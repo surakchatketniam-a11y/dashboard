@@ -422,6 +422,131 @@
       text-align: right;
     }
 
+    /* Budget Estimation Section */
+    .budget-section {
+      margin-bottom: 16px;
+    }
+
+    .budget-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .budget-input-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .budget-input-wrap input[type="number"] {
+      width: 110px;
+      height: 32px;
+      padding: 0 9px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: var(--navy-900);
+      background-color: var(--bg-subtle);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-sm);
+      outline: none;
+    }
+
+    .budget-input-wrap input[type="number"]:focus {
+      border-color: var(--navy-700);
+      background-color: #ffffff;
+    }
+
+    .vat-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .vat-toggle input {
+      accent-color: var(--navy-800);
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
+
+    .print-budget-meta {
+      display: none;
+      font-size: 9pt;
+      font-weight: 600;
+      color: var(--navy-900);
+      background: #f1f5f9;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border-mid);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .budget-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .budget-item {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-top: 3px solid var(--navy-800);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+    }
+
+    .budget-item.b-done { border-top-color: var(--status-done); }
+    .budget-item.b-pending { border-top-color: var(--sev-high); }
+    .budget-item.b-critical { border-top-color: var(--sev-critical); }
+
+    .budget-item-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .budget-amount-row {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      margin-bottom: 4px;
+    }
+
+    .budget-amount {
+      font-size: 22px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--navy-900);
+      line-height: 1.15;
+    }
+
+    .budget-unit {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .budget-sub {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
     /* Executive Decision Recommendations */
     .section-title-bar {
       display: flex;
@@ -665,6 +790,9 @@
       .kpi-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+      .budget-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
       .charts-grid {
         grid-template-columns: 1fr;
       }
@@ -678,7 +806,8 @@
         flex-direction: column;
       }
       .filter-bar,
-      .kpi-grid {
+      .kpi-grid,
+      .budget-grid {
         grid-template-columns: 1fr;
       }
       .donut-layout {
@@ -760,6 +889,33 @@
       .contract-row {
         padding: 4px 7px;
         font-size: 8.5pt;
+      }
+
+      .budget-section {
+        break-inside: avoid;
+        margin-bottom: 10px;
+      }
+
+      .print-budget-meta {
+        display: inline-block !important;
+      }
+
+      .budget-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .budget-item {
+        padding: 8px 10px;
+        break-inside: avoid;
+      }
+
+      .budget-amount {
+        font-size: 15pt;
+      }
+
+      .budget-sub {
+        font-size: 8.2pt;
       }
 
       .decision-section {
@@ -944,6 +1100,30 @@
         </div>
         <div class="chart-box" id="chartVintage"></div>
       </article>
+    </section>
+
+    <!-- Budget Estimation Section -->
+    <section class="budget-section">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">ประมาณการงบประมาณจัดหาจอคอมพิวเตอร์ทดแทน (ขนาด 21.5 นิ้ว)</h2>
+            <p class="card-desc">คำนวณอัตโนมัติตามจำนวนเครื่องในขอบเขตที่แสดง (ปรับราคาต่อเครื่องเพื่อจำลองงบประมาณได้)</p>
+          </div>
+          <div class="budget-controls">
+            <label class="budget-input-wrap no-print" for="budgetUnitPrice">
+              <span>ราคาต่อเครื่อง (บาท):</span>
+              <input id="budgetUnitPrice" type="number" min="0" step="100" value="2000" />
+            </label>
+            <label class="vat-toggle no-print">
+              <input id="budgetIncludeVat" type="checkbox" />
+              <span>รวม VAT 7%</span>
+            </label>
+            <span class="print-budget-meta" id="printBudgetMeta"></span>
+          </div>
+        </div>
+        <div class="budget-grid" id="budgetGrid"></div>
+      </div>
     </section>
 
     <!-- Executive Decision Recommendations -->
@@ -1496,6 +1676,78 @@
         `;
       }
 
+      const elBudgetPrice = document.getElementById("budgetUnitPrice");
+      const elBudgetVat = document.getElementById("budgetIncludeVat");
+
+      function formatBaht(amount) {
+        return Number(amount).toLocaleString("th-TH", {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2
+        });
+      }
+
+      function renderBudget(rows) {
+        const rawPrice = parseFloat(elBudgetPrice.value);
+        const basePrice = Number.isFinite(rawPrice) && rawPrice >= 0 ? rawPrice : 0;
+        const vatMultiplier = elBudgetVat.checked ? 1.07 : 1;
+        const effectivePrice = basePrice * vatMultiplier;
+
+        const total = rows.length;
+        const stCount = rows.filter((d) => d.orgGroup === "สท.พิจิตร").length;
+        const ssCount = rows.filter((d) => d.orgGroup === "สส.ในสังกัด").length;
+        const pending = rows.filter((d) => d.status === "รอทดแทน").length;
+        const done = total - pending;
+        const critical = rows.filter((d) => d.severity === "วิกฤต").length;
+        const high = total - critical;
+
+        const totalBudget = total * effectivePrice;
+        const stBudget = stCount * effectivePrice;
+        const ssBudget = ssCount * effectivePrice;
+        const doneBudget = done * effectivePrice;
+        const pendingBudget = pending * effectivePrice;
+        const criticalBudget = critical * effectivePrice;
+        const highBudget = high * effectivePrice;
+
+        const vatLabel = elBudgetVat.checked ? "รวม VAT 7%" : "ยังไม่รวม VAT 7%";
+        document.getElementById("printBudgetMeta").textContent =
+          `ราคาประมาณการ: ${formatBaht(basePrice)} บาท/เครื่อง (${vatLabel})`;
+
+        document.getElementById("budgetGrid").innerHTML = `
+          <div class="budget-item">
+            <div class="budget-item-title">1. จัดหาทดแทนทั้งหมด</div>
+            <div class="budget-amount-row">
+              <span class="budget-amount">${formatBaht(totalBudget)}</span>
+              <span class="budget-unit">บาท</span>
+            </div>
+            <div class="budget-sub">${total} เครื่อง | สท.พิจิตร ${formatBaht(stBudget)} บ. | สส. ${formatBaht(ssBudget)} บ.</div>
+          </div>
+          <div class="budget-item b-done">
+            <div class="budget-item-title">2. เฉพาะกลุ่ม "ทดแทนแล้ว"</div>
+            <div class="budget-amount-row">
+              <span class="budget-amount" style="color: var(--status-done);">${formatBaht(doneBudget)}</span>
+              <span class="budget-unit">บาท</span>
+            </div>
+            <div class="budget-sub">${done} เครื่อง (กรณีหักกลุ่มรอทดแทน ${pending} เครื่องออก)</div>
+          </div>
+          <div class="budget-item b-pending">
+            <div class="budget-item-title">3. กลุ่ม "รอทดแทน" (131/2554)</div>
+            <div class="budget-amount-row">
+              <span class="budget-amount" style="color: var(--sev-high);">${formatBaht(pendingBudget)}</span>
+              <span class="budget-unit">บาท</span>
+            </div>
+            <div class="budget-sub">${pending} เครื่อง (ติดตามสัญญาเดิม หรือตั้งงบสำรอง)</div>
+          </div>
+          <div class="budget-item b-critical">
+            <div class="budget-item-title">4. เร่งด่วนระดับวิกฤต (ทันที)</div>
+            <div class="budget-amount-row">
+              <span class="budget-amount" style="color: var(--sev-critical);">${formatBaht(criticalBudget)}</span>
+              <span class="budget-unit">บาท</span>
+            </div>
+            <div class="budget-sub">${critical} เครื่อง | ระดับรุนแรง ${high} เครื่อง = ${formatBaht(highBudget)} บ.</div>
+          </div>
+        `;
+      }
+
       function renderAll() {
         const filtered = getFilteredData();
         renderKPIs(filtered);
@@ -1503,9 +1755,13 @@
         renderContractDonut(filtered);
         renderSeverityChart(filtered);
         renderVintageChart(filtered);
+        renderBudget(filtered);
         renderTable(filtered);
         updatePrintScopeBar(filtered);
       }
+
+      elBudgetPrice.addEventListener("input", renderAll);
+      elBudgetVat.addEventListener("change", renderAll);
 
       elOrgGroup.addEventListener("change", () => {
         state.orgGroup = elOrgGroup.value;
