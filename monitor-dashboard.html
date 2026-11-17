@@ -871,8 +871,7 @@
         <select id="filterSeverity">
           <option value="all">ทุกระดับความรุนแรง</option>
           <option value="วิกฤต">วิกฤต (ใช้งานไม่ได้ / ไม่เห็นภาพ)</option>
-          <option value="รุนแรง">รุนแรง (กระทบการทำงานมาก)</option>
-          <option value="ปานกลาง">ปานกลาง (ฝ้า / รอยดำ / มัว)</option>
+          <option value="รุนแรง">รุนแรง (เป็นฝ้า / มองไม่ชัด / วงดำ / แทบใช้งานไม่ได้)</option>
         </select>
       </div>
       <div class="filter-group">
@@ -896,7 +895,6 @@
           <div class="legend-inline">
             <span class="legend-item"><span class="legend-swatch" style="background:#b91c1c"></span>วิกฤต</span>
             <span class="legend-item"><span class="legend-swatch" style="background:#d97706"></span>รุนแรง</span>
-            <span class="legend-item"><span class="legend-swatch" style="background:#0284c7"></span>ปานกลาง</span>
           </div>
         </div>
         <div class="chart-box" id="chartDept"></div>
@@ -963,10 +961,10 @@
         </article>
 
         <article class="decision-card p2">
-          <span class="decision-tag">เร่งด่วนระดับ 2 : ระยะสั้น (5 เครื่อง + สัญญา 131/2554)</span>
-          <h3 class="decision-title">เร่งรัดทดแทนตามสัญญา 131/2554 และเปลี่ยนกลุ่มอาการรุนแรง</h3>
+          <span class="decision-tag">เร่งด่วนระดับ 2 : ระยะสั้น (18 เครื่อง รุนแรง + สัญญา 131/2554)</span>
+          <h3 class="decision-title">เร่งรัดทดแทนตามสัญญา 131/2554 และเปลี่ยนกลุ่มจอเป็นฝ้า/มองไม่ชัด</h3>
           <div class="decision-body">
-            เร่งติดตามการส่งมอบทดแทนกลุ่ม <strong>รอทดแทน (5 เครื่อง)</strong> ได้แก่ กฎหมาย, สส.ทับคล้อ, สส.วังทรายพูน, สส.บางมูลนาก และ สส.สามง่าม พร้อมพิจารณาเปลี่ยนจออาการรุนแรง (กระพริบ/สีเพี้ยน/แตกลาย/เส้นทั่วจอ) ในกลุ่มงานวางแผนและ สส.ในสังกัด เพื่อลดความเสี่ยงด้านสายตาและข้อมูลผิดพลาด
+            จอที่มีอาการฝ้า/มองไม่ชัด/วงดำ/กระพริบ/แตกลาย/เส้นทั่วจอ (18 เครื่อง) แทบไม่สามารถใช้งานปฏิบัติงานได้จริง ควรเร่งติดตามส่งมอบกลุ่ม <strong>รอทดแทน (5 เครื่อง)</strong> ได้แก่ กฎหมาย, สส.ทับคล้อ, สส.วังทรายพูน, สส.บางมูลนาก และ สส.สามง่าม พร้อมจัดลำดับเปลี่ยนทดแทนกลุ่มงานส่วนกลางและ สส.ในสังกัดโดยด่วน
           </div>
         </article>
 
@@ -1046,16 +1044,7 @@
         if (symptom.includes("เปิดไม่ติด") || symptom.includes("ไม่เห็นภาพ")) {
           return { level: "วิกฤต", rank: 1 };
         }
-        if (
-          symptom.includes("กระพริบ") ||
-          symptom.includes("สีเพี้ยน") ||
-          symptom.includes("ไม่เต็มจอ") ||
-          symptom.includes("แตกลาย") ||
-          symptom.includes("มีเส้น")
-        ) {
-          return { level: "รุนแรง", rank: 2 };
-        }
-        return { level: "ปานกลาง", rank: 3 };
+        return { level: "รุนแรง", rank: 2 };
       }
 
       const DATA = RAW_DATA.map((item) => {
@@ -1169,7 +1158,7 @@
               <span class="kpi-value" style="color: var(--sev-critical);">${urgent}</span>
               <span class="kpi-unit">เครื่อง (${urgentPct}%)</span>
             </div>
-            <div class="kpi-sub">ใช้งานไม่ได้ (วิกฤต) ${critical} เครื่อง | กระทบงานมาก ${high} เครื่อง</div>
+            <div class="kpi-sub">ใช้งานไม่ได้ (วิกฤต) ${critical} เครื่อง | แทบใช้งานไม่ได้ (รุนแรง) ${high} เครื่อง</div>
           </div>
           <div class="kpi-card kpi-pending">
             <div class="kpi-label">สถานะ "รอทดแทน" ตามสัญญา</div>
@@ -1339,47 +1328,43 @@
 
         const groups = [
           {
-            label: "วิกฤต : ใช้งานไม่ได้ / ไม่เห็นภาพ",
+            label: "วิกฤต : ใช้งานไม่ได้เลย / ไม่เห็นภาพ",
             desc: "เปิดไม่ติด, ขึ้นเป็นเส้นไม่เห็นภาพ, จอเสื่อมไม่เห็นภาพ",
             count: rows.filter((d) => d.severity === "วิกฤต").length,
             color: "#b91c1c",
             bg: "#fef2f2"
           },
           {
-            label: "รุนแรง : กระทบการปฏิบัติงานมาก",
-            desc: "จอกระพริบบ่อย, สีเพี้ยน/ไม่เต็มจอ, แตกลาย, เส้นขึ้นทั่วจอ",
+            label: "รุนแรง : จอเป็นฝ้า / มองไม่ชัด / วงดำ / แทบใช้งานไม่ได้",
+            desc: "ฝ้าขาว-ฝ้าเม็ด-ฝ้ามืด, มองไม่ชัด, วงดำเป็นปื้น, กระพริบ, สีเพี้ยน, แตกลาย, เส้นทั่วจอ",
             count: rows.filter((d) => d.severity === "รุนแรง").length,
             color: "#d97706",
             bg: "#fffbeb"
-          },
-          {
-            label: "ปานกลาง : เสื่อมสภาพ / เป็นฝ้า / รอยดำ",
-            desc: "จอเป็นฝ้าขาว-ฝ้าเม็ด, รอยดำ/หยดน้ำ, มัวไม่ชัดเจน",
-            count: rows.filter((d) => d.severity === "ปานกลาง").length,
-            color: "#0284c7",
-            bg: "#f0f9ff"
           }
         ];
 
         const width = 520;
-        const height = 195;
+        const height = 185;
         const barX = 16;
         const barW = 488;
         let svg = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="กราฟระดับความรุนแรงของอาการ">`;
 
         groups.forEach((g, i) => {
-          const y = 8 + i * 62;
+          const y = 12 + i * 68;
           const pct = ((g.count / total) * 100).toFixed(1);
           const fillW = Math.max((g.count / total) * barW, g.count > 0 ? 8 : 0);
 
           svg += `<text x="${barX}" y="${y + 13}" font-size="11.5" font-weight="700" fill="#0f172a">${escapeHtml(g.label)}</text>`;
           svg += `<text x="${barX + barW}" y="${y + 13}" text-anchor="end" font-size="11.5" font-weight="700" fill="${g.color}">${g.count} เครื่อง (${pct}%)</text>`;
-          svg += `<rect x="${barX}" y="${y + 20}" width="${barW}" height="14" rx="4" fill="#f1f5f9" />`;
+          svg += `<rect x="${barX}" y="${y + 21}" width="${barW}" height="15" rx="4" fill="#f1f5f9" />`;
           if (fillW > 0) {
-            svg += `<rect x="${barX}" y="${y + 20}" width="${fillW.toFixed(1)}" height="14" rx="4" fill="${g.color}" />`;
+            svg += `<rect x="${barX}" y="${y + 21}" width="${fillW.toFixed(1)}" height="15" rx="4" fill="${g.color}" />`;
           }
-          svg += `<text x="${barX}" y="${y + 47}" font-size="10" fill="#64748b">${escapeHtml(g.desc)}</text>`;
+          svg += `<text x="${barX}" y="${y + 50}" font-size="10" fill="#64748b">${escapeHtml(g.desc)}</text>`;
         });
+
+        svg += `<rect x="${barX}" y="148" width="${barW}" height="26" rx="5" fill="#fffbeb" stroke="#fde68a" />`;
+        svg += `<text x="${barX + barW / 2}" y="165" text-anchor="middle" font-size="10.5" font-weight="700" fill="#92400e">สรุปภาพรวม: ทั้ง ${total} เครื่อง (100%) อยู่ในระดับเร่งด่วนที่ต้องจัดหาทดแทน</text>`;
 
         svg += `</svg>`;
         container.innerHTML = svg;
