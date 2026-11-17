@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Executive Dashboard - รายงานจอคอมพิวเตอร์เสื่อมสภาพ (สท.พิจิตร และ สส.ในสังกัด)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Mono:wght@400;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-page: #f4f6f9;
+      --bg-card: #ffffff;
+      --bg-subtle: #f8fafc;
+      --navy-900: #0f243e;
+      --navy-800: #1b365d;
+      --navy-700: #264b7d;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --border-light: #e2e8f0;
+      --border-mid: #cbd5e1;
+
+      --sev-critical: #b91c1c;
+      --sev-critical-bg: #fef2f2;
+      --sev-critical-border: #fecaca;
+
+      --sev-high: #b45309;
+      --sev-high-bg: #fffbeb;
+      --sev-high-border: #fde68a;
+
+      --sev-moderate: #0369a1;
+      --sev-moderate-bg: #f0f9ff;
+      --sev-moderate-border: #bae6fd;
+
+      --status-pending: #9a3412;
+      --status-pending-bg: #ffedd5;
+      --status-pending-border: #fed7aa;
+
+      --status-done: #0f766e;
+      --status-done-bg: #f0fdfa;
+      --status-done-border: #99f6e4;
+
+      --radius-md: 10px;
+      --radius-sm: 6px;
+      --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      font-family: "Noto Sans Thai", "Noto Sans", "Leelawadee UI", "Tahoma", sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-primary);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    svg text {
+      font-family: "Noto Sans Thai", "Noto Sans", sans-serif;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 20px 24px 40px;
+    }
+
+    /* Header */
+    .report-header {
+      background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 100%);
+      color: #ffffff;
+      border-radius: var(--radius-md);
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      box-shadow: 0 4px 12px rgba(15, 36, 62, 0.14);
+    }
+
+    .header-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #93c5fd;
+      margin-bottom: 4px;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+
+    .header-subtitle {
+      font-size: 13px;
+      color: #cbd5e1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .header-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 15px;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .btn-primary {
+      background-color: #ffffff;
+      color: var(--navy-900);
+    }
+
+    .btn-primary:hover {
+      background-color: #e2e8f0;
+    }
+
+    .btn-outline-light {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .btn-outline-light:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-card);
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .filter-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .filter-group select,
+    .filter-group input {
+      width: 100%;
+      padding: 7px 10px;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text-primary);
+      background-color: var(--bg-subtle);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-sm);
+      outline: none;
+    }
+
+    .filter-group select:focus,
+    .filter-group input:focus {
+      border-color: var(--navy-700);
+      background-color: #ffffff;
+    }
+
+    .btn-reset {
+      padding: 7px 12px;
+      background: #f1f5f9;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      height: 33px;
+      white-space: nowrap;
+    }
+
+    .btn-reset:hover {
+      background: #e2e8f0;
+      color: var(--text-primary);
+    }
+
+    .print-scope-bar {
+      display: none;
+      background: #f8fafc;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      margin-bottom: 10px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* KPI Strip */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 15px 18px;
+      box-shadow: var(--shadow-card);
+      border-top: 3px solid var(--navy-800);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .kpi-card.kpi-critical {
+      border-top-color: var(--sev-critical);
+    }
+
+    .kpi-card.kpi-pending {
+      border-top-color: var(--sev-high);
+    }
+
+    .kpi-card.kpi-age {
+      border-top-color: var(--status-done);
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .kpi-value-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-primary);
+    }
+
+    .kpi-unit {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .kpi-sub {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding-bottom: 9px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .card-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--navy-900);
+    }
+
+    .card-desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .legend-inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-swatch {
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .chart-box {
+      width: 100%;
+    }
+
+    .chart-box svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Contract & Donut Layout */
+    .donut-layout {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .contract-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .contract-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+    }
+
+    .contract-name {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .contract-count {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--navy-900);
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    /* Executive Decision Recommendations */
+    .section-title-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .section-heading {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--navy-900);
+    }
+
+    .section-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .decision-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .decision-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-left: 4px solid var(--navy-800);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .decision-card.p1 {
+      border-left-color: var(--sev-critical);
+    }
+
+    .decision-card.p2 {
+      border-left-color: var(--sev-high);
+    }
+
+    .decision-card.p3 {
+      border-left-color: var(--status-done);
+    }
+
+    .decision-tag {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-bottom: 7px;
+    }
+
+    .p1 .decision-tag {
+      background: var(--sev-critical-bg);
+      color: var(--sev-critical);
+      border: 1px solid var(--sev-critical-border);
+    }
+
+    .p2 .decision-tag {
+      background: var(--sev-high-bg);
+      color: var(--sev-high);
+      border: 1px solid var(--sev-high-border);
+    }
+
+    .p3 .decision-tag {
+      background: var(--status-done-bg);
+      color: var(--status-done);
+      border: 1px solid var(--status-done-border);
+    }
+
+    .decision-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .decision-body {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .decision-body ul {
+      padding-left: 16px;
+      margin-top: 5px;
+    }
+
+    .decision-body li {
+      margin-bottom: 3px;
+    }
+
+    /* Data Table */
+    .table-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    thead th {
+      background-color: #f1f5f9;
+      color: var(--navy-900);
+      font-weight: 700;
+      text-align: left;
+      padding: 9px 10px;
+      border-top: 1px solid var(--border-mid);
+      border-bottom: 1.5px solid var(--border-mid);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    thead th.sortable {
+      cursor: pointer;
+    }
+
+    thead th.sortable:hover {
+      background-color: #e2e8f0;
+    }
+
+    .sort-indicator {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    tbody td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border-light);
+      vertical-align: top;
+      color: var(--text-primary);
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #fafbfc;
+    }
+
+    tbody tr:hover {
+      background-color: #f1f5f9;
+    }
+
+    .col-center {
+      text-align: center;
+    }
+
+    .mono {
+      font-family: "Noto Sans Mono", "Noto Sans", "Consolas", monospace;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .badge-critical {
+      background: var(--sev-critical-bg);
+      color: var(--sev-critical);
+      border-color: var(--sev-critical-border);
+    }
+    .badge-critical .badge-dot { background: var(--sev-critical); }
+
+    .badge-high {
+      background: var(--sev-high-bg);
+      color: var(--sev-high);
+      border-color: var(--sev-high-border);
+    }
+    .badge-high .badge-dot { background: var(--sev-high); }
+
+    .badge-moderate {
+      background: var(--sev-moderate-bg);
+      color: var(--sev-moderate);
+      border-color: var(--sev-moderate-border);
+    }
+    .badge-moderate .badge-dot { background: var(--sev-moderate); }
+
+    .badge-pending {
+      background: var(--status-pending-bg);
+      color: var(--status-pending);
+      border-color: var(--status-pending-border);
+    }
+
+    .badge-done {
+      background: var(--status-done-bg);
+      color: var(--status-done);
+      border-color: var(--status-done-border);
+    }
+
+    .table-footnote {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* Responsive for smaller screens */
+    @media (max-width: 1024px) {
+      .filter-bar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+      .decision-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .report-header {
+        flex-direction: column;
+      }
+      .filter-bar,
+      .kpi-grid {
+        grid-template-columns: 1fr;
+      }
+      .donut-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Print / PDF Export Optimization */
+    @page {
+      size: A4 portrait;
+      margin: 10mm 11mm 11mm 11mm;
+    }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        font-size: 10pt;
+      }
+
+      .container {
+        max-width: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .print-scope-bar {
+        display: flex !important;
+        justify-content: space-between;
+      }
+
+      .report-header {
+        box-shadow: none;
+        padding: 14px 18px;
+        margin-bottom: 10px;
+        border-radius: 6px;
+      }
+
+      .header-title {
+        font-size: 15.5pt;
+      }
+
+      .kpi-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 9px;
+        margin-bottom: 10px;
+      }
+
+      .kpi-card {
+        box-shadow: none;
+        padding: 10px 12px;
+        break-inside: avoid;
+      }
+
+      .kpi-value {
+        font-size: 19pt;
+      }
+
+      .charts-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .card {
+        box-shadow: none;
+        padding: 11px 13px;
+        break-inside: avoid;
+      }
+
+      .donut-layout {
+        grid-template-columns: 118px 1fr;
+        gap: 10px;
+      }
+
+      .contract-row {
+        padding: 4px 7px;
+        font-size: 8.5pt;
+      }
+
+      .decision-section {
+        break-inside: avoid;
+        margin-bottom: 14px;
+      }
+
+      .decision-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 9px;
+      }
+
+      .decision-card {
+        box-shadow: none;
+        padding: 10px 11px;
+        break-inside: avoid;
+      }
+
+      .decision-body {
+        font-size: 8.8pt;
+      }
+
+      .table-section {
+        margin-top: 4px;
+      }
+
+      .table-card {
+        box-shadow: none;
+        padding: 0;
+        border: none;
+      }
+
+      .table-wrap {
+        overflow: visible;
+      }
+
+      table {
+        font-size: 8.8pt;
+      }
+
+      thead {
+        display: table-header-group;
+      }
+
+      thead th {
+        padding: 6px 6px;
+      }
+
+      tbody td {
+        padding: 5.5px 6px;
+      }
+
+      tbody tr {
+        break-inside: avoid;
+      }
+
+      .sort-indicator {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Executive Header -->
+    <header class="report-header">
+      <div>
+        <div class="header-eyebrow">Executive Decision Support Dashboard</div>
+        <h1 class="header-title">รายงานวิเคราะห์จอคอมพิวเตอร์ที่ใช้งานปัจจุบัน เสื่อมสภาพ (สท.พิจิตร และ สส.ในสังกัด)</h1>
+        <div class="header-subtitle">
+          <span class="header-meta-item">แหล่งข้อมูล: สำรวจจอคอมชำรุด.xlsx</span>
+          <span class="header-meta-item">ขอบเขต: สท.พิจิตร และ สส.ในสังกัด 6 สาขา</span>
+          <span class="header-meta-item">ปีฐานประเมินอายุครุภัณฑ์: พ.ศ. 2569</span>
+        </div>
+      </div>
+      <div class="header-actions no-print">
+        <button type="button" class="btn btn-primary" onclick="window.print()" title="พิมพ์รายงานหรือบันทึกเป็นไฟล์ PDF">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          พิมพ์ / บันทึกเป็น PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Print-only Scope Banner -->
+    <div id="printScopeBar" class="print-scope-bar"></div>
+
+    <!-- Interactive Filter Controls (Screen Only) -->
+    <section class="filter-bar no-print" aria-label="ตัวกรองข้อมูล">
+      <div class="filter-group">
+        <label for="filterOrgGroup">สังกัดหลัก</label>
+        <select id="filterOrgGroup">
+          <option value="all">ทั้งหมด (สท.พิจิตร + สส.ในสังกัด)</option>
+          <option value="สท.พิจิตร">สท.พิจิตร (ส่วนกลาง/ทีมงาน)</option>
+          <option value="สส.ในสังกัด">สส.ในสังกัด (สำนักงานสาขา)</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filterDept">หน่วยงาน / สาขา</label>
+        <select id="filterDept">
+          <option value="all">ทุกหน่วยงาน / สาขา</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filterStatus">สถานะตามสัญญา</label>
+        <select id="filterStatus">
+          <option value="all">ทุกสถานะสัญญา</option>
+          <option value="รอทดแทน">รอทดแทน</option>
+          <option value="ทดแทนแล้ว">ทดแทนแล้ว (ยังใช้งานอยู่)</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filterSeverity">ระดับความรุนแรง</label>
+        <select id="filterSeverity">
+          <option value="all">ทุกระดับความรุนแรง</option>
+          <option value="วิกฤต">วิกฤต (ใช้งานไม่ได้ / ไม่เห็นภาพ)</option>
+          <option value="รุนแรง">รุนแรง (กระทบการทำงานมาก)</option>
+          <option value="ปานกลาง">ปานกลาง (ฝ้า / รอยดำ / มัว)</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filterSearch">ค้นหา (เลขครุภัณฑ์ / ผู้ครอบครอง / อาการ)</label>
+        <input id="filterSearch" type="text" placeholder="ระบุคำค้นหา..." />
+      </div>
+      <button type="button" class="btn-reset" id="btnReset">ล้างตัวกรอง</button>
+    </section>
+
+    <!-- KPI Cards -->
+    <section class="kpi-grid" id="kpiGrid"></section>
+
+    <!-- Visual Analytics Grid -->
+    <section class="charts-grid">
+      <article class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">จำนวนจอเสื่อมสภาพแยกตามหน่วยงาน / สาขา</h2>
+            <p class="card-desc">จำแนกตามระดับความรุนแรง เพื่อระบุจุดที่ต้องจัดสรรทดแทน</p>
+          </div>
+          <div class="legend-inline">
+            <span class="legend-item"><span class="legend-swatch" style="background:#b91c1c"></span>วิกฤต</span>
+            <span class="legend-item"><span class="legend-swatch" style="background:#d97706"></span>รุนแรง</span>
+            <span class="legend-item"><span class="legend-swatch" style="background:#0284c7"></span>ปานกลาง</span>
+          </div>
+        </div>
+        <div class="chart-box" id="chartDept"></div>
+      </article>
+
+      <article class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">สัดส่วนตามเลขที่สัญญาและสถานะการทดแทน</h2>
+            <p class="card-desc">เปรียบเทียบกลุ่ม "รอทดแทน" กับกลุ่ม "ทดแทนแล้ว" ที่ยังพบใช้งานจริง</p>
+          </div>
+        </div>
+        <div class="donut-layout">
+          <div class="chart-box" id="chartContractDonut"></div>
+          <div class="contract-list" id="contractSummaryList"></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">จำแนกตามระดับความรุนแรงและผลกระทบการใช้งาน</h2>
+            <p class="card-desc">จัดลำดับความเร่งด่วนในการแก้ไขปัญหาและเปลี่ยนทดแทน</p>
+          </div>
+        </div>
+        <div class="chart-box" id="chartSeverity"></div>
+      </article>
+
+      <article class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">โครงสร้างอายุครุภัณฑ์ตามปี พ.ศ. ที่จัดหา</h2>
+            <p class="card-desc">อายุใช้งาน ณ ปี พ.ศ. 2569 (ทุกเครื่องเกินเกณฑ์มาตรฐาน 5 ปี)</p>
+          </div>
+          <div class="legend-inline">
+            <span class="legend-item"><span class="legend-swatch" style="background:#1b365d"></span>ทดแทนแล้ว</span>
+            <span class="legend-item"><span class="legend-swatch" style="background:#d97706"></span>รอทดแทน</span>
+          </div>
+        </div>
+        <div class="chart-box" id="chartVintage"></div>
+      </article>
+    </section>
+
+    <!-- Executive Decision Recommendations -->
+    <section class="decision-section">
+      <div class="section-title-bar">
+        <div>
+          <h2 class="section-heading">ประเด็นวิเคราะห์และข้อเสนอแนะเพื่อประกอบการตัดสินใจผู้บริหาร</h2>
+          <p class="section-sub">สรุปจากข้อมูลสำรวจทั้ง 21 เครื่อง แบ่งตามลำดับความสำคัญเร่งด่วนและแนวทางบริหารสินทรัพย์</p>
+        </div>
+      </div>
+      <div class="decision-grid">
+        <article class="decision-card p1">
+          <span class="decision-tag">เร่งด่วนระดับ 1 : ทันที (3 เครื่อง)</span>
+          <h3 class="decision-title">แก้ไขเครื่องที่ใช้งานไม่ได้เลย (ไม่เห็นภาพ / เปิดไม่ติด)</h3>
+          <div class="decision-body">
+            ส่งผลกระทบโดยตรงต่อการให้บริการและการปฏิบัติงานหน้างาน ควรจัดหาจอสำรองหรือโยกย้ายทดแทนทันที:
+            <ul>
+              <li><strong>สส.บางมูลนาก:</strong> 1310-02-3138-2554 (เปิดไม่ติด / สัญญา 131/2554 รอทดแทน)</li>
+              <li><strong>สส.ตะพานหิน:</strong> 1310-02-5248-2555 (ขึ้นเป็นเส้น ไม่เห็นภาพ)</li>
+              <li><strong>สส.เมืองพิจิตร:</strong> 1310-02-1237-2553 (จอเสื่อม ไม่เห็นภาพ)</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="decision-card p2">
+          <span class="decision-tag">เร่งด่วนระดับ 2 : ระยะสั้น (5 เครื่อง + สัญญา 131/2554)</span>
+          <h3 class="decision-title">เร่งรัดทดแทนตามสัญญา 131/2554 และเปลี่ยนกลุ่มอาการรุนแรง</h3>
+          <div class="decision-body">
+            เร่งติดตามการส่งมอบทดแทนกลุ่ม <strong>รอทดแทน (5 เครื่อง)</strong> ได้แก่ กฎหมาย, สส.ทับคล้อ, สส.วังทรายพูน, สส.บางมูลนาก และ สส.สามง่าม พร้อมพิจารณาเปลี่ยนจออาการรุนแรง (กระพริบ/สีเพี้ยน/แตกลาย/เส้นทั่วจอ) ในกลุ่มงานวางแผนและ สส.ในสังกัด เพื่อลดความเสี่ยงด้านสายตาและข้อมูลผิดพลาด
+          </div>
+        </article>
+
+        <article class="decision-card p3">
+          <span class="decision-tag">การบริหารสินทรัพย์ : 16 เครื่อง (76.2%)</span>
+          <h3 class="decision-title">สอบทานทะเบียนคุมครุภัณฑ์กลุ่ม "ทดแทนแล้ว" แต่ยังใช้งานอยู่</h3>
+          <div class="decision-body">
+            พบจอคอมพิวเตอร์ 16 เครื่อง (สัญญา 127/2555, 86/2556, 69/2554) ที่ระบุสถานะ <strong>ทดแทนแล้ว</strong> แต่ยังมีการใช้งานจริงและเสื่อมสภาพเป็นฝ้า/รอยดำ ควรให้เจ้าหน้าที่พัสดุตรวจสอบทะเบียนจำหน่าย/ส่งคืน และวางแผนตั้งงบประมาณทดแทนให้ครอบคลุม เนื่องจากทุกเครื่องมีอายุ <strong>13–16 ปี</strong> (จัดหาปี 2553–2556)
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Detailed Asset Table -->
+    <section class="table-section">
+      <div class="table-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">บัญชีรายละเอียดครุภัณฑ์จอคอมพิวเตอร์เสื่อมสภาพ (<span id="tableCountLabel">21</span> รายการ)</h2>
+            <p class="card-desc no-print">คลิกหัวตารางเพื่อเรียงลำดับข้อมูล (ลำดับ, เลขครุภัณฑ์, ปี พ.ศ., สังกัด, สถานะ หรือระดับความรุนแรง)</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="sortable col-center" data-sort="seq">ลำดับ <span class="sort-indicator" id="sort-seq"></span></th>
+                <th class="sortable" data-sort="asset">เลขครุภัณฑ์ <span class="sort-indicator" id="sort-asset"></span></th>
+                <th class="sortable col-center" data-sort="year">ปี พ.ศ. (อายุ) <span class="sort-indicator" id="sort-year"></span></th>
+                <th class="sortable" data-sort="contract">เลขที่สัญญา / สถานะ <span class="sort-indicator" id="sort-contract"></span></th>
+                <th class="sortable" data-sort="dept">หน่วยงาน / สาขา <span class="sort-indicator" id="sort-dept"></span></th>
+                <th class="sortable" data-sort="holder">ผู้ครอบครอง <span class="sort-indicator" id="sort-holder"></span></th>
+                <th>อาการที่พบ</th>
+                <th class="sortable" data-sort="severityRank">ระดับความรุนแรง <span class="sort-indicator" id="sort-severityRank"></span></th>
+              </tr>
+            </thead>
+            <tbody id="assetTableBody"></tbody>
+          </table>
+        </div>
+        <div class="table-footnote">
+          <span>หมายเหตุ: รายการที่ใช้เครื่องหมายอัญประกาศ (") ในคอลัมน์หมายเหตุของไฟล์ต้นฉบับ ถูกระบุชื่อหน่วยงาน/สาขาตามแถวอ้างอิงด้านบนเพื่อความถูกต้องในการวิเคราะห์</span>
+          <span>จัดทำข้อมูล: รายงานสนับสนุนการตัดสินใจผู้บริหาร (สท.พิจิตร)</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      const CURRENT_BE_YEAR = 2569;
+
+      const RAW_DATA = [
+        { seq: 1, asset: "1310-02-5093-2555", contract: "127/2555 (ทดแทนแล้ว)", symptom: "จอมีรอยดำ ฝ้า มองไม่ชัด", holder: "นางจงรัก วงษ์ลำดวน", dept: "ส่วนบริหารงานทั่วไป" },
+        { seq: 2, asset: "1310-02-5099-2555", contract: "127/2555 (ทดแทนแล้ว)", symptom: "จอมีรอยหยดน้ำ ฝ้า มองไม่ชัด", holder: "นายสำราญ คำภิระ", dept: "ส่วนบริหารงานทั่วไป" },
+        { seq: 3, asset: "1310-02-5109-2555", contract: "127/2555 (ทดแทนแล้ว)", symptom: "จอเป็นฝ้า มองไม่ชัด", holder: "น.ส.ลาวัลย์ เพ็ชรอำไพ", dept: "ส่วนบริหารงานทั่วไป" },
+        { seq: 4, asset: "1310-02-5100-2555", contract: "127/2555 (ทดแทนแล้ว)", symptom: "จอเป็นฝ้า มองไม่ชัด", holder: "ส่วนกลางงานคลัง", dept: "ส่วนบริหารงานทั่วไป" },
+        { seq: 5, asset: "1310-02-5103-2555", contract: "127/2555 (ทดแทนแล้ว)", symptom: "หน้าจอเสื่อมสภาพ เป็นรอบฝ้าเม็ดๆตามรูป", holder: "นางสาวกนกวรรณ จิตรเกษม", dept: "ทีม พ.01" },
+        { seq: 6, asset: "1310-02-5113-2555", contract: "127/2555 (ทดแทนแล้ว)", symptom: "หน้าจอเสื่อมสภาพเป็นฝ้าขาวบริเวณกว้าง", holder: "ส่วนกลาง นต.01", dept: "ทีม นต.01" },
+        { seq: 7, asset: "1310-02-5108-2555", contract: "127/2555 (ทดแทนแล้ว)", symptom: "หน้าจอเสื่อมสภาพเป็นฝ้าเม็ดๆ ทั่วจอ", holder: "อรอนงค์ ตระกูลพันธ์", dept: "ทีม นต.02" },
+        { seq: 8, asset: "1310-02-3128-2554", contract: "131/2554 (รอทดแทน)", symptom: "หน้าจอเสื่อมสภาพ เป็นรอบฝ้าเม็ดๆ มัวไม่ชัดเจน ขอบเหลือง", holder: "นางเรืองอุไร ฉ่ำอินทร์", dept: "กฎหมาย" },
+        { seq: 9, asset: "1310-02-5097-2555", contract: "127/2555 (ทดแทนแล้ว)", symptom: "หน้าจอเสื่อมสภาพ เป็นฝ้า", holder: "นางสาวนันทนาภรณ์ เริ่มศิลป์", dept: "วางแผน" },
+        { seq: 10, asset: "1310-02-5111-2555", contract: "127/2555 (ทดแทนแล้ว)", symptom: "หน้าจอเสื่อมสภาพ เป็นฝ้า", holder: "นางสาวนภาวรรณ ศรีนรคุตร", dept: "วางแผน" },
+        { seq: 11, asset: "1310-02-3764-2556", contract: "86/2556 (ทดแทนแล้ว)", symptom: "หน้าจอกระพริบบ่อย", holder: "นางสาวผ่องนภา ชูฉ่ำ", dept: "วางแผน" },
+        { seq: 12, asset: "1310-02-5115-2555", contract: "127/2555 (ทดแทนแล้ว)", symptom: "หน้าจอเสื่อมสภาพ เป็นฝ้า", holder: "นายธนพล ทองสุกดี", dept: "วางแผน" },
+        { seq: 13, asset: "1310-02-3141-2554", contract: "131/2554 (รอทดแทน)", symptom: "จอเป็นฝ้า สีเพี้ยน ภาพไม่เต็มจอ", holder: "นางสาวมนชกร เขียวสี", dept: "สส.ทับคล้อ" },
+        { seq: 14, asset: "1310-02-3135-2554", contract: "131/2554 (รอทดแทน)", symptom: "หน้าจอแตกลาย การแสดงผลเป็นฝ้า", holder: "นางทัศนีย์ มิ่งโสภา", dept: "สส.วังทรายพูน" },
+        { seq: 15, asset: "1310-02-3765-2556", contract: "86/2556 (ทดแทนแล้ว)", symptom: "อาการ มีวงดำเป็นปื้นจางๆ", holder: "นางพริมา ศิริมาศพฤฒิพงศ์", dept: "สส.วังทรายพูน" },
+        { seq: 16, asset: "1310-02-3138-2554", contract: "131/2554 (รอทดแทน)", symptom: "เปิดไม่ติด", holder: "น.ส.ศศิพรรณ ปัณราช", dept: "สส.บางมูลนาก" },
+        { seq: 17, asset: "1310-02-1241-2553", contract: "69/2554 (ทดแทนแล้ว)", symptom: "หน้าจอไม่ชัด เป็นฝ้ามืด", holder: "นางปิยะมาศ หิตะเกษม", dept: "สส.ตะพานหิน" },
+        { seq: 18, asset: "1310-02-5248-2555", contract: "127/2555 (ทดแทนแล้ว)", symptom: "ขึ้นเป็นเส้น ไม่เห็นภาพ", holder: "น.ส.ธีราพร พจนาพาณิชกุล", dept: "สส.ตะพานหิน" },
+        { seq: 19, asset: "1310-02-1237-2553", contract: "69/2554 (ทดแทนแล้ว)", symptom: "จอเสื่อม ไม่เห็นภาพ", holder: "น.ส.นันทพร วรรณภาส", dept: "สส.เมืองพิจิตร" },
+        { seq: 20, asset: "1310-02-3140-2554", contract: "131/2554 (รอทดแทน)", symptom: "มีอาการหน้าจอเป็นฝ้าเม็ดๆ มัวไม่ชัดเจน มีเส้นขึ้นทั่วทั้งหน้าจอ", holder: "นางสาวขวัญเรือน ฟักเจริญ", dept: "สส.สามง่าม" },
+        { seq: 21, asset: "1310-02-5122-2555", contract: "127/2555 (ทดแทนแล้ว)", symptom: "มีอาการหน้าจอเป็นฝ้าเม็ดๆ มัวไม่ชัดเจน มีเส้นขึ้นทั่วทั้งหน้าจอ", holder: "นางสาววันวิสาข์ พวงทอง", dept: "สส.สามง่าม" }
+      ];
+
+      function classifySeverity(symptom) {
+        if (symptom.includes("เปิดไม่ติด") || symptom.includes("ไม่เห็นภาพ")) {
+          return { level: "วิกฤต", rank: 1 };
+        }
+        if (
+          symptom.includes("กระพริบ") ||
+          symptom.includes("สีเพี้ยน") ||
+          symptom.includes("ไม่เต็มจอ") ||
+          symptom.includes("แตกลาย") ||
+          symptom.includes("มีเส้น")
+        ) {
+          return { level: "รุนแรง", rank: 2 };
+        }
+        return { level: "ปานกลาง", rank: 3 };
+      }
+
+      const DATA = RAW_DATA.map((item) => {
+        const year = parseInt(item.asset.split("-").pop(), 10);
+        const age = CURRENT_BE_YEAR - year;
+        const status = item.contract.includes("รอทดแทน") ? "รอทดแทน" : "ทดแทนแล้ว";
+        const orgGroup = item.dept.startsWith("สส.") ? "สส.ในสังกัด" : "สท.พิจิตร";
+        const sev = classifySeverity(item.symptom);
+        return {
+          ...item,
+          year,
+          age,
+          status,
+          orgGroup,
+          severity: sev.level,
+          severityRank: sev.rank
+        };
+      });
+
+      const state = {
+        orgGroup: "all",
+        dept: "all",
+        status: "all",
+        severity: "all",
+        search: "",
+        sortKey: "seq",
+        sortDir: "asc"
+      };
+
+      const elOrgGroup = document.getElementById("filterOrgGroup");
+      const elDept = document.getElementById("filterDept");
+      const elStatus = document.getElementById("filterStatus");
+      const elSeverity = document.getElementById("filterSeverity");
+      const elSearch = document.getElementById("filterSearch");
+      const elBtnReset = document.getElementById("btnReset");
+
+      function populateDeptFilter() {
+        const currentVal = elDept.value;
+        const pool = state.orgGroup === "all" ? DATA : DATA.filter((d) => d.orgGroup === state.orgGroup);
+        const depts = Array.from(new Set(pool.map((d) => d.dept)));
+        elDept.innerHTML = '<option value="all">ทุกหน่วยงาน / สาขา</option>';
+        depts.forEach((dept) => {
+          const opt = document.createElement("option");
+          opt.value = dept;
+          opt.textContent = dept;
+          elDept.appendChild(opt);
+        });
+        if (depts.includes(currentVal)) {
+          elDept.value = currentVal;
+        } else {
+          elDept.value = "all";
+          state.dept = "all";
+        }
+      }
+
+      function getFilteredData() {
+        const q = state.search.trim().toLowerCase();
+        return DATA.filter((d) => {
+          if (state.orgGroup !== "all" && d.orgGroup !== state.orgGroup) return false;
+          if (state.dept !== "all" && d.dept !== state.dept) return false;
+          if (state.status !== "all" && d.status !== state.status) return false;
+          if (state.severity !== "all" && d.severity !== state.severity) return false;
+          if (q) {
+            const hay = `${d.asset} ${d.contract} ${d.dept} ${d.holder} ${d.symptom}`.toLowerCase();
+            if (!hay.includes(q)) return false;
+          }
+          return true;
+        });
+      }
+
+      function sortData(rows) {
+        const dir = state.sortDir === "asc" ? 1 : -1;
+        const key = state.sortKey;
+        return [...rows].sort((a, b) => {
+          const va = a[key];
+          const vb = b[key];
+          if (typeof va === "number" && typeof vb === "number") {
+            return (va - vb) * dir;
+          }
+          return String(va).localeCompare(String(vb), "th") * dir;
+        });
+      }
+
+      function renderKPIs(rows) {
+        const total = rows.length;
+        const stCount = rows.filter((d) => d.orgGroup === "สท.พิจิตร").length;
+        const ssCount = rows.filter((d) => d.orgGroup === "สส.ในสังกัด").length;
+        const critical = rows.filter((d) => d.severity === "วิกฤต").length;
+        const high = rows.filter((d) => d.severity === "รุนแรง").length;
+        const urgent = critical + high;
+        const urgentPct = total ? ((urgent / total) * 100).toFixed(1) : "0.0";
+        const pending = rows.filter((d) => d.status === "รอทดแทน").length;
+        const pendingPct = total ? ((pending / total) * 100).toFixed(1) : "0.0";
+        const done = total - pending;
+        const avgAge = total ? (rows.reduce((s, d) => s + d.age, 0) / total).toFixed(1) : "0.0";
+        const minYr = total ? Math.min(...rows.map((d) => d.year)) : "-";
+        const maxYr = total ? Math.max(...rows.map((d) => d.year)) : "-";
+
+        document.getElementById("kpiGrid").innerHTML = `
+          <div class="kpi-card">
+            <div class="kpi-label">จำนวนจอคอมพิวเตอร์เสื่อมสภาพ</div>
+            <div class="kpi-value-row">
+              <span class="kpi-value">${total}</span>
+              <span class="kpi-unit">เครื่อง</span>
+            </div>
+            <div class="kpi-sub">สท.พิจิตร ${stCount} เครื่อง | สส.ในสังกัด ${ssCount} เครื่อง</div>
+          </div>
+          <div class="kpi-card kpi-critical">
+            <div class="kpi-label">กลุ่มเร่งด่วน (วิกฤต + รุนแรง)</div>
+            <div class="kpi-value-row">
+              <span class="kpi-value" style="color: var(--sev-critical);">${urgent}</span>
+              <span class="kpi-unit">เครื่อง (${urgentPct}%)</span>
+            </div>
+            <div class="kpi-sub">ใช้งานไม่ได้ (วิกฤต) ${critical} เครื่อง | กระทบงานมาก ${high} เครื่อง</div>
+          </div>
+          <div class="kpi-card kpi-pending">
+            <div class="kpi-label">สถานะ "รอทดแทน" ตามสัญญา</div>
+            <div class="kpi-value-row">
+              <span class="kpi-value" style="color: var(--sev-high);">${pending}</span>
+              <span class="kpi-unit">เครื่อง (${pendingPct}%)</span>
+            </div>
+            <div class="kpi-sub">สัญญา 131/2554: ${pending} เครื่อง | ทดแทนแล้ว (ยังใช้งาน): ${done} เครื่อง</div>
+          </div>
+          <div class="kpi-card kpi-age">
+            <div class="kpi-label">อายุครุภัณฑ์เฉลี่ย (ฐานปี 2569)</div>
+            <div class="kpi-value-row">
+              <span class="kpi-value" style="color: var(--status-done);">${avgAge}</span>
+              <span class="kpi-unit">ปี</span>
+            </div>
+            <div class="kpi-sub">ปีจัดหา พ.ศ. ${minYr}–${maxYr} (เกินเกณฑ์มาตรฐาน 5 ปีทุกเครื่อง)</div>
+          </div>
+        `;
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function renderDeptChart(rows) {
+        const container = document.getElementById("chartDept");
+        if (!rows.length) {
+          container.innerHTML = '<div class="empty-state">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</div>';
+          return;
+        }
+
+        const deptMap = new Map();
+        rows.forEach((d) => {
+          if (!deptMap.has(d.dept)) {
+            deptMap.set(d.dept, { dept: d.dept, critical: 0, high: 0, moderate: 0, total: 0 });
+          }
+          const rec = deptMap.get(d.dept);
+          rec.total += 1;
+          if (d.severity === "วิกฤต") rec.critical += 1;
+          else if (d.severity === "รุนแรง") rec.high += 1;
+          else rec.moderate += 1;
+        });
+
+        const list = Array.from(deptMap.values()).sort((a, b) => b.total - a.total || b.critical - a.critical || a.dept.localeCompare(b.dept, "th"));
+        const maxVal = Math.max(...list.map((x) => x.total), 1);
+
+        const rowH = 23;
+        const padTop = 6;
+        const padLeft = 128;
+        const padRight = 36;
+        const width = 520;
+        const barAreaW = width - padLeft - padRight;
+        const height = padTop + list.length * rowH + 6;
+
+        let svg = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="กราฟจำนวนจอเสื่อมสภาพแยกตามหน่วยงาน">`;
+
+        // Gridlines
+        for (let g = 0; g <= maxVal; g++) {
+          const x = padLeft + (g / maxVal) * barAreaW;
+          svg += `<line x1="${x.toFixed(1)}" y1="2" x2="${x.toFixed(1)}" y2="${height - 4}" stroke="#f1f5f9" stroke-width="1" />`;
+        }
+
+        list.forEach((item, idx) => {
+          const y = padTop + idx * rowH;
+          const barY = y + 3;
+          const barH = 14;
+          svg += `<text x="${padLeft - 8}" y="${y + 13.5}" text-anchor="end" font-size="11" font-weight="600" fill="#1e293b">${escapeHtml(item.dept)}</text>`;
+
+          let curX = padLeft;
+          const segments = [
+            { val: item.critical, color: "#b91c1c" },
+            { val: item.high, color: "#d97706" },
+            { val: item.moderate, color: "#0284c7" }
+          ];
+
+          segments.forEach((seg) => {
+            if (seg.val > 0) {
+              const w = (seg.val / maxVal) * barAreaW;
+              svg += `<rect x="${curX.toFixed(1)}" y="${barY}" width="${w.toFixed(1)}" height="${barH}" rx="2" fill="${seg.color}" />`;
+              if (w >= 16) {
+                svg += `<text x="${(curX + w / 2).toFixed(1)}" y="${barY + 10.8}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#ffffff">${seg.val}</text>`;
+              }
+              curX += w;
+            }
+          });
+
+          svg += `<text x="${(curX + 6).toFixed(1)}" y="${barY + 11}" font-size="10.5" font-weight="700" fill="#334155">${item.total}</text>`;
+        });
+
+        svg += `</svg>`;
+        container.innerHTML = svg;
+      }
+
+      function renderContractDonut(rows) {
+        const donutBox = document.getElementById("chartContractDonut");
+        const listBox = document.getElementById("contractSummaryList");
+        if (!rows.length) {
+          donutBox.innerHTML = "";
+          listBox.innerHTML = '<div class="empty-state">ไม่พบข้อมูล</div>';
+          return;
+        }
+
+        const contractColors = {
+          "127/2555 (ทดแทนแล้ว)": "#1b365d",
+          "131/2554 (รอทดแทน)": "#d97706",
+          "86/2556 (ทดแทนแล้ว)": "#0f766e",
+          "69/2554 (ทดแทนแล้ว)": "#64748b"
+        };
+
+        const counts = new Map();
+        rows.forEach((d) => counts.set(d.contract, (counts.get(d.contract) || 0) + 1));
+        const entries = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+        const total = rows.length;
+
+        const size = 160;
+        const cx = 80;
+        const cy = 80;
+        const r = 56;
+        const strokeW = 24;
+        const circumference = 2 * Math.PI * r;
+
+        let offset = 0;
+        let svg = `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="กราฟสัดส่วนตามเลขที่สัญญา">`;
+        svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#f1f5f9" stroke-width="${strokeW}" />`;
+
+        entries.forEach(([name, count]) => {
+          const frac = count / total;
+          const dash = frac * circumference;
+          const color = contractColors[name] || "#475569";
+          svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-dasharray="${dash.toFixed(2)} ${circumference.toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" />`;
+          offset += dash;
+        });
+
+        svg += `<text x="${cx}" y="${cy - 3}" text-anchor="middle" font-size="22" font-weight="700" fill="#0f243e">${total}</text>`;
+        svg += `<text x="${cx}" y="${cy + 14}" text-anchor="middle" font-size="10.5" font-weight="600" fill="#64748b">เครื่องทั้งหมด</text>`;
+        svg += `</svg>`;
+        donutBox.innerHTML = svg;
+
+        listBox.innerHTML = entries
+          .map(([name, count]) => {
+            const pct = ((count / total) * 100).toFixed(1);
+            const color = contractColors[name] || "#475569";
+            return `
+              <div class="contract-row">
+                <div class="contract-name">
+                  <span class="legend-swatch" style="background:${color}"></span>
+                  <span>${escapeHtml(name)}</span>
+                </div>
+                <div class="contract-count">${count} เครื่อง (${pct}%)</div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function renderSeverityChart(rows) {
+        const container = document.getElementById("chartSeverity");
+        const total = rows.length;
+        if (!total) {
+          container.innerHTML = '<div class="empty-state">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</div>';
+          return;
+        }
+
+        const groups = [
+          {
+            label: "วิกฤต : ใช้งานไม่ได้ / ไม่เห็นภาพ",
+            desc: "เปิดไม่ติด, ขึ้นเป็นเส้นไม่เห็นภาพ, จอเสื่อมไม่เห็นภาพ",
+            count: rows.filter((d) => d.severity === "วิกฤต").length,
+            color: "#b91c1c",
+            bg: "#fef2f2"
+          },
+          {
+            label: "รุนแรง : กระทบการปฏิบัติงานมาก",
+            desc: "จอกระพริบบ่อย, สีเพี้ยน/ไม่เต็มจอ, แตกลาย, เส้นขึ้นทั่วจอ",
+            count: rows.filter((d) => d.severity === "รุนแรง").length,
+            color: "#d97706",
+            bg: "#fffbeb"
+          },
+          {
+            label: "ปานกลาง : เสื่อมสภาพ / เป็นฝ้า / รอยดำ",
+            desc: "จอเป็นฝ้าขาว-ฝ้าเม็ด, รอยดำ/หยดน้ำ, มัวไม่ชัดเจน",
+            count: rows.filter((d) => d.severity === "ปานกลาง").length,
+            color: "#0284c7",
+            bg: "#f0f9ff"
+          }
+        ];
+
+        const width = 520;
+        const height = 195;
+        const barX = 16;
+        const barW = 488;
+        let svg = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="กราฟระดับความรุนแรงของอาการ">`;
+
+        groups.forEach((g, i) => {
+          const y = 8 + i * 62;
+          const pct = ((g.count / total) * 100).toFixed(1);
+          const fillW = Math.max((g.count / total) * barW, g.count > 0 ? 8 : 0);
+
+          svg += `<text x="${barX}" y="${y + 13}" font-size="11.5" font-weight="700" fill="#0f172a">${escapeHtml(g.label)}</text>`;
+          svg += `<text x="${barX + barW}" y="${y + 13}" text-anchor="end" font-size="11.5" font-weight="700" fill="${g.color}">${g.count} เครื่อง (${pct}%)</text>`;
+          svg += `<rect x="${barX}" y="${y + 20}" width="${barW}" height="14" rx="4" fill="#f1f5f9" />`;
+          if (fillW > 0) {
+            svg += `<rect x="${barX}" y="${y + 20}" width="${fillW.toFixed(1)}" height="14" rx="4" fill="${g.color}" />`;
+          }
+          svg += `<text x="${barX}" y="${y + 47}" font-size="10" fill="#64748b">${escapeHtml(g.desc)}</text>`;
+        });
+
+        svg += `</svg>`;
+        container.innerHTML = svg;
+      }
+
+      function renderVintageChart(rows) {
+        const container = document.getElementById("chartVintage");
+        if (!rows.length) {
+          container.innerHTML = '<div class="empty-state">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</div>';
+          return;
+        }
+
+        const years = [2553, 2554, 2555, 2556];
+        const counts = years.map((yr) => ({
+          year: yr,
+          age: CURRENT_BE_YEAR - yr,
+          pending: rows.filter((d) => d.year === yr && d.status === "รอทดแทน").length,
+          done: rows.filter((d) => d.year === yr && d.status === "ทดแทนแล้ว").length,
+          total: rows.filter((d) => d.year === yr).length
+        }));
+
+        const maxVal = Math.max(...counts.map((c) => c.total), 1);
+        const width = 520;
+        const height = 195;
+        const padLeft = 42;
+        const padRight = 24;
+        const padTop = 24;
+        const padBottom = 42;
+        const plotW = width - padLeft - padRight;
+        const plotH = height - padTop - padBottom;
+        const colW = plotW / years.length;
+        const barW = 54;
+
+        let svg = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="กราฟโครงสร้างอายุครุภัณฑ์ตามปีจัดหา">`;
+
+        // Horizontal gridlines
+        const ticks = 4;
+        for (let t = 0; t <= ticks; t++) {
+          const val = Math.round((maxVal * t) / ticks);
+          const y = padTop + plotH - (t / ticks) * plotH;
+          svg += `<line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${width - padRight}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-dasharray="${t === 0 ? "none" : "3 3"}" />`;
+          svg += `<text x="${padLeft - 8}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#64748b">${val}</text>`;
+        }
+
+        counts.forEach((c, idx) => {
+          const cx = padLeft + idx * colW + colW / 2;
+          const x = cx - barW / 2;
+          const doneH = (c.done / maxVal) * plotH;
+          const pendH = (c.pending / maxVal) * plotH;
+          const totalH = doneH + pendH;
+
+          const baseY = padTop + plotH;
+          if (doneH > 0) {
+            svg += `<rect x="${x.toFixed(1)}" y="${(baseY - doneH).toFixed(1)}" width="${barW}" height="${doneH.toFixed(1)}" fill="#1b365d" rx="2" />`;
+          }
+          if (pendH > 0) {
+            svg += `<rect x="${x.toFixed(1)}" y="${(baseY - totalH).toFixed(1)}" width="${barW}" height="${pendH.toFixed(1)}" fill="#d97706" rx="2" />`;
+          }
+
+          svg += `<text x="${cx.toFixed(1)}" y="${(baseY - totalH - 6).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">${c.total} เครื่อง</text>`;
+          svg += `<text x="${cx.toFixed(1)}" y="${baseY + 16}" text-anchor="middle" font-size="11" font-weight="700" fill="#1e293b">พ.ศ. ${c.year}</text>`;
+          svg += `<text x="${cx.toFixed(1)}" y="${baseY + 30}" text-anchor="middle" font-size="10" fill="#64748b">(อายุ ${c.age} ปี)</text>`;
+        });
+
+        svg += `</svg>`;
+        container.innerHTML = svg;
+      }
+
+      function renderTable(rows) {
+        const tbody = document.getElementById("assetTableBody");
+        const sorted = sortData(rows);
+        document.getElementById("tableCountLabel").textContent = sorted.length;
+
+        // Update sort indicators
+        document.querySelectorAll(".sort-indicator").forEach((el) => {
+          el.textContent = "";
+        });
+        const activeIndicator = document.getElementById(`sort-${state.sortKey}`);
+        if (activeIndicator) {
+          activeIndicator.textContent = state.sortDir === "asc" ? "[น้อย-มาก]" : "[มาก-น้อย]";
+        }
+
+        if (!sorted.length) {
+          tbody.innerHTML = '<tr><td colspan="8" class="empty-state">ไม่พบรายการครุภัณฑ์ที่ตรงกับเงื่อนไขการกรอง</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = sorted
+          .map((d) => {
+            const sevClass =
+              d.severity === "วิกฤต" ? "badge-critical" : d.severity === "รุนแรง" ? "badge-high" : "badge-moderate";
+            const statusClass = d.status === "รอทดแทน" ? "badge-pending" : "badge-done";
+            return `
+              <tr>
+                <td class="col-center">${d.seq}</td>
+                <td class="mono">${escapeHtml(d.asset)}</td>
+                <td class="col-center">${d.year} (${d.age} ปี)</td>
+                <td><span class="badge ${statusClass}">${escapeHtml(d.contract)}</span></td>
+                <td><strong>${escapeHtml(d.dept)}</strong></td>
+                <td>${escapeHtml(d.holder)}</td>
+                <td>${escapeHtml(d.symptom)}</td>
+                <td><span class="badge ${sevClass}"><span class="badge-dot"></span>${escapeHtml(d.severity)}</span></td>
+              </tr>
+            `;
+          })
+          .join("");
+      }
+
+      function updatePrintScopeBar(rows) {
+        const parts = [];
+        if (state.orgGroup !== "all") parts.push(`สังกัด: ${state.orgGroup}`);
+        if (state.dept !== "all") parts.push(`หน่วยงาน: ${state.dept}`);
+        if (state.status !== "all") parts.push(`สถานะสัญญา: ${state.status}`);
+        if (state.severity !== "all") parts.push(`ระดับความรุนแรง: ${state.severity}`);
+        if (state.search.trim()) parts.push(`คำค้น: "${state.search.trim()}"`);
+
+        const scopeText = parts.length ? parts.join(" | ") : "ข้อมูลทั้งหมด (สท.พิจิตร และ สส.ในสังกัด)";
+        document.getElementById("printScopeBar").innerHTML = `
+          <span><strong>ขอบเขตข้อมูลที่แสดง:</strong> ${escapeHtml(scopeText)}</span>
+          <span><strong>จำนวนที่แสดง:</strong> ${rows.length} จาก ${DATA.length} เครื่อง</span>
+        `;
+      }
+
+      function renderAll() {
+        const filtered = getFilteredData();
+        renderKPIs(filtered);
+        renderDeptChart(filtered);
+        renderContractDonut(filtered);
+        renderSeverityChart(filtered);
+        renderVintageChart(filtered);
+        renderTable(filtered);
+        updatePrintScopeBar(filtered);
+      }
+
+      elOrgGroup.addEventListener("change", () => {
+        state.orgGroup = elOrgGroup.value;
+        populateDeptFilter();
+        renderAll();
+      });
+
+      elDept.addEventListener("change", () => {
+        state.dept = elDept.value;
+        renderAll();
+      });
+
+      elStatus.addEventListener("change", () => {
+        state.status = elStatus.value;
+        renderAll();
+      });
+
+      elSeverity.addEventListener("change", () => {
+        state.severity = elSeverity.value;
+        renderAll();
+      });
+
+      elSearch.addEventListener("input", () => {
+        state.search = elSearch.value;
+        renderAll();
+      });
+
+      elBtnReset.addEventListener("click", () => {
+        state.orgGroup = "all";
+        state.dept = "all";
+        state.status = "all";
+        state.severity = "all";
+        state.search = "";
+        state.sortKey = "seq";
+        state.sortDir = "asc";
+        elOrgGroup.value = "all";
+        populateDeptFilter();
+        elDept.value = "all";
+        elStatus.value = "all";
+        elSeverity.value = "all";
+        elSearch.value = "";
+        renderAll();
+      });
+
+      document.querySelectorAll("thead th.sortable").forEach((th) => {
+        th.addEventListener("click", () => {
+          const key = th.getAttribute("data-sort");
+          if (state.sortKey === key) {
+            state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+          } else {
+            state.sortKey = key;
+            state.sortDir = "asc";
+          }
+          renderTable(getFilteredData());
+        });
+      });
+
+      populateDeptFilter();
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
