@@ -1,0 +1,2586 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>บันทึกค่าใช้จ่ายสร้างบ้าน — เชื่อมต่อ Google Sheets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Anuphan:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* Mintlify Design System Tokens (from DESIGN.md + tokens.css) */
+    :root {
+      --color-primary: #0a0a0a;
+      --color-on-primary: #ffffff;
+      --color-brand-green: #00d4a4;
+      --color-brand-green-deep: #00b48a;
+      --color-brand-green-soft: #7cebcb;
+      --color-brand-tag: #3772cf;
+      --color-brand-warn: #c37d0d;
+      --color-brand-annotate: #1ba673;
+      --color-brand-error: #d45656;
+      --color-brand-cursor: #888888;
+      --color-canvas: #ffffff;
+      --color-canvas-dark: #0a0a0a;
+      --color-surface: #f7f7f7;
+      --color-surface-soft: #fafafa;
+      --color-surface-code: #1c1c1e;
+      --color-hairline: #e5e5e5;
+      --color-hairline-soft: #ededed;
+      --color-hairline-dark: #1f1f1f;
+      --color-ink: #0a0a0a;
+      --color-charcoal: #1c1c1e;
+      --color-slate: #3a3a3c;
+      --color-steel: #5a5a5c;
+      --color-stone: #888888;
+      --color-muted: #a8a8aa;
+      --color-on-dark: #ffffff;
+      --color-on-dark-muted: #b3b3b3;
+
+      --app-danger: #b44949;
+      --app-danger-soft: #f8eded;
+      --app-danger-border: #e5bfbf;
+      --app-success: #067647;
+      --app-success-soft: #e6f1ed;
+      --app-success-border: #a8cfbf;
+      --app-warning: #96600a;
+      --app-warning-soft: #f5f0e7;
+      --app-warning-border: #dac7a9;
+      --app-info: #175cd3;
+      --app-info-soft: #e8effb;
+      --app-info-border: #aec6f0;
+
+      --radius-xs: 4px;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --radius-full: 9999px;
+
+      --space-xxs: 4px;
+      --space-xs: 8px;
+      --space-sm: 12px;
+      --space-md: 16px;
+      --space-lg: 20px;
+      --space-xl: 24px;
+      --space-xxl: 32px;
+
+      --font-display: Inter, 'Anuphan', 'Noto Sans Thai', system-ui, sans-serif;
+      --font-body: Inter, 'Anuphan', 'Noto Sans Thai', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Noto Sans Thai', ui-monospace, monospace;
+
+      /* Aliases for inline styles */
+      --border: var(--color-hairline);
+      --surface-soft: var(--color-surface-soft);
+      --text-muted: var(--color-steel);
+      --rose: var(--app-danger);
+      --blue: var(--app-info);
+    }
+
+    :root:lang(th) {
+      --lh-heading: 1.4;
+      --lh-body: 1.7;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--color-canvas);
+      color: var(--color-ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: var(--lh-body, 1.7);
+      letter-spacing: 0;
+      overflow-wrap: break-word;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .num {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      background: var(--color-surface);
+      color: var(--color-charcoal);
+      padding: 2px 6px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--color-hairline);
+    }
+
+    /* Top Bar (Mintlify Navigation) */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--color-hairline-soft);
+    }
+    .topbar-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary);
+      color: var(--color-brand-green);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .brand-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.35;
+      color: var(--color-ink);
+    }
+    .brand-sub {
+      font-size: 12.5px;
+      color: var(--color-steel);
+      line-height: 1.4;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Buttons (Mintlify Pill Standard) */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: 1px solid var(--color-hairline);
+      background: transparent;
+      color: var(--color-ink);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.4;
+      padding: 9px 18px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--color-surface); border-color: #d4d4d4; }
+    .btn:active { transform: scale(0.98); }
+    .btn:focus-visible { outline: 2px solid var(--color-brand-green); outline-offset: 2px; }
+
+    .btn-primary {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: var(--color-on-primary);
+    }
+    .btn-primary:hover { background: var(--color-charcoal); border-color: var(--color-charcoal); }
+
+    .btn-green {
+      background: var(--color-brand-green);
+      border-color: var(--color-brand-green);
+      color: var(--color-primary);
+      font-weight: 600;
+    }
+    .btn-green:hover { background: var(--color-brand-green-deep); border-color: var(--color-brand-green-deep); }
+
+    .btn-ghost {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--color-steel);
+      padding: 6px 10px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+    }
+    .btn-ghost:hover { background: var(--color-surface); color: var(--color-ink); }
+
+    .btn-danger-ghost {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--app-danger);
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 500;
+    }
+    .btn-danger-ghost:hover { background: var(--app-danger-soft); }
+
+    .btn-sm { padding: 6px 14px; font-size: 13px; }
+
+    /* Sync Pill */
+    .sync-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid var(--color-hairline);
+      background: var(--color-surface);
+      color: var(--color-steel);
+      cursor: pointer;
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+    .sync-pill:hover { border-color: #d4d4d4; background: var(--color-canvas); color: var(--color-ink); }
+    .sync-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-muted);
+      flex-shrink: 0;
+    }
+    .sync-pill.connected {
+      background: var(--color-canvas);
+      border-color: var(--color-hairline);
+      color: var(--color-ink);
+    }
+    .sync-pill.connected .sync-dot {
+      background: var(--color-brand-green);
+      box-shadow: 0 0 0 3px rgba(0, 212, 164, 0.22);
+    }
+    .sync-pill.syncing {
+      background: var(--app-info-soft);
+      border-color: var(--app-info-border);
+      color: var(--app-info);
+    }
+    .sync-pill.syncing .sync-dot { background: var(--app-info); animation: pulse 1s infinite; }
+    .sync-pill.error {
+      background: var(--app-danger-soft);
+      border-color: var(--app-danger-border);
+      color: var(--app-danger);
+    }
+    .sync-pill.error .sync-dot { background: var(--app-danger); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+    /* Navigation Tabs (Mintlify Pill Tabs) */
+    .tabs-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 24px 0;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      border: 1px solid var(--color-hairline);
+      background: var(--color-canvas);
+      color: var(--color-steel);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tab-btn:hover { background: var(--color-surface); color: var(--color-ink); }
+    .tab-btn.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: var(--color-on-primary);
+    }
+    .tab-badge {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      padding: 1px 8px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.18);
+      color: var(--color-on-primary);
+      font-weight: 500;
+    }
+    .tab-btn:not(.active) .tab-badge {
+      background: var(--color-surface);
+      color: var(--color-steel);
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 24px 72px;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Cards & Grids (Mintlify Flat Hairline Standard) */
+    .card {
+      background: var(--color-canvas);
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+    }
+    .card + .card { margin-top: 20px; }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--color-ink);
+      margin: 0;
+    }
+    .card-sub {
+      font-size: 13.5px;
+      color: var(--color-steel);
+      margin-top: 2px;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--color-canvas);
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+    }
+    /* Featured KPI Card (Mintlify pricing-card-featured treatment) */
+    .kpi-card.highlight {
+      background: var(--color-canvas);
+      border: 2px solid var(--color-brand-green);
+      box-shadow: rgba(0, 212, 164, 0.08) 0px 8px 24px;
+    }
+    .kpi-label {
+      font-size: 13.5px;
+      color: var(--color-steel);
+      font-weight: 500;
+    }
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 1.35;
+      margin-top: 6px;
+      color: var(--color-ink);
+    }
+    .kpi-foot {
+      font-size: 13px;
+      color: var(--color-steel);
+      margin-top: 6px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    /* Progress Bar */
+    .progress-track {
+      height: 8px;
+      background: var(--color-surface);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin: 12px 0 10px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--color-brand-green);
+      border-radius: var(--radius-full);
+      transition: width 0.3s ease;
+    }
+    .split-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--color-hairline-soft);
+    }
+    .split-stat-label { font-size: 12.5px; color: var(--color-steel); }
+    .split-stat-val { font-size: 17px; font-weight: 600; margin-top: 2px; color: var(--color-ink); }
+
+    .text-green { color: var(--app-success); }
+    .text-rose { color: var(--app-danger); }
+    .text-amber { color: var(--app-warning); }
+    .text-primary { color: var(--color-ink); }
+    .text-muted { color: var(--color-steel); }
+
+    /* Quick Actions Bar */
+    .quick-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    /* Bills Grid */
+    .bills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+      gap: 16px;
+    }
+    .bill-card {
+      background: var(--color-canvas);
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .bill-head {
+      padding: 16px 18px;
+      background: var(--color-surface-soft);
+      border-bottom: 1px solid var(--color-hairline-soft);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .bill-title {
+      font-weight: 600;
+      font-size: 15.5px;
+      color: var(--color-ink);
+    }
+    .bill-meta {
+      font-size: 12.5px;
+      color: var(--color-steel);
+      margin-top: 2px;
+    }
+    .inline-edit-title,
+    .inline-edit-note,
+    .inline-edit-item,
+    .inline-edit-amt {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      height: auto;
+      padding: 3px 6px;
+      margin-left: -6px;
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+    .inline-edit-title {
+      font-weight: 600;
+      font-size: 15.5px;
+      color: var(--color-ink);
+      width: 100%;
+    }
+    .inline-edit-note {
+      font-size: 12.5px;
+      color: var(--color-steel);
+      width: 100%;
+      margin-top: 2px;
+    }
+    .inline-edit-item {
+      font-size: 14px;
+      color: var(--color-ink);
+      flex: 1;
+      min-width: 0;
+    }
+    .inline-edit-amt {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-ink);
+      width: 82px;
+      text-align: right;
+      margin-left: 0;
+    }
+    .inline-edit-title:hover,
+    .inline-edit-note:hover,
+    .inline-edit-item:hover,
+    .inline-edit-amt:hover {
+      background: var(--color-canvas);
+      border-color: var(--color-hairline);
+    }
+    .inline-edit-title:focus,
+    .inline-edit-note:focus,
+    .inline-edit-item:focus,
+    .inline-edit-amt:focus {
+      background: var(--color-canvas);
+      border-color: var(--color-brand-green);
+      box-shadow: 0 0 0 2px rgba(0, 212, 164, 0.18);
+    }
+    .bill-sum-badge {
+      background: var(--color-surface);
+      color: var(--color-ink);
+      border: 1px solid var(--color-hairline);
+      font-weight: 600;
+      font-size: 13.5px;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      white-space: nowrap;
+    }
+    .bill-items {
+      padding: 10px 18px;
+      flex: 1;
+    }
+    .bill-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--color-hairline-soft);
+      font-size: 14px;
+    }
+    .bill-item-row:last-child { border-bottom: none; }
+    .bill-add-form {
+      padding: 12px 14px;
+      background: var(--color-surface-soft);
+      border-top: 1px solid var(--color-hairline-soft);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .bill-add-form input {
+      font-size: 13.5px;
+      padding: 6px 10px;
+      height: 36px;
+    }
+    .bill-add-form .inp-name { flex: 1; min-width: 0; }
+    .bill-add-form .inp-amt { width: 96px; text-align: right; font-family: var(--font-mono); }
+
+    /* Inputs (Mintlify text-input + brand-green focus) */
+    input[type="text"], input[type="number"], input[type="date"], select, textarea {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--color-ink);
+      background: var(--color-canvas);
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-md);
+      padding: 8px 12px;
+      height: 40px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--color-brand-green);
+      box-shadow: 0 0 0 2px rgba(0, 212, 164, 0.2);
+    }
+
+    /* Tables (Mintlify Feature Comparison Table) */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-md);
+      background: var(--color-canvas);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--color-hairline-soft);
+      text-align: left;
+      white-space: nowrap;
+    }
+    th {
+      background: var(--color-surface-soft);
+      font-weight: 600;
+      color: var(--color-steel);
+      font-size: 13px;
+      border-bottom: 1px solid var(--color-hairline);
+    }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--color-surface-soft); }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+
+    /* Sticky first column for attendance matrix */
+    .matrix-table th:first-child,
+    .matrix-table td:first-child {
+      position: sticky;
+      left: 0;
+      background: var(--color-canvas);
+      z-index: 2;
+      border-right: 1px solid var(--color-hairline);
+    }
+    .matrix-table th:first-child { background: var(--color-surface-soft); z-index: 3; }
+    .matrix-table tbody tr:hover td:first-child { background: var(--color-surface-soft); }
+    .matrix-table tfoot td {
+      background: var(--color-surface);
+      font-weight: 600;
+      border-top: 1px solid var(--color-hairline);
+    }
+    .matrix-table tfoot td:first-child { background: var(--color-surface); }
+
+    /* Attendance Cell Button */
+    .att-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .att-btn {
+      min-width: 74px;
+      padding: 5px 10px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-hairline);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.12s;
+      font-variant-numeric: tabular-nums;
+    }
+    .att-btn.full {
+      background: var(--app-success-soft);
+      border-color: var(--app-success-border);
+      color: var(--app-success);
+    }
+    .att-btn.full:hover { background: #d6ebe2; }
+    .att-btn.custom {
+      background: var(--app-warning-soft);
+      border-color: var(--app-warning-border);
+      color: var(--app-warning);
+    }
+    .att-btn.absent {
+      background: var(--color-surface);
+      border-color: var(--color-hairline-soft);
+      color: var(--color-muted);
+    }
+    .att-btn.absent:hover { background: #efefef; color: var(--color-steel); }
+    .att-edit-mini {
+      border: none;
+      background: transparent;
+      color: var(--color-muted);
+      cursor: pointer;
+      padding: 3px 5px;
+      border-radius: var(--radius-xs);
+      font-size: 12px;
+    }
+    .att-edit-mini:hover { background: var(--color-surface); color: var(--color-ink); }
+
+    /* Worker chips */
+    .worker-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .worker-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--color-surface-soft);
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-full);
+      padding: 6px 14px;
+      font-size: 13.5px;
+    }
+    .worker-chip strong { color: var(--color-ink); font-weight: 600; }
+    .worker-rate {
+      background: var(--color-canvas);
+      border: 1px solid var(--color-hairline);
+      color: var(--color-steel);
+      font-family: var(--font-mono);
+      font-weight: 500;
+      font-size: 12px;
+      padding: 1px 8px;
+      border-radius: var(--radius-full);
+    }
+
+    /* Payment badge */
+    .cat-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+    .cat-materials { background: var(--color-surface); color: var(--color-ink); border: 1px solid var(--color-hairline); }
+    .cat-labor { background: rgba(55, 114, 207, 0.12); color: var(--color-brand-tag); }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 10, 10, 0.45);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--color-canvas);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: rgba(0, 0, 0, 0.14) 0px 24px 48px -8px;
+      border: 1px solid var(--color-hairline);
+    }
+    .modal-lg { max-width: 720px; }
+    .modal-head {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--color-hairline-soft);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: var(--color-canvas);
+      z-index: 2;
+    }
+    .modal-head h3 { margin: 0; font-size: 17px; font-weight: 600; color: var(--color-ink); }
+    .modal-body { padding: 20px 24px; }
+    .modal-foot {
+      padding: 14px 24px;
+      border-top: 1px solid var(--color-hairline-soft);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: var(--color-surface-soft);
+    }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--color-charcoal);
+      margin-bottom: 6px;
+    }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .steps-box {
+      background: var(--color-surface);
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      font-size: 13.5px;
+      line-height: 1.7;
+      margin-bottom: 16px;
+    }
+    .steps-box ol { margin: 8px 0 0; padding-left: 20px; }
+    .steps-box li { margin-bottom: 4px; }
+
+    /* Toast */
+    .toast-wrap {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      background: var(--color-primary);
+      color: var(--color-on-dark);
+      padding: 11px 18px;
+      border-radius: var(--radius-full);
+      font-size: 13.5px;
+      font-weight: 500;
+      box-shadow: rgba(0, 0, 0, 0.16) 0px 12px 24px -4px;
+      animation: slideUp 0.2s ease;
+    }
+    .toast.success { background: var(--color-primary); border: 1px solid var(--color-brand-green); }
+    .toast.error { background: var(--color-brand-error); }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .empty-state {
+      text-align: center;
+      padding: 36px 16px;
+      color: var(--color-steel);
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .kpi-value { font-size: 24px; }
+      .topbar-inner, .tabs-wrap, .container { padding-left: 16px; padding-right: 16px; }
+      .btn { min-height: 40px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9 21v-6h6v6"/></svg>
+        </div>
+        <div>
+          <div class="brand-title" id="headerProjectName">บันทึกค่าใช้จ่ายสร้างบ้าน</div>
+          <div class="brand-sub">ซื้ออุปกรณ์ &amp; ค่าแรงช่าง • เชื่อมต่อ Google Sheets</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="sync-pill" id="syncStatusPill" onclick="openSheetsModal()" title="ตั้งค่าการเชื่อมต่อ Google Sheets">
+          <span class="sync-dot"></span>
+          <span id="syncStatusText">ยังไม่เชื่อม Google Sheets</span>
+        </button>
+        <button class="btn btn-sm" id="btnManualSync" onclick="syncPushToSheets(true)" style="display:none;">
+          ซิงค์เลย
+        </button>
+        <button class="btn btn-sm" onclick="openBackupModal()">ข้อมูล / สำรอง</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs-wrap">
+    <nav class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">ภาพรวม</button>
+      <button class="tab-btn" data-tab="materials" onclick="switchTab('materials')">ซื้ออุปกรณ์ / บิล <span class="tab-badge" id="badgeBills">0</span></button>
+      <button class="tab-btn" data-tab="labor" onclick="switchTab('labor')">ค่าแรงช่าง <span class="tab-badge" id="badgeDays">0 วัน</span></button>
+      <button class="tab-btn" data-tab="payments" onclick="switchTab('payments')">ประวัติจ่ายเงิน <span class="tab-badge" id="badgePayments">0</span></button>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <main class="container">
+
+    <!-- TAB 1: OVERVIEW -->
+    <section id="tab-overview" class="tab-panel active">
+      <div class="quick-bar">
+        <button class="btn btn-primary" onclick="openNewBillModal()">+ เพิ่มบิลซื้ออุปกรณ์</button>
+        <button class="btn btn-green" onclick="openAddDayModal()">+ เช็คชื่อช่างรายวัน</button>
+        <button class="btn" onclick="openPaymentModal()">+ บันทึกจ่ายเงิน / เบิกงวด</button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">ยอดค่าใช้จ่ายรวมทั้งหมด</div>
+          <div class="kpi-value num" id="kpiTotalAll">0 ฿</div>
+          <div class="kpi-foot" id="kpiTotalSub">อุปกรณ์ 0 ฿ + ค่าแรง 0 ฿</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">จ่ายไปแล้วทั้งหมด</div>
+          <div class="kpi-value num text-green" id="kpiPaidAll">0 ฿</div>
+          <div class="kpi-foot" id="kpiPaidPct">คิดเป็น 0% ของยอดรวม</div>
+        </div>
+        <div class="kpi-card highlight">
+          <div class="kpi-label">ยอดคงเหลือที่ต้องจ่าย</div>
+          <div class="kpi-value num text-rose" id="kpiRemainAll">0 ฿</div>
+          <div class="kpi-foot" id="kpiRemainSub">อุปกรณ์ 0 ฿ + ค่าแรง 0 ฿</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <!-- Materials Summary -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">ค่าซื้ออุปกรณ์ / บิล</h2>
+              <div class="card-sub" id="ovMatCount">0 บิล</div>
+            </div>
+            <button class="btn btn-sm" onclick="switchTab('materials')">ดูทั้งหมด →</button>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="ovMatBar" style="width:0%"></div></div>
+          <div class="split-stats">
+            <div>
+              <div class="split-stat-label">ยอดรวมบิล</div>
+              <div class="split-stat-val num" id="ovMatTotal">0 ฿</div>
+            </div>
+            <div>
+              <div class="split-stat-label">จ่ายแล้ว</div>
+              <div class="split-stat-val num text-green" id="ovMatPaid">0 ฿</div>
+            </div>
+            <div>
+              <div class="split-stat-label">คงเหลือ</div>
+              <div class="split-stat-val num text-rose" id="ovMatRemain">0 ฿</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Labor Summary -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">ค่าแรงช่าง</h2>
+              <div class="card-sub" id="ovLabCount">0 วันทำงาน • 0 คน</div>
+            </div>
+            <button class="btn btn-sm" onclick="switchTab('labor')">ดูตารางช่าง →</button>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="ovLabBar" style="width:0%"></div></div>
+          <div class="split-stats">
+            <div>
+              <div class="split-stat-label">รวมค่าแรง</div>
+              <div class="split-stat-val num" id="ovLabTotal">0 ฿</div>
+            </div>
+            <div>
+              <div class="split-stat-label">เบิก/จ่ายแล้ว</div>
+              <div class="split-stat-val num text-green" id="ovLabPaid">0 ฿</div>
+            </div>
+            <div>
+              <div class="split-stat-label">คงเหลือ</div>
+              <div class="split-stat-val num text-rose" id="ovLabRemain">0 ฿</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Worker Summary Table -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">สรุปค่าแรงแยกตามช่างแต่ละคน</h2>
+            <div class="card-sub">คำนวณอัตโนมัติจากตารางเช็คชื่อรายวัน</div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ชื่อช่าง</th>
+                <th class="text-right">ค่าแรง/วัน</th>
+                <th class="text-center">มาทำงาน (วัน)</th>
+                <th class="text-right">รวมค่าแรง (บาท)</th>
+              </tr>
+            </thead>
+            <tbody id="ovWorkerTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: MATERIALS / BILLS -->
+    <section id="tab-materials" class="tab-panel">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header" style="margin-bottom:8px;">
+          <div>
+            <h2 class="card-title">สรุปค่าอุปกรณ์ / บิลทั้งหมด</h2>
+            <div class="card-sub">คลิกที่ชื่อบิล ชื่อรายการ หรือราคาเพื่อแก้ไขได้ทันที — ระบบบันทึกและซิงค์ให้อัตโนมัติ</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="openNewBillModal()">+ เพิ่มบิลใหม่</button>
+            <button class="btn" onclick="openPaymentModal('materials')">จ่ายค่าอุปกรณ์</button>
+          </div>
+        </div>
+        <div class="split-stats" style="border-top:none; padding-top:4px; margin-top:0;">
+          <div>
+            <div class="split-stat-label">รวมทุกบิล</div>
+            <div class="split-stat-val num" id="matTabTotal">0 ฿</div>
+          </div>
+          <div>
+            <div class="split-stat-label">จ่ายแล้ว</div>
+            <div class="split-stat-val num text-green" id="matTabPaid">0 ฿</div>
+          </div>
+          <div>
+            <div class="split-stat-label">คงเหลือ</div>
+            <div class="split-stat-val num text-rose" id="matTabRemain">0 ฿</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bills-grid" id="billsContainer"></div>
+    </section>
+
+    <!-- TAB 3: LABOR / ATTENDANCE -->
+    <section id="tab-labor" class="tab-panel">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header" style="margin-bottom:12px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <h2 class="card-title">ตารางค่าแรงช่าง</h2>
+              <span class="bill-sum-badge" id="currentPeriodBadge" style="background:var(--color-primary); color:var(--color-on-primary); border-color:var(--color-primary);">งวดที่ 1 (กำลังทำงาน)</span>
+            </div>
+            <div class="card-sub">คลิกปุ่มในตารางเพื่อสลับ "มาทำงาน / ไม่มา" หรือกด ✎ เพื่อใส่ครึ่งวัน/กำหนดเอง — เมื่อจ่ายครบแล้วกด "ตัดยอดปิดงวด" เพื่อเริ่มงวดใหม่</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-sm" onclick="openWorkerModal()">+ เพิ่ม / แก้ไขช่าง</button>
+            <button class="btn btn-green btn-sm" onclick="openAddDayModal()">+ เพิ่มวันทำงาน</button>
+            <button class="btn btn-sm" onclick="openPaymentModal('labor')">เบิกล่วงหน้างวดนี้</button>
+            <button class="btn btn-primary btn-sm" onclick="openClosePeriodModal()">ตัดยอดปิดงวด</button>
+          </div>
+        </div>
+        <div class="worker-chips" id="workerChips"></div>
+
+        <div class="split-stats">
+          <div>
+            <div class="split-stat-label">รวมค่าแรงงวดนี้</div>
+            <div class="split-stat-val num" id="labTabTotal">0 ฿</div>
+          </div>
+          <div>
+            <div class="split-stat-label">เบิกล่วงหน้างวดนี้</div>
+            <div class="split-stat-val num text-green" id="labTabPaid">0 ฿</div>
+          </div>
+          <div>
+            <div class="split-stat-label">คงเหลือที่ต้องจ่ายงวดนี้</div>
+            <div class="split-stat-val num text-rose" id="labTabRemain">0 ฿</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:16px;">
+        <div class="table-wrap">
+          <table class="matrix-table" id="attendanceMatrix"></table>
+        </div>
+      </div>
+
+      <!-- Archived / Closed Labor Periods -->
+      <div class="card" id="closedPeriodsCard" style="margin-top:20px;">
+        <div class="card-header" style="margin-bottom:12px;">
+          <div>
+            <h2 class="card-title">ประวัติงวดค่าแรงที่ตัดยอดแล้ว</h2>
+            <div class="card-sub" id="closedPeriodsSub">ยังไม่มีงวดที่ตัดยอด</div>
+          </div>
+        </div>
+        <div id="closedPeriodsList"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: PAYMENTS -->
+    <section id="tab-payments" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">ประวัติการจ่ายเงิน / เบิกงวด</h2>
+            <div class="card-sub">บันทึกทุกครั้งที่จ่ายเงินค่าอุปกรณ์หรือจ่าย/เบิกค่าแรงช่าง</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <select id="payFilter" onchange="renderPayments()" style="padding:7px 10px; font-size:13px;">
+              <option value="all">ทั้งหมด</option>
+              <option value="materials">เฉพาะค่าอุปกรณ์ / บิล</option>
+              <option value="labor">เฉพาะค่าแรงช่าง</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="openPaymentModal()">+ บันทึกการจ่ายเงิน</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>วันที่</th>
+                <th>หมวดหมู่</th>
+                <th>หมายเหตุ / ผู้รับ</th>
+                <th class="text-right">จำนวนเงิน (บาท)</th>
+                <th class="text-center" style="width:60px;">ลบ</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL: NEW BILL -->
+  <div class="modal-backdrop" id="modalNewBill">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>เพิ่มบิลซื้ออุปกรณ์ใหม่</h3>
+        <button class="btn-ghost" onclick="closeModal('modalNewBill')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>ชื่อบิล / ร้านค้า</label>
+            <input type="text" id="newBillName" placeholder="เช่น บิล 7 หรือ ร้านไทวัสดุ" />
+          </div>
+          <div class="form-group">
+            <label>วันที่</label>
+            <input type="date" id="newBillDate" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>หมายเหตุ (ไม่บังคับ)</label>
+          <input type="text" id="newBillNote" placeholder="เช่น ปูน ทราย เหล็กเส้น" />
+        </div>
+        <div class="form-group">
+          <label>รายการแรกในบิล (ไม่บังคับ — เพิ่มทีหลังได้)</label>
+          <div class="form-row">
+            <input type="text" id="newBillFirstItemName" placeholder="ชื่อรายการ เช่น ปูน 2 ถุง" />
+            <input type="number" id="newBillFirstItemAmt" placeholder="ราคา (บาท)" min="0" step="any" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeModal('modalNewBill')">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="saveNewBill()">บันทึกบิล</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD WORK DAY -->
+  <div class="modal-backdrop" id="modalAddDay">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>เพิ่มวันทำงานช่าง</h3>
+        <button class="btn-ghost" onclick="closeModal('modalAddDay')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>วันที่ทำงาน (ใส่วันที่ เช่น 24 หรือ 24/11/2026)</label>
+          <input type="text" id="newDayLabel" placeholder="เช่น 24" />
+        </div>
+        <div class="form-group">
+          <label style="display:flex; justify-content:space-between; align-items:center;">
+            <span>เลือกช่างที่มาทำงานวันนี้</span>
+            <button type="button" class="btn btn-sm" onclick="toggleAllNewDayWorkers(true)">ติ๊กครบทุกคน</button>
+          </label>
+          <div id="newDayWorkersList" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;"></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeModal('modalAddDay')">ยกเลิก</button>
+        <button class="btn btn-green" onclick="saveNewDay()">บันทึกวันทำงาน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT ATTENDANCE CELL -->
+  <div class="modal-backdrop" id="modalEditAtt">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-head">
+        <h3 id="editAttTitle">แก้ไขค่าแรง</h3>
+        <button class="btn-ghost" onclick="closeModal('modalEditAtt')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editAttDayId" />
+        <input type="hidden" id="editAttWorkerId" />
+        <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+          <button class="btn btn-sm btn-green" onclick="quickSetAtt('full')">เต็มวัน</button>
+          <button class="btn btn-sm" onclick="quickSetAtt('half')">ครึ่งวัน (50%)</button>
+          <button class="btn btn-sm" onclick="quickSetAtt('zero')">ไม่มา (0)</button>
+        </div>
+        <div class="form-group">
+          <label>กำหนดจำนวนเงินเอง (บาท)</label>
+          <input type="number" id="editAttAmount" min="0" step="any" />
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeModal('modalEditAtt')">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="saveEditAtt()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MANAGE WORKERS -->
+  <div class="modal-backdrop" id="modalWorkers">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>จัดการรายชื่อช่าง &amp; ค่าแรง/วัน</h3>
+        <button class="btn-ghost" onclick="closeModal('modalWorkers')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="workersEditList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;"></div>
+        <div style="border-top:1px solid var(--border); padding-top:14px;">
+          <label style="display:block; font-size:13px; font-weight:700; margin-bottom:8px;">+ เพิ่มช่างคนใหม่</label>
+          <div class="form-row">
+            <input type="text" id="addWorkerName" placeholder="ชื่อช่าง เช่น ช่างบอย" />
+            <input type="number" id="addWorkerRate" placeholder="ค่าแรง/วัน (บาท)" min="0" step="any" />
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="addNewWorker()">เพิ่มช่าง</button>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-primary" onclick="closeModal('modalWorkers')">เสร็จสิ้น</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CLOSE LABOR PERIOD -->
+  <div class="modal-backdrop" id="modalClosePeriod">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>ตัดยอดปิดงวดค่าแรงช่าง</h3>
+        <button class="btn-ghost" onclick="closeModal('modalClosePeriod')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="steps-box" id="closePeriodSummaryBox" style="margin-bottom:16px;"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>ชื่องวด</label>
+            <input type="text" id="closePeriodLabel" placeholder="เช่น งวดที่ 1" />
+          </div>
+          <div class="form-group">
+            <label>วันที่จ่ายปิดงวด</label>
+            <input type="date" id="closePeriodDate" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>ยอดเงินที่จ่ายปิดงวดครั้งนี้ (บาท)</label>
+          <input type="number" id="closePeriodPayAmt" min="0" step="any" />
+          <div class="card-sub" style="margin-top:4px;">ระบบตั้งค่าเริ่มต้นเท่ากับยอดคงเหลือของงวดนี้ (ถ้าจ่ายครบแล้วก่อนหน้านี้ให้ใส่ 0)</div>
+        </div>
+        <div class="form-group">
+          <label>หมายเหตุ (ไม่บังคับ)</label>
+          <input type="text" id="closePeriodNote" placeholder="เช่น โอนจ่ายครบทุกคน ปิดงวดงานโครงสร้าง" />
+        </div>
+        <div style="font-size:13px; color:var(--color-steel); background:var(--color-surface-soft); border:1px solid var(--color-hairline); border-radius:8px; padding:10px 12px;">
+          เมื่อกดยืนยัน ตารางวันทำงานของงวดนี้จะถูกย้ายไปเก็บใน <strong>ประวัติงวดค่าแรงที่ตัดยอดแล้ว</strong> และตารางทำงานจะเริ่มว่างสำหรับงวดถัดไปทันที (ยอดสะสมทั้งโครงการในหน้าภาพรวมยังคงอยู่ครบ)
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeModal('modalClosePeriod')">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="confirmClosePeriod()">ยืนยันตัดยอดและเริ่มงวดใหม่</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD PAYMENT -->
+  <div class="modal-backdrop" id="modalPayment">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>บันทึกการจ่ายเงิน / เบิกงวด</h3>
+        <button class="btn-ghost" onclick="closeModal('modalPayment')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>หมวดหมู่</label>
+            <select id="payCategory">
+              <option value="labor">ค่าแรงช่าง</option>
+              <option value="materials">ซื้ออุปกรณ์ / บิล</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>วันที่จ่าย</label>
+            <input type="date" id="payDate" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>จำนวนเงิน (บาท)</label>
+          <input type="number" id="payAmount" placeholder="เช่น 5000" min="0" step="any" />
+        </div>
+        <div class="form-group">
+          <label>หมายเหตุ / ผู้รับเงิน</label>
+          <input type="text" id="payNote" placeholder="เช่น เบิกงวด 2 ให้ช่างศักดิ์ หรือ โอนจ่ายร้านอุปกรณ์" />
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeModal('modalPayment')">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="savePayment()">บันทึกการจ่ายเงิน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GOOGLE SHEETS SYNC -->
+  <div class="modal-backdrop" id="modalSheets">
+    <div class="modal modal-lg">
+      <div class="modal-head">
+        <h3>เชื่อมต่อ Google Sheets</h3>
+        <button class="btn-ghost" onclick="closeModal('modalSheets')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="steps-box">
+          <strong>วิธีเชื่อมกับ Google Sheets ของคุณ (ทำครั้งเดียว 2 นาที):</strong>
+          <ol>
+            <li>สร้างหรือเปิด Google Sheet ที่ต้องการเก็บข้อมูล</li>
+            <li>ไปที่เมนู <strong>ส่วนขยาย (Extensions) → Apps Script</strong></li>
+            <li>กดปุ่ม <strong>"คัดลอกโค้ด Apps Script"</strong> ด้านล่าง แล้วนำไปวางทับโค้ดเดิม กดบันทึก (Ctrl+S)</li>
+            <li>กดปุ่ม <strong>ทำให้ใช้งานได้ (Deploy) → การทำให้ใช้งานได้รายการใหม่ (New deployment)</strong> เลือกประเภท <strong>เว็บแอป (Web app)</strong> → ดำเนินการในฐานะ: <strong>ฉัน (Me)</strong> → ผู้มีสิทธิ์เข้าถึง: <strong>ทุกคน (Anyone)</strong> → กด Deploy แล้วคัดลอก <strong>Web App URL</strong> มาวางด้านล่าง</li>
+          </ol>
+          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-sm btn-primary" onclick="copyAppsScriptCode()">คัดลอกโค้ด Apps Script</button>
+            <span style="font-size:12px; color:var(--text-muted); align-self:center;">(หรือเปิดไฟล์ <code>house-expense-apps-script.gs</code>)</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Google Apps Script Web App URL</label>
+          <input type="text" id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/AKfycb.../exec" />
+        </div>
+
+        <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="autoSyncCheckbox" style="width:auto;" checked />
+          <label for="autoSyncCheckbox" style="margin:0; font-weight:500; cursor:pointer;">บันทึกขึ้น Google Sheets อัตโนมัติทุกครั้งที่มีการแก้ไข</label>
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+          <button class="btn btn-primary" onclick="saveAndTestSheetsUrl()">ทดสอบและเชื่อมต่อ</button>
+          <button class="btn btn-green" onclick="syncPushToSheets(true)">ส่งข้อมูลขึ้น Sheet (Push)</button>
+          <button class="btn" onclick="syncPullFromSheets()">ดึงข้อมูลจาก Sheet (Pull)</button>
+        </div>
+        <div id="sheetsTestResult" style="margin-top:12px; font-size:13px;"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeModal('modalSheets')">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: BACKUP & SETTINGS -->
+  <div class="modal-backdrop" id="modalBackup">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>ตั้งค่าและสำรองข้อมูล</h3>
+        <button class="btn-ghost" onclick="closeModal('modalBackup')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>ชื่อโครงการบ้าน</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="projectNameInput" />
+            <button class="btn btn-primary btn-sm" onclick="saveProjectName()">บันทึกชื่อ</button>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border); padding-top:14px; display:flex; flex-direction:column; gap:10px;">
+          <div style="font-weight:700; font-size:13.5px;">ส่งออก / นำเข้าข้อมูล</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-sm" onclick="exportJSON()">ดาวน์โหลดไฟล์สำรอง (.json)</button>
+            <button class="btn btn-sm" onclick="document.getElementById('importJsonInput').click()">นำเข้าไฟล์สำรอง (.json)</button>
+            <input type="file" id="importJsonInput" accept=".json" style="display:none;" onchange="importJSON(event)" />
+            <button class="btn btn-sm" onclick="exportCSV()">ส่งออก CSV (เปิดใน Excel)</button>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border); padding-top:14px; margin-top:14px;">
+          <div style="font-weight:700; font-size:13.5px; color:var(--rose); margin-bottom:8px;">จัดการข้อมูลเริ่มต้น</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-sm" onclick="resetToSampleData()">คืนค่าข้อมูลเริ่มต้นของคุณ</button>
+            <button class="btn btn-sm btn-danger-ghost" style="border:1px solid #fecdd3;" onclick="clearAllData()">ล้างข้อมูลทั้งหมด (เริ่มใหม่)</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeModal('modalBackup')">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script>
+    const STORAGE_KEY = 'house_expense_app_v1';
+    const CONFIG_KEY = 'house_expense_config_v1';
+    const DEFAULT_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxohluawjJDQsiBAOOv8duBEIld0bXcBYDEPu5dihd2-RkR76QQnbcxNm9cnvyPrcIq/exec';
+
+    // ข้อมูลเริ่มต้นจากตารางที่คุณส่งมา
+    function getDefaultData() {
+      return {
+        projectName: 'บันทึกค่าใช้จ่ายสร้างบ้าน',
+        currentPeriodNo: 1,
+        closedPeriods: [],
+        bills: [
+          { id: 'b1', name: 'บิล 1', date: '', note: '', items: [{ id: 'i1', name: 'รายการ 1', amount: 100 }, { id: 'i2', name: 'รายการ 2', amount: 50 }, { id: 'i3', name: 'รายการ 3', amount: 120 }] },
+          { id: 'b2', name: 'บิล 2', date: '', note: '', items: [{ id: 'i4', name: 'รายการ 1', amount: 160 }] },
+          { id: 'b3', name: 'บิล 3', date: '', note: '', items: [{ id: 'i5', name: 'รายการ 1', amount: 50 }] },
+          { id: 'b4', name: 'บิล 4', date: '', note: '', items: [{ id: 'i6', name: 'รายการ 1', amount: 145 }] },
+          { id: 'b5', name: 'บิล 5', date: '', note: '', items: [{ id: 'i7', name: 'รายการ 1', amount: 160 }, { id: 'i8', name: 'รายการ 2', amount: 60 }] },
+          { id: 'b6', name: 'บิล 6', date: '', note: '', items: [{ id: 'i9', name: 'รายการ 1', amount: 190 }, { id: 'i10', name: 'รายการ 2', amount: 56 }, { id: 'i11', name: 'รายการ 3', amount: 70 }] }
+        ],
+        workers: [
+          { id: 'w1', name: 'ศักดิ์', dailyRate: 1000 },
+          { id: 'w2', name: 'สุวรรณ', dailyRate: 450 },
+          { id: 'w3', name: 'ผู้ช่วย', dailyRate: 400 },
+          { id: 'w4', name: 'ไก่', dailyRate: 400 }
+        ],
+        attendance: [
+          { id: 'd0', date: 'วันแรก (ไม่ระบุ)', entries: { w1: 1000, w2: 450, w3: 400, w4: 400 } },
+          { id: 'd7', date: 'วันที่ 7', entries: { w1: 1000, w2: 450, w3: 400, w4: 400 } },
+          { id: 'd8', date: 'วันที่ 8', entries: { w1: 1000, w2: 450, w3: 400, w4: 400 } },
+          { id: 'd9', date: 'วันที่ 9', entries: { w1: 1000, w2: 450, w3: 0, w4: 400 } },
+          { id: 'd10', date: 'วันที่ 10', entries: { w1: 1000, w2: 0, w3: 400, w4: 400 } },
+          { id: 'd11', date: 'วันที่ 11', entries: { w1: 1000, w2: 0, w3: 400, w4: 400 } },
+          { id: 'd12', date: 'วันที่ 12', entries: { w1: 1000, w2: 0, w3: 400, w4: 400 } },
+          { id: 'd13', date: 'วันที่ 13', entries: { w1: 1000, w2: 0, w3: 400, w4: 0 } },
+          { id: 'd14', date: 'วันที่ 14', entries: { w1: 1000, w2: 0, w3: 400, w4: 400 } },
+          { id: 'd15', date: 'วันที่ 15', entries: { w1: 1000, w2: 450, w3: 400, w4: 400 } },
+          { id: 'd18', date: 'วันที่ 18', entries: { w1: 1000, w2: 450, w3: 400, w4: 400 } },
+          { id: 'd21', date: 'วันที่ 21', entries: { w1: 0, w2: 450, w3: 400, w4: 400 } },
+          { id: 'd22', date: 'วันที่ 22', entries: { w1: 1000, w2: 0, w3: 400, w4: 400 } },
+          { id: 'd23', date: 'วันที่ 23', entries: { w1: 1000, w2: 450, w3: 400, w4: 0 } }
+        ],
+        payments: [
+          { id: 'p1', date: '', category: 'materials', amount: 1000, note: 'จ่ายค่าอุปกรณ์แล้ว (ยอดยกมา)' },
+          { id: 'p2', date: '', category: 'labor', amount: 10000, periodNo: 1, note: 'เบิกล่วงหน้างวดที่ 1 (ยอดยกมา)' }
+        ]
+      };
+    }
+
+    function normalizeState(rawState) {
+      const s = rawState || getDefaultData();
+      if (!Array.isArray(s.closedPeriods)) s.closedPeriods = [];
+      if (!s.currentPeriodNo) s.currentPeriodNo = s.closedPeriods.length + 1;
+      if (!Array.isArray(s.bills)) s.bills = [];
+      if (!Array.isArray(s.workers)) s.workers = [];
+      if (!Array.isArray(s.attendance)) s.attendance = [];
+      if (!Array.isArray(s.payments)) s.payments = [];
+      s.payments.forEach(p => {
+        if (p.category === 'labor' && !p.periodNo) p.periodNo = 1;
+      });
+      return s;
+    }
+
+    let state = loadState();
+    let config = loadConfig();
+    let autoSyncTimer = null;
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return normalizeState(JSON.parse(raw));
+      } catch (e) {}
+      return normalizeState(getDefaultData());
+    }
+
+    function loadConfig() {
+      try {
+        const raw = localStorage.getItem(CONFIG_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (!parsed.sheetsUrl) parsed.sheetsUrl = DEFAULT_SHEETS_URL;
+          return parsed;
+        }
+      } catch (e) {}
+      return { sheetsUrl: DEFAULT_SHEETS_URL, autoSync: true, lastSync: null, sheetName: '' };
+    }
+
+    function saveState(triggerSync = true) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+      if (triggerSync && config.sheetsUrl && config.autoSync) {
+        clearTimeout(autoSyncTimer);
+        setSyncPill('syncing', 'รอซิงค์...');
+        autoSyncTimer = setTimeout(() => syncPushToSheets(false), 1200);
+      }
+    }
+
+    function saveConfig() {
+      localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+      updateSyncUI();
+    }
+
+    function uid(prefix = 'id') {
+      return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    }
+
+    function fmt(n) {
+      return (Number(n) || 0).toLocaleString('th-TH');
+    }
+
+    function todayISO() {
+      const d = new Date();
+      return d.toISOString().slice(0, 10);
+    }
+
+    function esc(str) {
+      return String(str || '').replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
+    }
+
+    function toast(msg, type = '') {
+      const wrap = document.getElementById('toastWrap');
+      const el = document.createElement('div');
+      el.className = 'toast ' + type;
+      el.textContent = msg;
+      wrap.appendChild(el);
+      setTimeout(() => el.remove(), 3200);
+    }
+
+    // ---- CALCULATIONS ----
+    function calcSummary() {
+      const totalMaterials = state.bills.reduce((s, b) => s + b.items.reduce((a, it) => a + (Number(it.amount) || 0), 0), 0);
+      const paidMaterials = state.payments.filter(p => p.category === 'materials').reduce((s, p) => s + (Number(p.amount) || 0), 0);
+      const remainMaterials = totalMaterials - paidMaterials;
+
+      // Active period labor
+      const activeWorkerTotals = {};
+      const activeWorkerDays = {};
+      state.workers.forEach(w => { activeWorkerTotals[w.id] = 0; activeWorkerDays[w.id] = 0; });
+
+      let activeLabor = 0;
+      state.attendance.forEach(day => {
+        state.workers.forEach(w => {
+          const v = Number((day.entries || {})[w.id]) || 0;
+          activeWorkerTotals[w.id] = (activeWorkerTotals[w.id] || 0) + v;
+          if (v > 0) activeWorkerDays[w.id] = (activeWorkerDays[w.id] || 0) + 1;
+          activeLabor += v;
+        });
+      });
+
+      const curPeriodNo = state.currentPeriodNo || 1;
+      const activeLaborPaid = state.payments
+        .filter(p => p.category === 'labor' && Number(p.periodNo || 1) === curPeriodNo)
+        .reduce((s, p) => s + (Number(p.amount) || 0), 0);
+      const activeLaborRemain = activeLabor - activeLaborPaid;
+
+      // Closed periods labor + all-time cumulative worker totals
+      const closedPeriods = state.closedPeriods || [];
+      const workerTotalsAll = {};
+      const workerDaysAll = {};
+      state.workers.forEach(w => {
+        workerTotalsAll[w.id] = activeWorkerTotals[w.id] || 0;
+        workerDaysAll[w.id] = activeWorkerDays[w.id] || 0;
+      });
+
+      let closedLabor = 0;
+      let closedDaysCount = 0;
+      closedPeriods.forEach(cp => {
+        closedLabor += Number(cp.totalLabor) || 0;
+        closedDaysCount += (cp.attendance || []).length;
+        (cp.workerSummary || []).forEach(ws => {
+          const matched = state.workers.find(w => w.id === ws.id || w.name === ws.name);
+          if (matched) {
+            workerTotalsAll[matched.id] = (workerTotalsAll[matched.id] || 0) + (Number(ws.total) || 0);
+            workerDaysAll[matched.id] = (workerDaysAll[matched.id] || 0) + (Number(ws.days) || 0);
+          }
+        });
+      });
+
+      const totalLabor = closedLabor + activeLabor;
+      const paidLabor = state.payments.filter(p => p.category === 'labor').reduce((s, p) => s + (Number(p.amount) || 0), 0);
+      const remainLabor = totalLabor - paidLabor;
+
+      return {
+        totalMaterials, paidMaterials, remainMaterials,
+        activeLabor, activeLaborPaid, activeLaborRemain,
+        activeWorkerTotals, activeWorkerDays,
+        closedLabor, closedDaysCount,
+        totalLabor, paidLabor, remainLabor,
+        totalAll: totalMaterials + totalLabor,
+        paidAll: paidMaterials + paidLabor,
+        remainAll: remainMaterials + remainLabor,
+        workerTotals: workerTotalsAll,
+        workerDays: workerDaysAll
+      };
+    }
+
+    // ---- TABS & MODALS ----
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabName));
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    document.querySelectorAll('.modal-backdrop').forEach(el => {
+      el.addEventListener('click', (e) => { if (e.target === el) el.classList.remove('open'); });
+    });
+
+    // ---- RENDER ALL ----
+    function renderAll() {
+      const s = calcSummary();
+      document.getElementById('headerProjectName').textContent = state.projectName || 'บันทึกค่าใช้จ่ายสร้างบ้าน';
+      document.getElementById('badgeBills').textContent = state.bills.length;
+      document.getElementById('badgeDays').textContent = state.attendance.length + ' วัน';
+      document.getElementById('badgePayments').textContent = state.payments.length;
+
+      // Overview KPIs
+      document.getElementById('kpiTotalAll').textContent = fmt(s.totalAll) + ' ฿';
+      document.getElementById('kpiTotalSub').textContent = `อุปกรณ์ ${fmt(s.totalMaterials)} ฿ + ค่าแรง ${fmt(s.totalLabor)} ฿`;
+      document.getElementById('kpiPaidAll').textContent = fmt(s.paidAll) + ' ฿';
+      const paidPct = s.totalAll > 0 ? Math.min(100, Math.round((s.paidAll / s.totalAll) * 100)) : 0;
+      document.getElementById('kpiPaidPct').textContent = `คิดเป็น ${paidPct}% ของยอดรวม`;
+      document.getElementById('kpiRemainAll').textContent = fmt(s.remainAll) + ' ฿';
+      document.getElementById('kpiRemainSub').textContent = `อุปกรณ์ ${fmt(s.remainMaterials)} ฿ + ค่าแรง ${fmt(s.remainLabor)} ฿`;
+
+      // Materials card
+      document.getElementById('ovMatCount').textContent = `${state.bills.length} บิล`;
+      document.getElementById('ovMatTotal').textContent = fmt(s.totalMaterials) + ' ฿';
+      document.getElementById('ovMatPaid').textContent = fmt(s.paidMaterials) + ' ฿';
+      document.getElementById('ovMatRemain').textContent = fmt(s.remainMaterials) + ' ฿';
+      const matPct = s.totalMaterials > 0 ? Math.min(100, Math.round((s.paidMaterials / s.totalMaterials) * 100)) : 0;
+      document.getElementById('ovMatBar').style.width = matPct + '%';
+
+      // Labor card (all-time project summary)
+      const totalDaysAll = (s.closedDaysCount || 0) + state.attendance.length;
+      const closedCount = (state.closedPeriods || []).length;
+      document.getElementById('ovLabCount').textContent = `งวดปัจจุบัน ${state.attendance.length} วัน${closedCount > 0 ? ` • ตัดยอดแล้ว ${closedCount} งวด (รวม ${totalDaysAll} วัน)` : ''} • ช่าง ${state.workers.length} คน`;
+      document.getElementById('ovLabTotal').textContent = fmt(s.totalLabor) + ' ฿';
+      document.getElementById('ovLabPaid').textContent = fmt(s.paidLabor) + ' ฿';
+      document.getElementById('ovLabRemain').textContent = fmt(s.remainLabor) + ' ฿';
+      const labPct = s.totalLabor > 0 ? Math.min(100, Math.round((s.paidLabor / s.totalLabor) * 100)) : 0;
+      document.getElementById('ovLabBar').style.width = labPct + '%';
+
+      // Worker Summary Table
+      const wtBody = document.getElementById('ovWorkerTable');
+      if (state.workers.length === 0) {
+        wtBody.innerHTML = '<tr><td colspan="4" class="empty-state">ยังไม่มีรายชื่อช่าง</td></tr>';
+      } else {
+        wtBody.innerHTML = state.workers.map(w => `
+          <tr>
+            <td><strong>${esc(w.name)}</strong></td>
+            <td class="text-right num">${fmt(w.dailyRate)} ฿</td>
+            <td class="text-center num">${s.workerDays[w.id] || 0} วัน</td>
+            <td class="text-right num"><strong>${fmt(s.workerTotals[w.id] || 0)} ฿</strong></td>
+          </tr>
+        `).join('') + `
+          <tr style="background:var(--color-surface); font-weight:600;">
+            <td colspan="3">รวมค่าแรงช่างทั้งหมด (ทุกงวด)</td>
+            <td class="text-right num">${fmt(s.totalLabor)} ฿</td>
+          </tr>
+        `;
+      }
+
+      // Materials Tab
+      document.getElementById('matTabTotal').textContent = fmt(s.totalMaterials) + ' ฿';
+      document.getElementById('matTabPaid').textContent = fmt(s.paidMaterials) + ' ฿';
+      document.getElementById('matTabRemain').textContent = fmt(s.remainMaterials) + ' ฿';
+      renderBills();
+
+      // Labor Tab (Current Active Period)
+      document.getElementById('currentPeriodBadge').textContent = `งวดที่ ${state.currentPeriodNo || 1} (กำลังทำงาน)`;
+      document.getElementById('labTabTotal').textContent = fmt(s.activeLabor) + ' ฿';
+      document.getElementById('labTabPaid').textContent = fmt(s.activeLaborPaid) + ' ฿';
+      document.getElementById('labTabRemain').textContent = fmt(s.activeLaborRemain) + ' ฿';
+      renderLabor(s);
+      renderClosedPeriods();
+
+      // Payments Tab
+      renderPayments();
+      updateSyncUI();
+    }
+
+    // ---- BILLS ----
+    function renderBills() {
+      const container = document.getElementById('billsContainer');
+      if (state.bills.length === 0) {
+        container.innerHTML = '<div class="card empty-state" style="grid-column:1/-1;">ยังไม่มีบิลซื้ออุปกรณ์ กดปุ่ม "+ เพิ่มบิลใหม่" ด้านบนเพื่อเริ่มต้น</div>';
+        return;
+      }
+      container.innerHTML = state.bills.map(bill => {
+        const sum = bill.items.reduce((a, it) => a + (Number(it.amount) || 0), 0);
+        const itemsHtml = bill.items.length === 0
+          ? '<div style="color:var(--text-muted); font-size:13px; padding:8px 0;">ยังไม่มีรายการในบิลนี้</div>'
+          : bill.items.map(it => `
+              <div class="bill-item-row">
+                <input type="text" class="inline-edit-item" value="${esc(it.name || '')}" placeholder="ชื่อรายการของที่ซื้อ" onchange="updateBillItem('${bill.id}', '${it.id}', 'name', this.value)" />
+                <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+                  <input type="number" class="inline-edit-amt num" value="${it.amount}" min="0" step="any" onchange="updateBillItem('${bill.id}', '${it.id}', 'amount', this.value)" />
+                  <span class="text-muted" style="font-size:12.5px;">฿</span>
+                  <button class="btn-danger-ghost" title="ลบรายการ" onclick="deleteBillItem('${bill.id}', '${it.id}')">✕</button>
+                </div>
+              </div>
+            `).join('');
+
+        return `
+          <div class="bill-card">
+            <div class="bill-head">
+              <div style="flex:1; min-width:0;">
+                <input type="text" class="inline-edit-title" value="${esc(bill.name)}" placeholder="ชื่อบิล" onchange="updateBillField('${bill.id}', 'name', this.value)" />
+                <input type="text" class="inline-edit-note" value="${esc(bill.note || '')}" placeholder="${bill.date ? esc(bill.date) + ' • เพิ่มหมายเหตุ / ชื่อร้าน...' : 'เพิ่มหมายเหตุ / ชื่อร้าน...'}" onchange="updateBillField('${bill.id}', 'note', this.value)" />
+              </div>
+              <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+                <span class="bill-sum-badge num">${fmt(sum)} ฿</span>
+                <button class="btn-danger-ghost" title="ลบบิลนี้" onclick="deleteBill('${bill.id}')">ลบ</button>
+              </div>
+            </div>
+            <div class="bill-items">${itemsHtml}</div>
+            <form class="bill-add-form" onsubmit="addBillItem(event, '${bill.id}')">
+              <input type="text" class="inp-name" name="itemName" placeholder="ชื่อรายการ (ไม่บังคับ)" />
+              <input type="number" class="inp-amt" name="itemAmt" placeholder="ราคา ฿" min="0" step="any" required />
+              <button type="submit" class="btn btn-primary btn-sm">+ เพิ่ม</button>
+            </form>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openNewBillModal() {
+      document.getElementById('newBillName').value = 'บิล ' + (state.bills.length + 1);
+      document.getElementById('newBillDate').value = todayISO();
+      document.getElementById('newBillNote').value = '';
+      document.getElementById('newBillFirstItemName').value = '';
+      document.getElementById('newBillFirstItemAmt').value = '';
+      openModal('modalNewBill');
+      setTimeout(() => document.getElementById('newBillFirstItemAmt').focus(), 80);
+    }
+
+    function saveNewBill() {
+      const name = document.getElementById('newBillName').value.trim() || ('บิล ' + (state.bills.length + 1));
+      const date = document.getElementById('newBillDate').value;
+      const note = document.getElementById('newBillNote').value.trim();
+      const firstItemName = document.getElementById('newBillFirstItemName').value.trim();
+      const firstItemAmt = parseFloat(document.getElementById('newBillFirstItemAmt').value);
+
+      const items = [];
+      if (!isNaN(firstItemAmt) && firstItemAmt > 0) {
+        items.push({ id: uid('it'), name: firstItemName || 'รายการ 1', amount: firstItemAmt });
+      }
+      state.bills.push({ id: uid('bill'), name, date, note, items });
+      closeModal('modalNewBill');
+      saveState();
+      toast('เพิ่ม ' + name + ' เรียบร้อย', 'success');
+    }
+
+    function addBillItem(e, billId) {
+      e.preventDefault();
+      const form = e.target;
+      const nameVal = form.itemName.value.trim();
+      const amtVal = parseFloat(form.itemAmt.value);
+      if (isNaN(amtVal) || amtVal <= 0) return;
+      const bill = state.bills.find(b => b.id === billId);
+      if (!bill) return;
+      bill.items.push({ id: uid('it'), name: nameVal || ('รายการ ' + (bill.items.length + 1)), amount: amtVal });
+      saveState();
+    }
+
+    function updateBillField(billId, field, val) {
+      const bill = state.bills.find(b => b.id === billId);
+      if (!bill) return;
+      bill[field] = val.trim();
+      if (field === 'name' && !bill.name) bill.name = 'บิล';
+      saveState();
+    }
+
+    function updateBillItem(billId, itemId, field, val) {
+      const bill = state.bills.find(b => b.id === billId);
+      if (!bill) return;
+      const item = bill.items.find(it => it.id === itemId);
+      if (!item) return;
+      if (field === 'amount') {
+        const num = parseFloat(val);
+        item.amount = isNaN(num) || num < 0 ? 0 : num;
+      } else {
+        item[field] = val.trim() || 'รายการ';
+      }
+      saveState();
+    }
+
+    function deleteBillItem(billId, itemId) {
+      const bill = state.bills.find(b => b.id === billId);
+      if (!bill) return;
+      bill.items = bill.items.filter(it => it.id !== itemId);
+      saveState();
+    }
+
+    function deleteBill(billId) {
+      const bill = state.bills.find(b => b.id === billId);
+      if (!bill) return;
+      if (!confirm(`ต้องการลบ "${bill.name}" ใช่หรือไม่?`)) return;
+      state.bills = state.bills.filter(b => b.id !== billId);
+      saveState();
+      toast('ลบบิลเรียบร้อย');
+    }
+
+    // ---- LABOR & ATTENDANCE ----
+    function renderLabor(s) {
+      const chips = document.getElementById('workerChips');
+      chips.innerHTML = state.workers.map(w => `
+        <div class="worker-chip">
+          <strong>${esc(w.name)}</strong>
+          <span class="worker-rate num">${fmt(w.dailyRate)} ฿/วัน</span>
+        </div>
+      `).join('');
+
+      const table = document.getElementById('attendanceMatrix');
+      if (state.workers.length === 0) {
+        table.innerHTML = '<tr><td class="empty-state">กรุณาเพิ่มรายชื่อช่างก่อน</td></tr>';
+        return;
+      }
+
+      const thead = `
+        <thead>
+          <tr>
+            <th>วันที่</th>
+            ${state.workers.map(w => `<th class="text-center">${esc(w.name)}<div style="font-size:11px; font-weight:500; color:var(--text-muted);">${fmt(w.dailyRate)} ฿</div></th>`).join('')}
+            <th class="text-right">รวมรายวัน</th>
+            <th class="text-center" style="width:46px;">ลบ</th>
+          </tr>
+        </thead>
+      `;
+
+      const tbodyRows = state.attendance.length === 0
+        ? `<tr><td colspan="${state.workers.length + 3}" class="empty-state">ยังไม่มีบันทึกวันทำงาน กด "+ เพิ่มวันทำงาน" เพื่อเริ่มเช็คชื่อ</td></tr>`
+        : state.attendance.map(day => {
+            let rowSum = 0;
+            const cells = state.workers.map(w => {
+              const val = Number((day.entries || {})[w.id]) || 0;
+              rowSum += val;
+              const cls = val === 0 ? 'absent' : (val === Number(w.dailyRate) ? 'full' : 'custom');
+              const label = val === 0 ? '—' : fmt(val);
+              return `
+                <td class="text-center">
+                  <div class="att-cell">
+                    <button class="att-btn ${cls}" title="คลิกเพื่อสลับ มาเต็มวัน / ไม่มา" onclick="toggleAtt('${day.id}', '${w.id}')">${label}</button>
+                    <button class="att-edit-mini" title="กำหนดครึ่งวันหรือใส่ยอดเอง" onclick="openEditAtt('${day.id}', '${w.id}')">✎</button>
+                  </div>
+                </td>
+              `;
+            }).join('');
+            return `
+              <tr>
+                <td><strong>${esc(day.date)}</strong></td>
+                ${cells}
+                <td class="text-right num"><strong>${fmt(rowSum)}</strong></td>
+                <td class="text-center"><button class="btn-danger-ghost" title="ลบวันนี้" onclick="deleteDay('${day.id}')">✕</button></td>
+              </tr>
+            `;
+          }).join('');
+
+      const tfoot = `
+        <tfoot>
+          <tr>
+            <td>รวมค่าแรงงวดนี้</td>
+            ${state.workers.map(w => `<td class="text-center num">${fmt(s.activeWorkerTotals[w.id] || 0)}</td>`).join('')}
+            <td class="text-right num text-primary">${fmt(s.activeLabor)} ฿</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      `;
+
+      table.innerHTML = thead + '<tbody>' + tbodyRows + '</tbody>' + tfoot;
+    }
+
+    function toggleAtt(dayId, workerId) {
+      const day = state.attendance.find(d => d.id === dayId);
+      const worker = state.workers.find(w => w.id === workerId);
+      if (!day || !worker) return;
+      if (!day.entries) day.entries = {};
+      const cur = Number(day.entries[workerId]) || 0;
+      day.entries[workerId] = cur > 0 ? 0 : Number(worker.dailyRate);
+      saveState();
+    }
+
+    function openEditAtt(dayId, workerId) {
+      const day = state.attendance.find(d => d.id === dayId);
+      const worker = state.workers.find(w => w.id === workerId);
+      if (!day || !worker) return;
+      document.getElementById('editAttTitle').textContent = `ค่าแรง ${worker.name} — ${day.date}`;
+      document.getElementById('editAttDayId').value = dayId;
+      document.getElementById('editAttWorkerId').value = workerId;
+      document.getElementById('editAttAmount').value = Number((day.entries || {})[workerId]) || 0;
+      openModal('modalEditAtt');
+    }
+
+    function quickSetAtt(mode) {
+      const workerId = document.getElementById('editAttWorkerId').value;
+      const worker = state.workers.find(w => w.id === workerId);
+      if (!worker) return;
+      const inp = document.getElementById('editAttAmount');
+      if (mode === 'full') inp.value = Number(worker.dailyRate);
+      if (mode === 'half') inp.value = Math.round(Number(worker.dailyRate) / 2);
+      if (mode === 'zero') inp.value = 0;
+    }
+
+    function saveEditAtt() {
+      const dayId = document.getElementById('editAttDayId').value;
+      const workerId = document.getElementById('editAttWorkerId').value;
+      const amt = parseFloat(document.getElementById('editAttAmount').value) || 0;
+      const day = state.attendance.find(d => d.id === dayId);
+      if (!day) return;
+      if (!day.entries) day.entries = {};
+      day.entries[workerId] = amt;
+      closeModal('modalEditAtt');
+      saveState();
+    }
+
+    function openAddDayModal() {
+      const d = new Date();
+      document.getElementById('newDayLabel').value = `วันที่ ${d.getDate()}/${d.getMonth() + 1}`;
+      const list = document.getElementById('newDayWorkersList');
+      list.innerHTML = state.workers.map(w => `
+        <label style="display:flex; align-items:center; justify-content:space-between; padding:8px 11px; border:1px solid var(--border); border-radius:9px; cursor:pointer; background:var(--surface-soft);">
+          <span style="display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" class="new-day-chk" data-wid="${w.id}" checked style="width:auto;" />
+            <strong>${esc(w.name)}</strong>
+          </span>
+          <span class="num text-muted" style="font-size:13px;">${fmt(w.dailyRate)} ฿</span>
+        </label>
+      `).join('');
+      openModal('modalAddDay');
+    }
+
+    function toggleAllNewDayWorkers(checked) {
+      document.querySelectorAll('.new-day-chk').forEach(c => c.checked = checked);
+    }
+
+    function saveNewDay() {
+      const label = document.getElementById('newDayLabel').value.trim();
+      if (!label) { toast('กรุณาระบุวันที่', 'error'); return; }
+      const entries = {};
+      document.querySelectorAll('.new-day-chk').forEach(chk => {
+        const wid = chk.dataset.wid;
+        const w = state.workers.find(x => x.id === wid);
+        entries[wid] = chk.checked && w ? Number(w.dailyRate) : 0;
+      });
+      state.attendance.push({ id: uid('day'), date: label, entries });
+      closeModal('modalAddDay');
+      saveState();
+      toast('เพิ่มวันทำงาน "' + label + '" เรียบร้อย', 'success');
+    }
+
+    function deleteDay(dayId) {
+      const day = state.attendance.find(d => d.id === dayId);
+      if (!day) return;
+      if (!confirm(`ต้องการลบข้อมูลวัน "${day.date}" ใช่หรือไม่?`)) return;
+      state.attendance = state.attendance.filter(d => d.id !== dayId);
+      saveState();
+    }
+
+    // ---- CLOSE LABOR PERIOD & ARCHIVE ----
+    function openClosePeriodModal() {
+      const s = calcSummary();
+      if (state.attendance.length === 0 && s.activeLabor === 0) {
+        toast('ยังไม่มีวันทำงานในงวดปัจจุบันให้ตัดยอด', 'error');
+        return;
+      }
+      const pNo = state.currentPeriodNo || 1;
+      const firstDay = state.attendance[0] ? state.attendance[0].date : '';
+      const lastDay = state.attendance[state.attendance.length - 1] ? state.attendance[state.attendance.length - 1].date : '';
+      const rangeStr = firstDay && lastDay && firstDay !== lastDay ? `${firstDay} – ${lastDay}` : firstDay;
+
+      const workerLines = state.workers
+        .map(w => `${esc(w.name)}: <strong class="num">${fmt(s.activeWorkerTotals[w.id] || 0)} ฿</strong> (${s.activeWorkerDays[w.id] || 0} วัน)`)
+        .join(' &nbsp;•&nbsp; ');
+
+      document.getElementById('closePeriodSummaryBox').innerHTML = `
+        <div style="font-weight:600; color:var(--color-ink); margin-bottom:6px;">สรุปงวดที่ ${pNo} (${state.attendance.length} วันทำงาน${rangeStr ? ' : ' + esc(rangeStr) : ''})</div>
+        <div style="font-size:13px; color:var(--color-steel); margin-bottom:8px;">${workerLines}</div>
+        <div style="display:flex; gap:18px; flex-wrap:wrap; border-top:1px solid var(--color-hairline); padding-top:8px;">
+          <span>รวมค่าแรงงวดนี้: <strong class="num">${fmt(s.activeLabor)} ฿</strong></span>
+          <span>เบิกล่วงหน้าแล้ว: <strong class="num text-green">${fmt(s.activeLaborPaid)} ฿</strong></span>
+          <span>คงเหลือต้องจ่าย: <strong class="num text-rose">${fmt(s.activeLaborRemain)} ฿</strong></span>
+        </div>
+      `;
+      document.getElementById('closePeriodLabel').value = `งวดที่ ${pNo}`;
+      document.getElementById('closePeriodDate').value = todayISO();
+      document.getElementById('closePeriodPayAmt').value = Math.max(0, s.activeLaborRemain);
+      document.getElementById('closePeriodNote').value = '';
+      openModal('modalClosePeriod');
+    }
+
+    function confirmClosePeriod() {
+      const s = calcSummary();
+      const pNo = state.currentPeriodNo || 1;
+      const label = document.getElementById('closePeriodLabel').value.trim() || `งวดที่ ${pNo}`;
+      const closedDate = document.getElementById('closePeriodDate').value || todayISO();
+      const payAmt = Math.max(0, parseFloat(document.getElementById('closePeriodPayAmt').value) || 0);
+      const note = document.getElementById('closePeriodNote').value.trim();
+
+      const firstDay = state.attendance[0] ? state.attendance[0].date : '';
+      const lastDay = state.attendance[state.attendance.length - 1] ? state.attendance[state.attendance.length - 1].date : '';
+      const dateRange = firstDay && lastDay && firstDay !== lastDay ? `${firstDay} – ${lastDay}` : firstDay;
+
+      if (payAmt > 0) {
+        state.payments.unshift({
+          id: uid('pay'),
+          date: closedDate,
+          category: 'labor',
+          periodNo: pNo,
+          amount: payAmt,
+          note: `ตัดยอดปิด${label}${dateRange ? ' (' + dateRange + ')' : ''}${note ? ' — ' + note : ''}`
+        });
+      }
+
+      const workerSummary = state.workers.map(w => ({
+        id: w.id,
+        name: w.name,
+        dailyRate: Number(w.dailyRate) || 0,
+        days: s.activeWorkerDays[w.id] || 0,
+        total: s.activeWorkerTotals[w.id] || 0
+      }));
+
+      if (!Array.isArray(state.closedPeriods)) state.closedPeriods = [];
+      state.closedPeriods.unshift({
+        id: uid('cp'),
+        periodNo: pNo,
+        label,
+        dateRange,
+        closedDate,
+        note,
+        totalLabor: s.activeLabor,
+        paidAdvance: s.activeLaborPaid,
+        paidClosing: payAmt,
+        paidTotal: s.activeLaborPaid + payAmt,
+        workerSummary,
+        attendance: JSON.parse(JSON.stringify(state.attendance)),
+        workersSnapshot: JSON.parse(JSON.stringify(state.workers))
+      });
+
+      state.attendance = [];
+      state.currentPeriodNo = pNo + 1;
+      closeModal('modalClosePeriod');
+      saveState();
+      toast(`ตัดยอดปิด${label}เรียบร้อย — เริ่มงวดที่ ${state.currentPeriodNo} แล้ว`, 'success');
+    }
+
+    function toggleClosedPeriodDetail(cpId) {
+      const el = document.getElementById('cp_detail_' + cpId);
+      if (!el) return;
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function renderClosedPeriods() {
+      const list = state.closedPeriods || [];
+      const sub = document.getElementById('closedPeriodsSub');
+      const container = document.getElementById('closedPeriodsList');
+      if (list.length === 0) {
+        sub.textContent = 'ยังไม่มีงวดที่ตัดยอด — เมื่อจ่ายค่าแรงงวดปัจจุบันครบแล้ว กดปุ่ม "ตัดยอดปิดงวด" ด้านบนเพื่อเก็บเข้าประวัติและเริ่มตารางงวดใหม่';
+        container.innerHTML = '';
+        return;
+      }
+      const sumClosed = list.reduce((a, cp) => a + (Number(cp.totalLabor) || 0), 0);
+      sub.textContent = `ตัดยอดแล้วทั้งหมด ${list.length} งวด • รวมค่าแรงที่ตัดยอดแล้ว ${fmt(sumClosed)} ฿`;
+
+      container.innerHTML = list.map(cp => {
+        const ws = cp.workerSummary || [];
+        const days = cp.attendance || [];
+        const wSnaps = cp.workersSnapshot || ws;
+        const workerBadges = ws.map(w => `<span class="worker-chip" style="padding:4px 10px; font-size:12.5px;"><strong>${esc(w.name)}</strong> <span class="num">${fmt(w.total)} ฿ (${w.days} วัน)</span></span>`).join('');
+
+        const detailTable = days.length === 0 ? '' : `
+          <div class="table-wrap" style="margin-top:12px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>วันที่</th>
+                  ${wSnaps.map(w => `<th class="text-center">${esc(w.name)}</th>`).join('')}
+                  <th class="text-right">รวมรายวัน</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${days.map(d => {
+                  let rSum = 0;
+                  const cells = wSnaps.map(w => {
+                    const v = Number((d.entries || {})[w.id]) || 0;
+                    rSum += v;
+                    return `<td class="text-center num" style="color:${v > 0 ? 'var(--color-ink)' : 'var(--color-muted)'};">${v > 0 ? fmt(v) : '—'}</td>`;
+                  }).join('');
+                  return `<tr><td>${esc(d.date)}</td>${cells}<td class="text-right num"><strong>${fmt(rSum)}</strong></td></tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        return `
+          <div style="border:1px solid var(--color-hairline); border-radius:var(--radius-md); padding:14px 16px; margin-bottom:10px; background:var(--color-surface-soft);">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+              <div>
+                <div style="font-weight:600; font-size:15px; color:var(--color-ink);">
+                  ${esc(cp.label)}
+                  <span style="font-size:12.5px; font-weight:500; color:var(--color-steel); margin-left:6px;">${cp.dateRange ? esc(cp.dateRange) : ''} (${days.length} วัน)</span>
+                </div>
+                <div style="font-size:12.5px; color:var(--color-steel); margin-top:2px;">
+                  ตัดยอดเมื่อ ${esc(cp.closedDate || '—')} • รวมค่าแรง <strong class="num">${fmt(cp.totalLabor)} ฿</strong> • จ่ายรวม <strong class="num text-green">${fmt(cp.paidTotal)} ฿</strong>${cp.note ? ' • ' + esc(cp.note) : ''}
+                </div>
+              </div>
+              <button class="btn btn-sm" onclick="toggleClosedPeriodDetail('${cp.id}')">ดูรายละเอียด</button>
+            </div>
+            <div id="cp_detail_${cp.id}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--color-hairline);">
+              <div class="worker-chips" style="margin-bottom:8px;">${workerBadges}</div>
+              ${detailTable}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ---- WORKERS ----
+    function openWorkerModal() {
+      renderWorkersEditList();
+      document.getElementById('addWorkerName').value = '';
+      document.getElementById('addWorkerRate').value = '';
+      openModal('modalWorkers');
+    }
+
+    function renderWorkersEditList() {
+      const list = document.getElementById('workersEditList');
+      list.innerHTML = state.workers.map(w => `
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" value="${esc(w.name)}" onchange="updateWorker('${w.id}', 'name', this.value)" style="flex:1;" />
+          <input type="number" value="${w.dailyRate}" onchange="updateWorker('${w.id}', 'dailyRate', this.value)" style="width:110px; text-align:right;" min="0" />
+          <button class="btn-danger-ghost" title="ลบช่าง" onclick="deleteWorker('${w.id}')">ลบ</button>
+        </div>
+      `).join('');
+    }
+
+    function updateWorker(id, field, val) {
+      const w = state.workers.find(x => x.id === id);
+      if (!w) return;
+      w[field] = field === 'dailyRate' ? (parseFloat(val) || 0) : val.trim();
+      saveState();
+    }
+
+    function addNewWorker() {
+      const name = document.getElementById('addWorkerName').value.trim();
+      const rate = parseFloat(document.getElementById('addWorkerRate').value) || 0;
+      if (!name) { toast('กรุณาใส่ชื่อช่าง', 'error'); return; }
+      state.workers.push({ id: uid('w'), name, dailyRate: rate });
+      document.getElementById('addWorkerName').value = '';
+      document.getElementById('addWorkerRate').value = '';
+      renderWorkersEditList();
+      saveState();
+      toast('เพิ่มช่าง ' + name + ' เรียบร้อย', 'success');
+    }
+
+    function deleteWorker(id) {
+      const w = state.workers.find(x => x.id === id);
+      if (!w) return;
+      if (!confirm(`ต้องการลบช่าง "${w.name}" ออกจากรายชื่อใช่หรือไม่?`)) return;
+      state.workers = state.workers.filter(x => x.id !== id);
+      renderWorkersEditList();
+      saveState();
+    }
+
+    // ---- PAYMENTS ----
+    function openPaymentModal(defaultCat = 'labor') {
+      document.getElementById('payCategory').value = defaultCat;
+      document.getElementById('payDate').value = todayISO();
+      document.getElementById('payAmount').value = '';
+      document.getElementById('payNote').value = '';
+      openModal('modalPayment');
+      setTimeout(() => document.getElementById('payAmount').focus(), 80);
+    }
+
+    function savePayment() {
+      const category = document.getElementById('payCategory').value;
+      const date = document.getElementById('payDate').value;
+      const amount = parseFloat(document.getElementById('payAmount').value);
+      const note = document.getElementById('payNote').value.trim();
+      if (isNaN(amount) || amount <= 0) { toast('กรุณาใส่จำนวนเงินที่ถูกต้อง', 'error'); return; }
+      const item = { id: uid('pay'), date, category, amount, note };
+      if (category === 'labor') item.periodNo = state.currentPeriodNo || 1;
+      state.payments.unshift(item);
+      closeModal('modalPayment');
+      saveState();
+      toast('บันทึกการจ่ายเงิน ' + fmt(amount) + ' ฿ เรียบร้อย', 'success');
+    }
+
+    function deletePayment(id) {
+      if (!confirm('ต้องการลบรายการจ่ายเงินนี้ใช่หรือไม่?')) return;
+      state.payments = state.payments.filter(p => p.id !== id);
+      saveState();
+    }
+
+    function renderPayments() {
+      const filter = document.getElementById('payFilter').value;
+      const rows = state.payments.filter(p => filter === 'all' || p.category === filter);
+      const tbody = document.getElementById('paymentsTableBody');
+      if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">ยังไม่มีประวัติการจ่ายเงิน</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(p => `
+        <tr>
+          <td>${esc(p.date || '—')}</td>
+          <td><span class="cat-badge ${p.category === 'materials' ? 'cat-materials' : 'cat-labor'}">${p.category === 'materials' ? 'ค่าอุปกรณ์ / บิล' : 'ค่าแรงช่าง'}</span></td>
+          <td>${esc(p.note || '—')}</td>
+          <td class="text-right num"><strong>${fmt(p.amount)} ฿</strong></td>
+          <td class="text-center"><button class="btn-danger-ghost" onclick="deletePayment('${p.id}')">✕</button></td>
+        </tr>
+      `).join('');
+    }
+
+    // ---- GOOGLE SHEETS SYNC ----
+    function openSheetsModal() {
+      document.getElementById('sheetsUrlInput').value = config.sheetsUrl || '';
+      document.getElementById('autoSyncCheckbox').checked = config.autoSync !== false;
+      document.getElementById('sheetsTestResult').innerHTML = '';
+      openModal('modalSheets');
+    }
+
+    function setSyncPill(mode, text) {
+      const pill = document.getElementById('syncStatusPill');
+      pill.className = 'sync-pill ' + mode;
+      document.getElementById('syncStatusText').textContent = text;
+    }
+
+    function updateSyncUI() {
+      const manualBtn = document.getElementById('btnManualSync');
+      if (config.sheetsUrl) {
+        manualBtn.style.display = 'inline-flex';
+        const timeStr = config.lastSync ? new Date(config.lastSync).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '';
+        setSyncPill('connected', timeStr ? `เชื่อม Sheet แล้ว (${timeStr})` : 'เชื่อม Google Sheets แล้ว');
+      } else {
+        manualBtn.style.display = 'none';
+        setSyncPill('', 'ยังไม่เชื่อม Google Sheets');
+      }
+    }
+
+    async function saveAndTestSheetsUrl() {
+      const url = document.getElementById('sheetsUrlInput').value.trim();
+      const autoSync = document.getElementById('autoSyncCheckbox').checked;
+      const resultEl = document.getElementById('sheetsTestResult');
+      if (!url) {
+        config.sheetsUrl = '';
+        config.autoSync = autoSync;
+        saveConfig();
+        resultEl.innerHTML = '<span class="text-muted">ยกเลิกการเชื่อมต่อ Google Sheets แล้ว (เก็บข้อมูลในเครื่องอย่างเดียว)</span>';
+        return;
+      }
+      if (!url.startsWith('https://script.google.com/')) {
+        resultEl.innerHTML = '<span class="text-rose">URL ไม่ถูกต้อง ต้องขึ้นต้นด้วย https://script.google.com/macros/s/...</span>';
+        return;
+      }
+
+      resultEl.innerHTML = '<span style="color:var(--blue);">กำลังทดสอบการเชื่อมต่อ...</span>';
+      try {
+        const res = await fetch(url + '?action=ping', { method: 'GET', redirect: 'follow' });
+        const json = await res.json();
+        if (json.ok) {
+          config.sheetsUrl = url;
+          config.autoSync = autoSync;
+          config.sheetName = json.sheetName || '';
+          saveConfig();
+          resultEl.innerHTML = `<span class="text-green"><strong>✓ เชื่อมต่อสำเร็จ!</strong> ชื่อไฟล์: ${esc(json.sheetName || 'Google Sheets')} — กดปุ่ม "ส่งข้อมูลขึ้น Sheet" เพื่อเริ่มบันทึกได้เลย</span>`;
+          toast('เชื่อมต่อ Google Sheets สำเร็จ', 'success');
+        } else {
+          throw new Error(json.error || 'Unknown error');
+        }
+      } catch (err) {
+        setSyncPill('error', 'เชื่อมต่อไม่สำเร็จ');
+        resultEl.innerHTML = `<span class="text-rose"><strong>✕ เชื่อมต่อไม่สำเร็จ:</strong> ${esc(err.message)}<br/>ตรวจสอบว่าได้ Deploy เป็น Web App และตั้งสิทธิ์เป็น "ทุกคน (Anyone)" แล้ว</span>`;
+      }
+    }
+
+    async function syncPushToSheets(showNotice = true) {
+      if (!config.sheetsUrl) { openSheetsModal(); return; }
+      setSyncPill('syncing', 'กำลังบันทึกขึ้น Sheet...');
+      try {
+        const res = await fetch(config.sheetsUrl, {
+          method: 'POST',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'save', data: state })
+        });
+        const json = await res.json();
+        if (!json.ok) throw new Error(json.error || 'Save failed');
+        config.lastSync = new Date().toISOString();
+        saveConfig();
+        if (showNotice) toast('บันทึกข้อมูลลง Google Sheets เรียบร้อย', 'success');
+      } catch (err) {
+        setSyncPill('error', 'ซิงค์ไม่สำเร็จ');
+        if (showNotice) toast('ซิงค์ไม่สำเร็จ: ' + err.message, 'error');
+      }
+    }
+
+    async function syncPullFromSheets() {
+      if (!config.sheetsUrl) { toast('กรุณาใส่ Web App URL ก่อน', 'error'); return; }
+      setSyncPill('syncing', 'กำลังดึงข้อมูลจาก Sheet...');
+      try {
+        const res = await fetch(config.sheetsUrl + '?action=load', { method: 'GET', redirect: 'follow' });
+        const json = await res.json();
+        if (!json.ok) throw new Error(json.error || 'Load failed');
+        if (!json.hasData || !json.data) {
+          toast('ยังไม่มีข้อมูลใน Google Sheet นี้ (ลองกดส่งข้อมูลขึ้น Sheet ก่อน)', 'error');
+          updateSyncUI();
+          return;
+        }
+        if (!confirm('ต้องการนำข้อมูลจาก Google Sheets มาแทนที่ข้อมูลในหน้าจอนี้ใช่หรือไม่?')) {
+          updateSyncUI();
+          return;
+        }
+        state = normalizeState(json.data);
+        config.lastSync = new Date().toISOString();
+        saveState(false);
+        saveConfig();
+        closeModal('modalSheets');
+        toast('ดึงข้อมูลจาก Google Sheets เรียบร้อย', 'success');
+      } catch (err) {
+        setSyncPill('error', 'ดึงข้อมูลไม่สำเร็จ');
+        toast('ดึงข้อมูลไม่สำเร็จ: ' + err.message, 'error');
+      }
+    }
+
+    // ---- BACKUP & SETTINGS ----
+    function openBackupModal() {
+      document.getElementById('projectNameInput').value = state.projectName || 'บันทึกค่าใช้จ่ายสร้างบ้าน';
+      openModal('modalBackup');
+    }
+
+    function saveProjectName() {
+      state.projectName = document.getElementById('projectNameInput').value.trim() || 'บันทึกค่าใช้จ่ายสร้างบ้าน';
+      saveState();
+      toast('บันทึกชื่อโครงการเรียบร้อย', 'success');
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `house-expense-backup-${todayISO()}.json`;
+      a.click();
+    }
+
+    function importJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (!parsed.bills || !parsed.workers) throw new Error('รูปแบบไฟล์ไม่ถูกต้อง');
+          state = parsed;
+          saveState();
+          closeModal('modalBackup');
+          toast('นำเข้าข้อมูลเรียบร้อย', 'success');
+        } catch (err) {
+          toast('นำเข้าไม่สำเร็จ: ' + err.message, 'error');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    }
+
+    function exportCSV() {
+      const s = calcSummary();
+      const lines = [];
+      lines.push('=== สรุปค่าอุปกรณ์ / บิล ===');
+      lines.push('บิล,วันที่,รายการ,จำนวนเงิน');
+      state.bills.forEach(b => {
+        b.items.forEach(it => lines.push(`"${b.name}","${b.date || ''}","${it.name || ''}",${it.amount}`));
+      });
+      lines.push(`รวมค่าอุปกรณ์,,,${s.totalMaterials}`);
+      lines.push(`จ่ายแล้ว,,,${s.paidMaterials}`);
+      lines.push(`คงเหลือ,,,${s.remainMaterials}`);
+      lines.push('');
+      lines.push('=== ตารางค่าแรงช่าง ===');
+      lines.push(['วันที่', ...state.workers.map(w => `"${w.name}"`), 'รวมรายวัน'].join(','));
+      lines.push(['ค่าแรง/วัน', ...state.workers.map(w => w.dailyRate), ''].join(','));
+      state.attendance.forEach(d => {
+        let sum = 0;
+        const vals = state.workers.map(w => { const v = Number((d.entries || {})[w.id]) || 0; sum += v; return v; });
+        lines.push([`"${d.date}"`, ...vals, sum].join(','));
+      });
+      lines.push(['รวมค่าแรง', ...state.workers.map(w => s.workerTotals[w.id] || 0), s.totalLabor].join(','));
+      lines.push(['จ่ายแล้ว', ...state.workers.map(() => ''), s.paidLabor].join(','));
+      lines.push(['คงเหลือ', ...state.workers.map(() => ''), s.remainLabor].join(','));
+
+      const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `house-expense-${todayISO()}.csv`;
+      a.click();
+    }
+
+    function resetToSampleData() {
+      if (!confirm('คืนค่ากลับเป็นข้อมูลเริ่มต้นจากตารางเดิมของคุณใช่หรือไม่?')) return;
+      state = getDefaultData();
+      saveState();
+      closeModal('modalBackup');
+      toast('คืนค่าข้อมูลเริ่มต้นเรียบร้อย', 'success');
+    }
+
+    function clearAllData() {
+      if (!confirm('ต้องการล้างข้อมูลบิล ค่าแรง และการจ่ายเงินทั้งหมดใช่หรือไม่?')) return;
+      state = normalizeState({ projectName: state.projectName, currentPeriodNo: 1, closedPeriods: [], bills: [], workers: state.workers, attendance: [], payments: [] });
+      saveState();
+      closeModal('modalBackup');
+      toast('ล้างข้อมูลทั้งหมดเรียบร้อย');
+    }
+
+    // ---- EMBEDDED APPS SCRIPT CODE FOR 1-CLICK COPY ----
+    const APPS_SCRIPT_CODE = `const DATA_SHEET_NAME = '_AppData';
+const CHUNK_SIZE = 40000;
+
+function doGet(e) {
+  try {
+    const action = (e && e.parameter && e.parameter.action) || 'load';
+    if (action === 'ping') {
+      return jsonResponse({ ok: true, message: 'เชื่อมต่อ Google Sheets สำเร็จ', sheetName: SpreadsheetApp.getActiveSpreadsheet().getName() });
+    }
+    if (action === 'load') {
+      const data = loadAppData_();
+      return jsonResponse({ ok: true, hasData: data !== null, data: data, sheetName: SpreadsheetApp.getActiveSpreadsheet().getName(), serverTime: new Date().toISOString() });
+    }
+    return jsonResponse({ ok: false, error: 'Unknown action: ' + action });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: String(err) });
+  }
+}
+
+function doPost(e) {
+  try {
+    const raw = (e && e.postData && e.postData.contents) ? e.postData.contents : '{}';
+    const payload = JSON.parse(raw);
+    if ((payload.action || 'save') === 'save') {
+      if (!payload.data) return jsonResponse({ ok: false, error: 'Missing data payload' });
+      saveAppData_(payload.data);
+      renderReadableSheets_(payload.data);
+      return jsonResponse({ ok: true, message: 'บันทึกข้อมูลเรียบร้อย', sheetName: SpreadsheetApp.getActiveSpreadsheet().getName(), serverTime: new Date().toISOString() });
+    }
+    return jsonResponse({ ok: false, error: 'Unknown action' });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: String(err) });
+  }
+}
+
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function getOrCreateSheet_(ss, name) {
+  return ss.getSheetByName(name) || ss.insertSheet(name);
+}
+
+function saveAppData_(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = getOrCreateSheet_(ss, DATA_SHEET_NAME);
+  sheet.clearContents();
+  const jsonStr = JSON.stringify(data);
+  const chunks = [];
+  for (let i = 0; i < jsonStr.length; i += CHUNK_SIZE) chunks.push([jsonStr.slice(i, i + CHUNK_SIZE)]);
+  if (chunks.length === 0) chunks.push(['{}']);
+  sheet.getRange(1, 1, 1, 2).setValues([['updatedAt', new Date().toISOString()]]);
+  sheet.getRange(2, 1, chunks.length, 1).setValues(chunks);
+  try { sheet.hideSheet(); } catch (_) {}
+}
+
+function loadAppData_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(DATA_SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) return null;
+  const values = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+  const jsonStr = values.map(function (r) { return r[0] || ''; }).join('');
+  return jsonStr ? JSON.parse(jsonStr) : null;
+}
+
+function renderReadableSheets_(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const bills = data.bills || [], workers = data.workers || [], attendance = data.attendance || [], payments = data.payments || [];
+
+  const totalMaterials = bills.reduce(function (s, b) { return s + (b.items || []).reduce(function (a, it) { return a + (Number(it.amount) || 0); }, 0); }, 0);
+  const paidMaterials = payments.filter(function (p) { return p.category === 'materials'; }).reduce(function (s, p) { return s + (Number(p.amount) || 0); }, 0);
+  const remainMaterials = totalMaterials - paidMaterials;
+
+  const workerTotals = {};
+  workers.forEach(function (w) { workerTotals[w.id] = 0; });
+  let totalLabor = 0;
+  attendance.forEach(function (day) {
+    workers.forEach(function (w) {
+      const amt = Number((day.entries || {})[w.id]) || 0;
+      workerTotals[w.id] = (workerTotals[w.id] || 0) + amt;
+      totalLabor += amt;
+    });
+  });
+  const paidLabor = payments.filter(function (p) { return p.category === 'labor'; }).reduce(function (s, p) { return s + (Number(p.amount) || 0); }, 0);
+  const remainLabor = totalLabor - paidLabor;
+
+  const summarySheet = getOrCreateSheet_(ss, 'สรุปภาพรวม');
+  summarySheet.clear();
+  const summaryRows = [
+    [(data.projectName || 'โครงการสร้างบ้าน') + ' — สรุปค่าใช้จ่ายทั้งหมด', '', '', ''],
+    ['อัปเดตล่าสุด', Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss'), '', ''],
+    ['', '', '', ''],
+    ['หมวดหมู่', 'ยอดรวม (บาท)', 'จ่ายแล้ว (บาท)', 'คงเหลือ (บาท)'],
+    ['ซื้ออุปกรณ์ / บิล', totalMaterials, paidMaterials, remainMaterials],
+    ['ค่าแรงช่าง', totalLabor, paidLabor, remainLabor],
+    ['รวมทั้งหมด', totalMaterials + totalLabor, paidMaterials + paidLabor, remainMaterials + remainLabor],
+    ['', '', '', ''],
+    ['สรุปค่าแรงแยกตามช่าง', 'ค่าแรง/วัน (บาท)', 'รวมค่าแรง (บาท)', 'จำนวนวันทำงาน']
+  ];
+  workers.forEach(function (w) {
+    const daysWorked = attendance.filter(function (d) { return (Number((d.entries || {})[w.id]) || 0) > 0; }).length;
+    summaryRows.push([w.name, Number(w.dailyRate) || 0, workerTotals[w.id] || 0, daysWorked]);
+  });
+  summarySheet.getRange(1, 1, summaryRows.length, 4).setValues(summaryRows);
+  summarySheet.getRange(1, 1, 1, 4).merge().setFontWeight('bold').setFontSize(13).setBackground('#c85a2a').setFontColor('#ffffff');
+  summarySheet.getRange(4, 1, 1, 4).setFontWeight('bold').setBackground('#f1efe8');
+  summarySheet.getRange(7, 1, 1, 4).setFontWeight('bold').setBackground('#fef3c7');
+  summarySheet.getRange(9, 1, 1, 4).setFontWeight('bold').setBackground('#f1efe8');
+  summarySheet.getRange(5, 2, 3, 3).setNumberFormat('#,##0');
+  if (workers.length > 0) summarySheet.getRange(10, 2, workers.length, 2).setNumberFormat('#,##0');
+  summarySheet.autoResizeColumns(1, 4);
+
+  const billSheet = getOrCreateSheet_(ss, 'ค่าอุปกรณ์_บิล');
+  billSheet.clear();
+  const billRows = [['บิล', 'วันที่', 'รายการ', 'จำนวนเงิน (บาท)', 'หมายเหตุ']];
+  bills.forEach(function (b) {
+    let billSum = 0;
+    (b.items || []).forEach(function (it, idx) {
+      const amt = Number(it.amount) || 0;
+      billSum += amt;
+      billRows.push([idx === 0 ? (b.name || '') : '', idx === 0 ? (b.date || '') : '', it.name || ('รายการที่ ' + (idx + 1)), amt, idx === 0 ? (b.note || '') : '']);
+    });
+    billRows.push(['รวม ' + (b.name || ''), '', '', billSum, '']);
+  });
+  billRows.push(['', '', '', '', ''], ['รวมค่าอุปกรณ์ทั้งหมด', '', '', totalMaterials, ''], ['จ่ายแล้ว', '', '', paidMaterials, ''], ['คงเหลือ', '', '', remainMaterials, '']);
+  billSheet.getRange(1, 1, billRows.length, 5).setValues(billRows);
+  billSheet.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
+  billSheet.getRange(2, 4, billRows.length - 1, 1).setNumberFormat('#,##0');
+  billSheet.getRange(billRows.length - 2, 1, 3, 5).setFontWeight('bold').setBackground('#fef3c7');
+  billSheet.autoResizeColumns(1, 5);
+
+  const laborSheet = getOrCreateSheet_(ss, 'ค่าแรงช่าง');
+  laborSheet.clear();
+  const colCount = workers.length + 2;
+  const laborRows = [
+    ['วันที่'].concat(workers.map(function (w) { return w.name; })).concat(['รวมรายวัน']),
+    ['ค่าแรง/วัน'].concat(workers.map(function (w) { return Number(w.dailyRate) || 0; })).concat([''])
+  ];
+  attendance.forEach(function (day) {
+    let daySum = 0;
+    const row = [day.date || ''];
+    workers.forEach(function (w) { const amt = Number((day.entries || {})[w.id]) || 0; daySum += amt; row.push(amt); });
+    row.push(daySum);
+    laborRows.push(row);
+  });
+  laborRows.push(
+    ['รวมค่าแรง'].concat(workers.map(function (w) { return workerTotals[w.id] || 0; })).concat([totalLabor]),
+    ['จ่ายแล้ว'].concat(workers.map(function () { return ''; })).concat([paidLabor]),
+    ['คงเหลือ'].concat(workers.map(function () { return ''; })).concat([remainLabor])
+  );
+  laborSheet.getRange(1, 1, laborRows.length, colCount).setValues(laborRows);
+  laborSheet.getRange(1, 1, 1, colCount).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
+  laborSheet.getRange(2, 1, 1, colCount).setFontStyle('italic').setBackground('#f1efe8');
+  laborSheet.getRange(2, 2, laborRows.length - 1, colCount - 1).setNumberFormat('#,##0');
+  laborSheet.getRange(laborRows.length - 2, 1, 3, colCount).setFontWeight('bold').setBackground('#fef3c7');
+  laborSheet.autoResizeColumns(1, colCount);
+
+  const paySheet = getOrCreateSheet_(ss, 'ประวัติการจ่ายเงิน');
+  paySheet.clear();
+  const payRows = [['วันที่', 'หมวดหมู่', 'จำนวนเงิน (บาท)', 'หมายเหตุ / ผู้รับ']];
+  payments.forEach(function (p) {
+    payRows.push([p.date || '', p.category === 'materials' ? 'ค่าอุปกรณ์ / บิล' : 'ค่าแรงช่าง', Number(p.amount) || 0, p.note || '']);
+  });
+  paySheet.getRange(1, 1, payRows.length, 4).setValues(payRows);
+  paySheet.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
+  if (payRows.length > 1) paySheet.getRange(2, 3, payRows.length - 1, 1).setNumberFormat('#,##0');
+  paySheet.autoResizeColumns(1, 4);
+}`;
+
+    async function copyAppsScriptCode() {
+      try {
+        await navigator.clipboard.writeText(APPS_SCRIPT_CODE);
+        toast('คัดลอกโค้ด Apps Script เรียบร้อยแล้ว!', 'success');
+      } catch (err) {
+        const ta = document.createElement('textarea');
+        ta.value = APPS_SCRIPT_CODE;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        toast('คัดลอกโค้ด Apps Script เรียบร้อยแล้ว!', 'success');
+      }
+    }
+
+    // Initial render
+    renderAll();
+  </script>
+</body>
+</html>
