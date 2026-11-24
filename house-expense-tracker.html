@@ -431,8 +431,161 @@
       padding-top: 14px;
       border-top: 1px solid var(--color-hairline-soft);
     }
+    .split-stats.four-col {
+      grid-template-columns: repeat(4, 1fr);
+    }
     .split-stat-label { font-size: 12.5px; color: var(--color-steel); }
     .split-stat-val { font-size: 17px; font-weight: 600; margin-top: 2px; color: var(--color-ink); }
+    .split-stat-sub { font-size: 12px; color: var(--color-steel); margin-top: 2px; }
+
+    /* Bill Buyer Type Styles */
+    .mat-breakdown-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .mat-breakdown-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-hairline);
+      background: var(--color-surface-soft);
+      color: var(--color-charcoal);
+    }
+    .mat-breakdown-pill.contractor {
+      background: var(--app-warning-soft);
+      border-color: var(--app-warning-border);
+      color: var(--app-warning);
+    }
+    .mat-breakdown-pill.owner {
+      background: var(--app-info-soft);
+      border-color: var(--app-info-border);
+      color: var(--app-info);
+    }
+
+    .bill-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .filter-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-hairline);
+      background: var(--color-canvas);
+      color: var(--color-steel);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-pill:hover { background: var(--color-surface); color: var(--color-ink); }
+    .filter-pill.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: var(--color-on-primary);
+    }
+    .filter-pill .filter-count {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      padding: 0 6px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.18);
+    }
+    .filter-pill:not(.active) .filter-count {
+      background: var(--color-surface);
+      color: var(--color-steel);
+    }
+
+    .bill-card.type-contractor {
+      border-top: 3px solid var(--app-warning);
+    }
+    .bill-card.type-owner {
+      border-top: 3px solid var(--app-info);
+    }
+    .buyer-switch {
+      display: inline-flex;
+      background: var(--color-surface);
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-full);
+      padding: 2px;
+      gap: 2px;
+      margin-top: 6px;
+    }
+    .buyer-switch-btn {
+      border: none;
+      background: transparent;
+      color: var(--color-steel);
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .buyer-switch-btn:hover { color: var(--color-ink); }
+    .buyer-switch-btn.active.contractor {
+      background: var(--app-warning-soft);
+      color: var(--app-warning);
+      font-weight: 600;
+      box-shadow: inset 0 0 0 1px var(--app-warning-border);
+    }
+    .buyer-switch-btn.active.owner {
+      background: var(--app-info-soft);
+      color: var(--app-info);
+      font-weight: 600;
+      box-shadow: inset 0 0 0 1px var(--app-info-border);
+    }
+
+    .buyer-type-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .buyer-type-option {
+      border: 1.5px solid var(--color-hairline);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      cursor: pointer;
+      background: var(--color-canvas);
+      text-align: left;
+      font-family: var(--font-body);
+      transition: all 0.15s;
+    }
+    .buyer-type-option:hover { background: var(--color-surface-soft); }
+    .buyer-type-option.active.contractor {
+      border-color: var(--app-warning);
+      background: var(--app-warning-soft);
+    }
+    .buyer-type-option.active.owner {
+      border-color: var(--app-info);
+      background: var(--app-info-soft);
+    }
+    .buyer-type-option-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-ink);
+    }
+    .buyer-type-option.active.contractor .buyer-type-option-title { color: var(--app-warning); }
+    .buyer-type-option.active.owner .buyer-type-option-title { color: var(--app-info); }
+    .buyer-type-option-desc {
+      font-size: 12px;
+      color: var(--color-steel);
+      margin-top: 2px;
+      line-height: 1.45;
+    }
 
     .text-green { color: var(--app-success); }
     .text-rose { color: var(--app-danger); }
@@ -865,6 +1018,8 @@
       .kpi-grid { grid-template-columns: 1fr; }
       .two-col { grid-template-columns: 1fr; }
       .form-row { grid-template-columns: 1fr; }
+      .split-stats.four-col { grid-template-columns: repeat(2, 1fr); }
+      .buyer-type-grid { grid-template-columns: 1fr; }
       .kpi-value { font-size: 24px; }
       .topbar-inner, .tabs-wrap, .container { padding-left: 16px; padding-right: 16px; }
       .btn { min-height: 40px; }
@@ -931,9 +1086,9 @@
           <div class="kpi-foot" id="kpiPaidPct">คิดเป็น 0% ของยอดรวม</div>
         </div>
         <div class="kpi-card highlight">
-          <div class="kpi-label">ยอดคงเหลือที่ต้องจ่าย</div>
+          <div class="kpi-label">ยอดคงเหลือที่ต้องจ่ายช่าง</div>
           <div class="kpi-value num text-rose" id="kpiRemainAll">0 ฿</div>
-          <div class="kpi-foot" id="kpiRemainSub">อุปกรณ์ 0 ฿ + ค่าแรง 0 ฿</div>
+          <div class="kpi-foot" id="kpiRemainSub">ค่าของช่างซื้อ 0 ฿ + ค่าแรง 0 ฿</div>
         </div>
       </div>
 
@@ -947,18 +1102,23 @@
             </div>
             <button class="btn btn-sm" onclick="switchTab('materials')">ดูทั้งหมด →</button>
           </div>
+          <div class="mat-breakdown-bar">
+            <span class="mat-breakdown-pill contractor">ช่างซื้อมาเบิก: <strong class="num" id="ovMatContractor">0 ฿</strong></span>
+            <span class="mat-breakdown-pill owner">เจ้าของซื้อเอง: <strong class="num" id="ovMatOwner">0 ฿</strong></span>
+          </div>
           <div class="progress-track"><div class="progress-fill" id="ovMatBar" style="width:0%"></div></div>
           <div class="split-stats">
             <div>
-              <div class="split-stat-label">ยอดรวมบิล</div>
+              <div class="split-stat-label">ยอดรวมทุกบิล</div>
               <div class="split-stat-val num" id="ovMatTotal">0 ฿</div>
             </div>
             <div>
-              <div class="split-stat-label">จ่ายแล้ว</div>
+              <div class="split-stat-label">จ่ายแล้วรวม</div>
               <div class="split-stat-val num text-green" id="ovMatPaid">0 ฿</div>
+              <div class="split-stat-sub" id="ovMatPaidSub">คืนช่าง 0 ฿</div>
             </div>
             <div>
-              <div class="split-stat-label">คงเหลือ</div>
+              <div class="split-stat-label">ค้างจ่ายค่าของช่าง</div>
               <div class="split-stat-val num text-rose" id="ovMatRemain">0 ฿</div>
             </div>
           </div>
@@ -1021,27 +1181,41 @@
         <div class="card-header" style="margin-bottom:8px;">
           <div>
             <h2 class="card-title">สรุปค่าอุปกรณ์ / บิลทั้งหมด</h2>
-            <div class="card-sub">คลิกที่ชื่อบิล ชื่อรายการ หรือราคาเพื่อแก้ไขได้ทันที — ระบบบันทึกและซิงค์ให้อัตโนมัติ</div>
+            <div class="card-sub">แยกบิล "ช่างซื้อมาเบิก" (ต้องจ่ายเงินคืนช่าง) และ "เจ้าของซื้อเอง" (เก็บยอดค่าใช้จ่ายรวม) — คลิกแก้ไขหรือสลับประเภทได้ทันที</div>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button class="btn btn-primary" onclick="openNewBillModal()">+ เพิ่มบิลใหม่</button>
-            <button class="btn" onclick="openPaymentModal('materials')">จ่ายค่าอุปกรณ์</button>
+            <button class="btn" onclick="openPaymentModal('materials')">จ่ายคืนค่าของช่าง</button>
           </div>
         </div>
-        <div class="split-stats" style="border-top:none; padding-top:4px; margin-top:0;">
+        <div class="split-stats four-col" style="border-top:none; padding-top:4px; margin-top:0;">
           <div>
-            <div class="split-stat-label">รวมทุกบิล</div>
+            <div class="split-stat-label">รวมค่าอุปกรณ์ทั้งหมด</div>
             <div class="split-stat-val num" id="matTabTotal">0 ฿</div>
+            <div class="split-stat-sub" id="matTabTotalSub">0 บิล</div>
           </div>
           <div>
-            <div class="split-stat-label">จ่ายแล้ว</div>
-            <div class="split-stat-val num text-green" id="matTabPaid">0 ฿</div>
+            <div class="split-stat-label">เจ้าของซื้อเอง (จ่ายแล้ว)</div>
+            <div class="split-stat-val num" style="color:var(--app-info);" id="matTabOwner">0 ฿</div>
+            <div class="split-stat-sub" id="matTabOwnerSub">0 บิล • ไม่ค้างจ่ายช่าง</div>
           </div>
           <div>
-            <div class="split-stat-label">คงเหลือ</div>
+            <div class="split-stat-label">ช่างซื้อมาเบิก</div>
+            <div class="split-stat-val num text-amber" id="matTabContractor">0 ฿</div>
+            <div class="split-stat-sub" id="matTabPaidSub">จ่ายคืนช่างแล้ว 0 ฿</div>
+          </div>
+          <div>
+            <div class="split-stat-label">คงเหลือต้องจ่ายช่าง</div>
             <div class="split-stat-val num text-rose" id="matTabRemain">0 ฿</div>
+            <div class="split-stat-sub" id="matTabRemainSub">เฉพาะบิลช่างซื้อ</div>
           </div>
         </div>
+      </div>
+
+      <div class="bill-filter-bar" id="billFilterBar">
+        <button class="filter-pill active" data-filter="all" onclick="setBillFilter('all')">ทั้งหมด <span class="filter-count" id="billCountAll">0</span></button>
+        <button class="filter-pill" data-filter="contractor" onclick="setBillFilter('contractor')">ช่างซื้อมาเบิก <span class="filter-count" id="billCountContractor">0</span></button>
+        <button class="filter-pill" data-filter="owner" onclick="setBillFilter('owner')">เจ้าของซื้อเอง <span class="filter-count" id="billCountOwner">0</span></button>
       </div>
 
       <div class="bills-grid" id="billsContainer"></div>
@@ -1112,7 +1286,7 @@
           <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
             <select id="payFilter" onchange="renderPayments()" style="padding:7px 10px; font-size:13px;">
               <option value="all">ทั้งหมด</option>
-              <option value="materials">เฉพาะค่าอุปกรณ์ / บิล</option>
+              <option value="materials">เฉพาะจ่ายคืนค่าของ (บิลช่างซื้อ)</option>
               <option value="labor">เฉพาะค่าแรงช่าง</option>
             </select>
             <button class="btn btn-primary btn-sm" onclick="openPaymentModal()">+ บันทึกการจ่ายเงิน</button>
@@ -1144,6 +1318,20 @@
         <button class="btn-ghost" onclick="closeModal('modalNewBill')">✕</button>
       </div>
       <div class="modal-body">
+        <div class="form-group">
+          <label>ประเภทบิล (ใครเป็นคนซื้อ)</label>
+          <input type="hidden" id="newBillBuyerType" value="contractor" />
+          <div class="buyer-type-grid">
+            <button type="button" class="buyer-type-option contractor active" id="optBuyerContractor" onclick="selectNewBillBuyerType('contractor')">
+              <div class="buyer-type-option-title">ช่างซื้อแล้วมาเบิก</div>
+              <div class="buyer-type-option-desc">นับเข้ายอดค้างจ่ายช่าง เพื่อจ่ายเงินค่าของคืนช่าง</div>
+            </button>
+            <button type="button" class="buyer-type-option owner" id="optBuyerOwner" onclick="selectNewBillBuyerType('owner')">
+              <div class="buyer-type-option-title">เจ้าของซื้อเอง</div>
+              <div class="buyer-type-option-desc">เก็บเป็นยอดค่าใช้จ่ายรวม (จ่ายเองแล้ว ไม่ค้างจ่ายช่าง)</div>
+            </button>
+          </div>
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label>ชื่อบิล / ร้านค้า</label>
@@ -1301,9 +1489,9 @@
         <div class="form-row">
           <div class="form-group">
             <label>หมวดหมู่</label>
-            <select id="payCategory">
+            <select id="payCategory" onchange="updatePayModalHint()">
               <option value="labor">ค่าแรงช่าง</option>
-              <option value="materials">ซื้ออุปกรณ์ / บิล</option>
+              <option value="materials">จ่ายคืนค่าของ (บิลช่างซื้อ)</option>
             </select>
           </div>
           <div class="form-group">
@@ -1311,6 +1499,7 @@
             <input type="date" id="payDate" />
           </div>
         </div>
+        <div id="payBalanceHint" style="font-size:12.5px; color:var(--color-steel); background:var(--color-surface-soft); border:1px solid var(--color-hairline); border-radius:8px; padding:8px 12px; margin-bottom:14px;"></div>
         <div class="form-group">
           <label>จำนวนเงิน (บาท)</label>
           <input type="number" id="payAmount" placeholder="เช่น 5000" min="0" step="any" />
@@ -1424,12 +1613,12 @@
         currentPeriodNo: 1,
         closedPeriods: [],
         bills: [
-          { id: 'b1', name: 'บิล 1', date: '', note: '', items: [{ id: 'i1', name: 'รายการ 1', amount: 100 }, { id: 'i2', name: 'รายการ 2', amount: 50 }, { id: 'i3', name: 'รายการ 3', amount: 120 }] },
-          { id: 'b2', name: 'บิล 2', date: '', note: '', items: [{ id: 'i4', name: 'รายการ 1', amount: 160 }] },
-          { id: 'b3', name: 'บิล 3', date: '', note: '', items: [{ id: 'i5', name: 'รายการ 1', amount: 50 }] },
-          { id: 'b4', name: 'บิล 4', date: '', note: '', items: [{ id: 'i6', name: 'รายการ 1', amount: 145 }] },
-          { id: 'b5', name: 'บิล 5', date: '', note: '', items: [{ id: 'i7', name: 'รายการ 1', amount: 160 }, { id: 'i8', name: 'รายการ 2', amount: 60 }] },
-          { id: 'b6', name: 'บิล 6', date: '', note: '', items: [{ id: 'i9', name: 'รายการ 1', amount: 190 }, { id: 'i10', name: 'รายการ 2', amount: 56 }, { id: 'i11', name: 'รายการ 3', amount: 70 }] }
+          { id: 'b1', name: 'บิล 1', buyerType: 'contractor', date: '', note: '', items: [{ id: 'i1', name: 'รายการ 1', amount: 100 }, { id: 'i2', name: 'รายการ 2', amount: 50 }, { id: 'i3', name: 'รายการ 3', amount: 120 }] },
+          { id: 'b2', name: 'บิล 2', buyerType: 'contractor', date: '', note: '', items: [{ id: 'i4', name: 'รายการ 1', amount: 160 }] },
+          { id: 'b3', name: 'บิล 3', buyerType: 'contractor', date: '', note: '', items: [{ id: 'i5', name: 'รายการ 1', amount: 50 }] },
+          { id: 'b4', name: 'บิล 4', buyerType: 'contractor', date: '', note: '', items: [{ id: 'i6', name: 'รายการ 1', amount: 145 }] },
+          { id: 'b5', name: 'บิล 5', buyerType: 'contractor', date: '', note: '', items: [{ id: 'i7', name: 'รายการ 1', amount: 160 }, { id: 'i8', name: 'รายการ 2', amount: 60 }] },
+          { id: 'b6', name: 'บิล 6', buyerType: 'contractor', date: '', note: '', items: [{ id: 'i9', name: 'รายการ 1', amount: 190 }, { id: 'i10', name: 'รายการ 2', amount: 56 }, { id: 'i11', name: 'รายการ 3', amount: 70 }] }
         ],
         workers: [
           { id: 'w1', name: 'ศักดิ์', dailyRate: 1000 },
@@ -1465,6 +1654,10 @@
       if (!Array.isArray(s.closedPeriods)) s.closedPeriods = [];
       if (!s.currentPeriodNo) s.currentPeriodNo = s.closedPeriods.length + 1;
       if (!Array.isArray(s.bills)) s.bills = [];
+      s.bills.forEach(b => {
+        if (b.buyerType !== 'owner' && b.buyerType !== 'contractor') b.buyerType = 'contractor';
+        if (!Array.isArray(b.items)) b.items = [];
+      });
       if (!Array.isArray(s.workers)) s.workers = [];
       if (!Array.isArray(s.attendance)) s.attendance = [];
       if (!Array.isArray(s.payments)) s.payments = [];
@@ -1477,6 +1670,7 @@
     let state = loadState();
     let config = loadConfig();
     let autoSyncTimer = null;
+    let billFilter = 'all';
 
     function loadState() {
       try {
@@ -1541,9 +1735,26 @@
 
     // ---- CALCULATIONS ----
     function calcSummary() {
-      const totalMaterials = state.bills.reduce((s, b) => s + b.items.reduce((a, it) => a + (Number(it.amount) || 0), 0), 0);
+      let ownerMatTotal = 0;
+      let ownerBillCount = 0;
+      let contractorMatTotal = 0;
+      let contractorBillCount = 0;
+
+      state.bills.forEach(b => {
+        const bSum = (b.items || []).reduce((a, it) => a + (Number(it.amount) || 0), 0);
+        if (b.buyerType === 'owner') {
+          ownerMatTotal += bSum;
+          ownerBillCount += 1;
+        } else {
+          contractorMatTotal += bSum;
+          contractorBillCount += 1;
+        }
+      });
+
+      const totalMaterials = ownerMatTotal + contractorMatTotal;
       const paidMaterials = state.payments.filter(p => p.category === 'materials').reduce((s, p) => s + (Number(p.amount) || 0), 0);
-      const remainMaterials = totalMaterials - paidMaterials;
+      const totalPaidMaterials = ownerMatTotal + paidMaterials;
+      const remainMaterials = contractorMatTotal - paidMaterials;
 
       // Active period labor
       const activeWorkerTotals = {};
@@ -1594,13 +1805,15 @@
       const remainLabor = totalLabor - paidLabor;
 
       return {
-        totalMaterials, paidMaterials, remainMaterials,
+        ownerMatTotal, ownerBillCount,
+        contractorMatTotal, contractorBillCount,
+        totalMaterials, paidMaterials, totalPaidMaterials, remainMaterials,
         activeLabor, activeLaborPaid, activeLaborRemain,
         activeWorkerTotals, activeWorkerDays,
         closedLabor, closedDaysCount,
         totalLabor, paidLabor, remainLabor,
         totalAll: totalMaterials + totalLabor,
-        paidAll: paidMaterials + paidLabor,
+        paidAll: totalPaidMaterials + paidLabor,
         remainAll: remainMaterials + remainLabor,
         workerTotals: workerTotalsAll,
         workerDays: workerDaysAll
@@ -1630,19 +1843,24 @@
 
       // Overview KPIs
       document.getElementById('kpiTotalAll').textContent = fmt(s.totalAll) + ' ฿';
-      document.getElementById('kpiTotalSub').textContent = `อุปกรณ์ ${fmt(s.totalMaterials)} ฿ + ค่าแรง ${fmt(s.totalLabor)} ฿`;
+      document.getElementById('kpiTotalSub').textContent = `อุปกรณ์ ${fmt(s.totalMaterials)} ฿ (เจ้าของ ${fmt(s.ownerMatTotal)} + ช่างซื้อ ${fmt(s.contractorMatTotal)}) • ค่าแรง ${fmt(s.totalLabor)} ฿`;
       document.getElementById('kpiPaidAll').textContent = fmt(s.paidAll) + ' ฿';
       const paidPct = s.totalAll > 0 ? Math.min(100, Math.round((s.paidAll / s.totalAll) * 100)) : 0;
-      document.getElementById('kpiPaidPct').textContent = `คิดเป็น ${paidPct}% ของยอดรวม`;
+      document.getElementById('kpiPaidPct').textContent = `คิดเป็น ${paidPct}% ของยอดรวม (รวมบิลเจ้าของซื้อเอง)`;
       document.getElementById('kpiRemainAll').textContent = fmt(s.remainAll) + ' ฿';
-      document.getElementById('kpiRemainSub').textContent = `อุปกรณ์ ${fmt(s.remainMaterials)} ฿ + ค่าแรง ${fmt(s.remainLabor)} ฿`;
+      document.getElementById('kpiRemainSub').textContent = `ค่าของช่างซื้อ ${fmt(s.remainMaterials)} ฿ + ค่าแรง ${fmt(s.remainLabor)} ฿`;
 
       // Materials card
-      document.getElementById('ovMatCount').textContent = `${state.bills.length} บิล`;
+      document.getElementById('ovMatCount').textContent = `${state.bills.length} บิล (ช่างซื้อ ${s.contractorBillCount} • เจ้าของซื้อเอง ${s.ownerBillCount})`;
+      document.getElementById('ovMatContractor').textContent = fmt(s.contractorMatTotal) + ' ฿';
+      document.getElementById('ovMatOwner').textContent = fmt(s.ownerMatTotal) + ' ฿';
       document.getElementById('ovMatTotal').textContent = fmt(s.totalMaterials) + ' ฿';
-      document.getElementById('ovMatPaid').textContent = fmt(s.paidMaterials) + ' ฿';
-      document.getElementById('ovMatRemain').textContent = fmt(s.remainMaterials) + ' ฿';
-      const matPct = s.totalMaterials > 0 ? Math.min(100, Math.round((s.paidMaterials / s.totalMaterials) * 100)) : 0;
+      document.getElementById('ovMatPaid').textContent = fmt(s.totalPaidMaterials) + ' ฿';
+      document.getElementById('ovMatPaidSub').textContent = `คืนช่างแล้ว ${fmt(s.paidMaterials)} ฿`;
+      const ovMatRemainEl = document.getElementById('ovMatRemain');
+      ovMatRemainEl.textContent = fmt(s.remainMaterials) + ' ฿';
+      ovMatRemainEl.className = 'split-stat-val num ' + (s.remainMaterials > 0 ? 'text-rose' : 'text-green');
+      const matPct = s.totalMaterials > 0 ? Math.min(100, Math.round((s.totalPaidMaterials / s.totalMaterials) * 100)) : 0;
       document.getElementById('ovMatBar').style.width = matPct + '%';
 
       // Labor card (all-time project summary)
@@ -1677,8 +1895,20 @@
 
       // Materials Tab
       document.getElementById('matTabTotal').textContent = fmt(s.totalMaterials) + ' ฿';
-      document.getElementById('matTabPaid').textContent = fmt(s.paidMaterials) + ' ฿';
-      document.getElementById('matTabRemain').textContent = fmt(s.remainMaterials) + ' ฿';
+      document.getElementById('matTabTotalSub').textContent = `${state.bills.length} บิลทั้งหมด`;
+      document.getElementById('matTabOwner').textContent = fmt(s.ownerMatTotal) + ' ฿';
+      document.getElementById('matTabOwnerSub').textContent = `${s.ownerBillCount} บิล • ไม่ค้างจ่ายช่าง`;
+      document.getElementById('matTabContractor').textContent = fmt(s.contractorMatTotal) + ' ฿';
+      document.getElementById('matTabPaidSub').textContent = `${s.contractorBillCount} บิล • จ่ายคืนแล้ว ${fmt(s.paidMaterials)} ฿`;
+      const matTabRemainEl = document.getElementById('matTabRemain');
+      matTabRemainEl.textContent = fmt(s.remainMaterials) + ' ฿';
+      matTabRemainEl.className = 'split-stat-val num ' + (s.remainMaterials > 0 ? 'text-rose' : 'text-green');
+      document.getElementById('billCountAll').textContent = state.bills.length;
+      document.getElementById('billCountContractor').textContent = s.contractorBillCount;
+      document.getElementById('billCountOwner').textContent = s.ownerBillCount;
+      document.querySelectorAll('#billFilterBar .filter-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === billFilter);
+      });
       renderBills();
 
       // Labor Tab (Current Active Period)
@@ -1695,13 +1925,46 @@
     }
 
     // ---- BILLS ----
+    function setBillFilter(filter) {
+      billFilter = filter;
+      renderAll();
+    }
+
+    function selectNewBillBuyerType(type) {
+      const val = type === 'owner' ? 'owner' : 'contractor';
+      document.getElementById('newBillBuyerType').value = val;
+      document.getElementById('optBuyerContractor').classList.toggle('active', val === 'contractor');
+      document.getElementById('optBuyerOwner').classList.toggle('active', val === 'owner');
+    }
+
+    function setBillBuyerType(billId, type) {
+      const bill = state.bills.find(b => b.id === billId);
+      if (!bill) return;
+      const next = type === 'owner' ? 'owner' : 'contractor';
+      if (bill.buyerType === next) return;
+      bill.buyerType = next;
+      saveState();
+      toast(next === 'owner' ? `เปลี่ยน "${bill.name}" เป็น เจ้าของซื้อเอง` : `เปลี่ยน "${bill.name}" เป็น ช่างซื้อมาเบิก`, 'success');
+    }
+
     function renderBills() {
       const container = document.getElementById('billsContainer');
+      const filteredBills = state.bills.filter(b => {
+        if (billFilter === 'owner') return b.buyerType === 'owner';
+        if (billFilter === 'contractor') return b.buyerType !== 'owner';
+        return true;
+      });
       if (state.bills.length === 0) {
         container.innerHTML = '<div class="card empty-state" style="grid-column:1/-1;">ยังไม่มีบิลซื้ออุปกรณ์ กดปุ่ม "+ เพิ่มบิลใหม่" ด้านบนเพื่อเริ่มต้น</div>';
         return;
       }
-      container.innerHTML = state.bills.map(bill => {
+      if (filteredBills.length === 0) {
+        const emptyLabel = billFilter === 'owner' ? 'ยังไม่มีบิลประเภท "เจ้าของซื้อเอง"' : 'ยังไม่มีบิลประเภท "ช่างซื้อมาเบิก"';
+        container.innerHTML = `<div class="card empty-state" style="grid-column:1/-1;">${emptyLabel}</div>`;
+        return;
+      }
+      container.innerHTML = filteredBills.map(bill => {
+        const isOwner = bill.buyerType === 'owner';
         const sum = bill.items.reduce((a, it) => a + (Number(it.amount) || 0), 0);
         const itemsHtml = bill.items.length === 0
           ? '<div style="color:var(--text-muted); font-size:13px; padding:8px 0;">ยังไม่มีรายการในบิลนี้</div>'
@@ -1717,13 +1980,17 @@
             `).join('');
 
         return `
-          <div class="bill-card">
+          <div class="bill-card ${isOwner ? 'type-owner' : 'type-contractor'}">
             <div class="bill-head">
               <div style="flex:1; min-width:0;">
                 <input type="text" class="inline-edit-title" value="${esc(bill.name)}" placeholder="ชื่อบิล" onchange="updateBillField('${bill.id}', 'name', this.value)" />
                 <div class="bill-meta-row">
                   <input type="date" class="inline-edit-date" value="${esc(bill.date || '')}" title="วันที่บิล" onchange="updateBillField('${bill.id}', 'date', this.value)" />
                   <input type="text" class="inline-edit-note" value="${esc(bill.note || '')}" placeholder="เพิ่มหมายเหตุ / ชื่อร้าน..." onchange="updateBillField('${bill.id}', 'note', this.value)" />
+                </div>
+                <div class="buyer-switch" role="group" aria-label="ประเภทผู้ซื้อ">
+                  <button type="button" class="buyer-switch-btn contractor ${!isOwner ? 'active' : ''}" onclick="setBillBuyerType('${bill.id}', 'contractor')" title="ช่างซื้อแล้วมาเบิก (นับเข้ายอดค้างจ่ายช่าง)">ช่างซื้อมาเบิก</button>
+                  <button type="button" class="buyer-switch-btn owner ${isOwner ? 'active' : ''}" onclick="setBillBuyerType('${bill.id}', 'owner')" title="เจ้าของซื้อเอง (เก็บยอดค่าใช้จ่าย ไม่ค้างจ่ายช่าง)">เจ้าของซื้อเอง</button>
                 </div>
               </div>
               <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
@@ -1748,12 +2015,14 @@
       document.getElementById('newBillNote').value = '';
       document.getElementById('newBillFirstItemName').value = '';
       document.getElementById('newBillFirstItemAmt').value = '';
+      selectNewBillBuyerType(billFilter === 'owner' ? 'owner' : 'contractor');
       openModal('modalNewBill');
       setTimeout(() => document.getElementById('newBillFirstItemAmt').focus(), 80);
     }
 
     function saveNewBill() {
       const name = document.getElementById('newBillName').value.trim() || ('บิล ' + (state.bills.length + 1));
+      const buyerType = document.getElementById('newBillBuyerType').value === 'owner' ? 'owner' : 'contractor';
       const date = document.getElementById('newBillDate').value;
       const note = document.getElementById('newBillNote').value.trim();
       const firstItemName = document.getElementById('newBillFirstItemName').value.trim();
@@ -1763,10 +2032,11 @@
       if (!isNaN(firstItemAmt) && firstItemAmt > 0) {
         items.push({ id: uid('it'), name: firstItemName || 'รายการ 1', amount: firstItemAmt });
       }
-      state.bills.push({ id: uid('bill'), name, date, note, items });
+      state.bills.push({ id: uid('bill'), name, buyerType, date, note, items });
       closeModal('modalNewBill');
       saveState();
-      toast('เพิ่ม ' + name + ' เรียบร้อย', 'success');
+      const typeLabel = buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
+      toast(`เพิ่ม ${name} (${typeLabel}) เรียบร้อย`, 'success');
     }
 
     function addBillItem(e, billId) {
@@ -2181,11 +2451,24 @@
     }
 
     // ---- PAYMENTS ----
+    function updatePayModalHint() {
+      const cat = document.getElementById('payCategory').value;
+      const hint = document.getElementById('payBalanceHint');
+      if (!hint) return;
+      const s = calcSummary();
+      if (cat === 'materials') {
+        hint.innerHTML = `ยอดบิลช่างซื้อมาเบิก <strong class="num">${fmt(s.contractorMatTotal)} ฿</strong> • จ่ายคืนแล้ว <strong class="num text-green">${fmt(s.paidMaterials)} ฿</strong> • ค้างจ่ายค่าของช่าง <strong class="num ${s.remainMaterials > 0 ? 'text-rose' : 'text-green'}">${fmt(s.remainMaterials)} ฿</strong>`;
+      } else {
+        hint.innerHTML = `ค่าแรงงวดที่ ${state.currentPeriodNo || 1} รวม <strong class="num">${fmt(s.activeLabor)} ฿</strong> • เบิกแล้ว <strong class="num text-green">${fmt(s.activeLaborPaid)} ฿</strong> • ค้างจ่ายงวดนี้ <strong class="num ${s.activeLaborRemain > 0 ? 'text-rose' : 'text-green'}">${fmt(s.activeLaborRemain)} ฿</strong>`;
+      }
+    }
+
     function openPaymentModal(defaultCat = 'labor') {
       document.getElementById('payCategory').value = defaultCat;
       document.getElementById('payDate').value = todayISO();
       document.getElementById('payAmount').value = '';
       document.getElementById('payNote').value = '';
+      updatePayModalHint();
       openModal('modalPayment');
       setTimeout(() => document.getElementById('payAmount').focus(), 80);
     }
@@ -2221,7 +2504,7 @@
       tbody.innerHTML = rows.map(p => `
         <tr>
           <td>${esc(p.date || '—')}</td>
-          <td><span class="cat-badge ${p.category === 'materials' ? 'cat-materials' : 'cat-labor'}">${p.category === 'materials' ? 'ค่าอุปกรณ์ / บิล' : 'ค่าแรงช่าง'}</span></td>
+          <td><span class="cat-badge ${p.category === 'materials' ? 'cat-materials' : 'cat-labor'}">${p.category === 'materials' ? 'คืนค่าของ (บิลช่าง)' : 'ค่าแรงช่าง'}</span></td>
           <td>${esc(p.note || '—')}</td>
           <td class="text-right num"><strong>${fmt(p.amount)} ฿</strong></td>
           <td class="text-center"><button class="btn-danger-ghost" onclick="deletePayment('${p.id}')">✕</button></td>
@@ -2368,7 +2651,7 @@
         try {
           const parsed = JSON.parse(reader.result);
           if (!parsed.bills || !parsed.workers) throw new Error('รูปแบบไฟล์ไม่ถูกต้อง');
-          state = parsed;
+          state = normalizeState(parsed);
           saveState();
           closeModal('modalBackup');
           toast('นำเข้าข้อมูลเรียบร้อย', 'success');
@@ -2384,13 +2667,16 @@
       const s = calcSummary();
       const lines = [];
       lines.push('=== สรุปค่าอุปกรณ์ / บิล ===');
-      lines.push('บิล,วันที่,รายการ,จำนวนเงิน');
+      lines.push('บิล,ประเภทผู้ซื้อ,วันที่,รายการ,จำนวนเงิน');
       state.bills.forEach(b => {
-        b.items.forEach(it => lines.push(`"${b.name}","${b.date || ''}","${it.name || ''}",${it.amount}`));
+        const buyerLabel = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
+        b.items.forEach(it => lines.push(`"${b.name}","${buyerLabel}","${b.date || ''}","${it.name || ''}",${it.amount}`));
       });
-      lines.push(`รวมค่าอุปกรณ์,,,${s.totalMaterials}`);
-      lines.push(`จ่ายแล้ว,,,${s.paidMaterials}`);
-      lines.push(`คงเหลือ,,,${s.remainMaterials}`);
+      lines.push(`รวมค่าอุปกรณ์ทั้งหมด,,,,${s.totalMaterials}`);
+      lines.push(`เจ้าของซื้อเอง (จ่ายแล้ว),,,,${s.ownerMatTotal}`);
+      lines.push(`ช่างซื้อมาเบิก,,,,${s.contractorMatTotal}`);
+      lines.push(`จ่ายคืนค่าของให้ช่างแล้ว,,,,${s.paidMaterials}`);
+      lines.push(`คงเหลือต้องจ่ายช่าง,,,,${s.remainMaterials}`);
       lines.push('');
       lines.push('=== ตารางค่าแรงช่าง ===');
       lines.push(['วันที่', ...state.workers.map(w => `"${w.name}"`), 'รวมรายวัน'].join(','));
@@ -2497,9 +2783,15 @@ function renderReadableSheets_(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const bills = data.bills || [], workers = data.workers || [], attendance = data.attendance || [], payments = data.payments || [];
 
-  const totalMaterials = bills.reduce(function (s, b) { return s + (b.items || []).reduce(function (a, it) { return a + (Number(it.amount) || 0); }, 0); }, 0);
+  let ownerMatTotal = 0, contractorMatTotal = 0;
+  bills.forEach(function (b) {
+    const bSum = (b.items || []).reduce(function (a, it) { return a + (Number(it.amount) || 0); }, 0);
+    if (b.buyerType === 'owner') ownerMatTotal += bSum; else contractorMatTotal += bSum;
+  });
+  const totalMaterials = ownerMatTotal + contractorMatTotal;
   const paidMaterials = payments.filter(function (p) { return p.category === 'materials'; }).reduce(function (s, p) { return s + (Number(p.amount) || 0); }, 0);
-  const remainMaterials = totalMaterials - paidMaterials;
+  const totalPaidMaterials = ownerMatTotal + paidMaterials;
+  const remainMaterials = contractorMatTotal - paidMaterials;
 
   const workerTotals = {};
   workers.forEach(function (w) { workerTotals[w.id] = 0; });
@@ -2520,10 +2812,11 @@ function renderReadableSheets_(data) {
     [(data.projectName || 'โครงการสร้างบ้าน') + ' — สรุปค่าใช้จ่ายทั้งหมด', '', '', ''],
     ['อัปเดตล่าสุด', Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss'), '', ''],
     ['', '', '', ''],
-    ['หมวดหมู่', 'ยอดรวม (บาท)', 'จ่ายแล้ว (บาท)', 'คงเหลือ (บาท)'],
-    ['ซื้ออุปกรณ์ / บิล', totalMaterials, paidMaterials, remainMaterials],
+    ['หมวดหมู่', 'ยอดรวม (บาท)', 'จ่ายแล้ว (บาท)', 'คงเหลือต้องจ่ายช่าง (บาท)'],
+    ['ค่าอุปกรณ์ (เจ้าของซื้อเอง)', ownerMatTotal, ownerMatTotal, 0],
+    ['ค่าอุปกรณ์ (ช่างซื้อมาเบิก)', contractorMatTotal, paidMaterials, remainMaterials],
     ['ค่าแรงช่าง', totalLabor, paidLabor, remainLabor],
-    ['รวมทั้งหมด', totalMaterials + totalLabor, paidMaterials + paidLabor, remainMaterials + remainLabor],
+    ['รวมทั้งหมด', totalMaterials + totalLabor, totalPaidMaterials + paidLabor, remainMaterials + remainLabor],
     ['', '', '', ''],
     ['สรุปค่าแรงแยกตามช่าง', 'ค่าแรง/วัน (บาท)', 'รวมค่าแรง (บาท)', 'จำนวนวันทำงาน']
   ];
@@ -2534,30 +2827,31 @@ function renderReadableSheets_(data) {
   summarySheet.getRange(1, 1, summaryRows.length, 4).setValues(summaryRows);
   summarySheet.getRange(1, 1, 1, 4).merge().setFontWeight('bold').setFontSize(13).setBackground('#c85a2a').setFontColor('#ffffff');
   summarySheet.getRange(4, 1, 1, 4).setFontWeight('bold').setBackground('#f1efe8');
-  summarySheet.getRange(7, 1, 1, 4).setFontWeight('bold').setBackground('#fef3c7');
-  summarySheet.getRange(9, 1, 1, 4).setFontWeight('bold').setBackground('#f1efe8');
-  summarySheet.getRange(5, 2, 3, 3).setNumberFormat('#,##0');
-  if (workers.length > 0) summarySheet.getRange(10, 2, workers.length, 2).setNumberFormat('#,##0');
+  summarySheet.getRange(8, 1, 1, 4).setFontWeight('bold').setBackground('#fef3c7');
+  summarySheet.getRange(10, 1, 1, 4).setFontWeight('bold').setBackground('#f1efe8');
+  summarySheet.getRange(5, 2, 4, 3).setNumberFormat('#,##0');
+  if (workers.length > 0) summarySheet.getRange(11, 2, workers.length, 2).setNumberFormat('#,##0');
   summarySheet.autoResizeColumns(1, 4);
 
   const billSheet = getOrCreateSheet_(ss, 'ค่าอุปกรณ์_บิล');
   billSheet.clear();
-  const billRows = [['บิล', 'วันที่', 'รายการ', 'จำนวนเงิน (บาท)', 'หมายเหตุ']];
+  const billRows = [['บิล', 'ประเภทผู้ซื้อ', 'วันที่', 'รายการ', 'จำนวนเงิน (บาท)', 'หมายเหตุ']];
   bills.forEach(function (b) {
+    const buyerLabel = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
     let billSum = 0;
     (b.items || []).forEach(function (it, idx) {
       const amt = Number(it.amount) || 0;
       billSum += amt;
-      billRows.push([idx === 0 ? (b.name || '') : '', idx === 0 ? (b.date || '') : '', it.name || ('รายการที่ ' + (idx + 1)), amt, idx === 0 ? (b.note || '') : '']);
+      billRows.push([idx === 0 ? (b.name || '') : '', idx === 0 ? buyerLabel : '', idx === 0 ? (b.date || '') : '', it.name || ('รายการที่ ' + (idx + 1)), amt, idx === 0 ? (b.note || '') : '']);
     });
-    billRows.push(['รวม ' + (b.name || ''), '', '', billSum, '']);
+    billRows.push(['รวม ' + (b.name || ''), buyerLabel, '', '', billSum, '']);
   });
-  billRows.push(['', '', '', '', ''], ['รวมค่าอุปกรณ์ทั้งหมด', '', '', totalMaterials, ''], ['จ่ายแล้ว', '', '', paidMaterials, ''], ['คงเหลือ', '', '', remainMaterials, '']);
-  billSheet.getRange(1, 1, billRows.length, 5).setValues(billRows);
-  billSheet.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
-  billSheet.getRange(2, 4, billRows.length - 1, 1).setNumberFormat('#,##0');
-  billSheet.getRange(billRows.length - 2, 1, 3, 5).setFontWeight('bold').setBackground('#fef3c7');
-  billSheet.autoResizeColumns(1, 5);
+  billRows.push(['', '', '', '', '', ''], ['รวมค่าอุปกรณ์ทั้งหมด', '', '', '', totalMaterials, ''], ['เจ้าของซื้อเอง (จ่ายแล้ว)', '', '', '', ownerMatTotal, 'ไม่ค้างจ่ายช่าง'], ['ช่างซื้อมาเบิก', '', '', '', contractorMatTotal, ''], ['จ่ายคืนค่าของให้ช่างแล้ว', '', '', '', paidMaterials, ''], ['คงเหลือต้องจ่ายช่าง', '', '', '', remainMaterials, '']);
+  billSheet.getRange(1, 1, billRows.length, 6).setValues(billRows);
+  billSheet.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
+  billSheet.getRange(2, 5, billRows.length - 1, 1).setNumberFormat('#,##0');
+  billSheet.getRange(billRows.length - 4, 1, 5, 6).setFontWeight('bold').setBackground('#fef3c7');
+  billSheet.autoResizeColumns(1, 6);
 
   const laborSheet = getOrCreateSheet_(ss, 'ค่าแรงช่าง');
   laborSheet.clear();
@@ -2589,7 +2883,7 @@ function renderReadableSheets_(data) {
   paySheet.clear();
   const payRows = [['วันที่', 'หมวดหมู่', 'จำนวนเงิน (บาท)', 'หมายเหตุ / ผู้รับ']];
   payments.forEach(function (p) {
-    payRows.push([p.date || '', p.category === 'materials' ? 'ค่าอุปกรณ์ / บิล' : 'ค่าแรงช่าง', Number(p.amount) || 0, p.note || '']);
+    payRows.push([p.date || '', p.category === 'materials' ? 'คืนค่าของ (บิลช่างซื้อ)' : 'ค่าแรงช่าง', Number(p.amount) || 0, p.note || '']);
   });
   paySheet.getRange(1, 1, payRows.length, 4).setValues(payRows);
   paySheet.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');

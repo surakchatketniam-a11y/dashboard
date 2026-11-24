@@ -124,13 +124,22 @@ function renderReadableSheets_(data) {
   const currentPeriodNo = data.currentPeriodNo || (closedPeriods.length + 1);
   const payments = data.payments || [];
 
-  const totalMaterials = bills.reduce(function (sum, b) {
-    return sum + (b.items || []).reduce(function (s, it) { return s + (Number(it.amount) || 0); }, 0);
-  }, 0);
+  let ownerMatTotal = 0;
+  let contractorMatTotal = 0;
+  bills.forEach(function (b) {
+    const bSum = (b.items || []).reduce(function (s, it) { return s + (Number(it.amount) || 0); }, 0);
+    if (b.buyerType === 'owner') {
+      ownerMatTotal += bSum;
+    } else {
+      contractorMatTotal += bSum;
+    }
+  });
+  const totalMaterials = ownerMatTotal + contractorMatTotal;
   const paidMaterials = payments
     .filter(function (p) { return p.category === 'materials'; })
     .reduce(function (sum, p) { return sum + (Number(p.amount) || 0); }, 0);
-  const remainMaterials = totalMaterials - paidMaterials;
+  const totalPaidMaterials = ownerMatTotal + paidMaterials;
+  const remainMaterials = contractorMatTotal - paidMaterials;
 
   const activeWorkerTotals = {};
   const allWorkerTotals = {};
@@ -184,10 +193,11 @@ function renderReadableSheets_(data) {
     [projectName + ' — สรุปค่าใช้จ่ายทั้งหมด', '', '', ''],
     ['อัปเดตล่าสุด', Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm:ss'), '', ''],
     ['', '', '', ''],
-    ['หมวดหมู่', 'ยอดรวม (บาท)', 'จ่ายแล้ว (บาท)', 'คงเหลือ (บาท)'],
-    ['ซื้ออุปกรณ์ / บิล', totalMaterials, paidMaterials, remainMaterials],
+    ['หมวดหมู่', 'ยอดรวม (บาท)', 'จ่ายแล้ว (บาท)', 'คงเหลือต้องจ่ายช่าง (บาท)'],
+    ['ค่าอุปกรณ์ (เจ้าของซื้อเอง)', ownerMatTotal, ownerMatTotal, 0],
+    ['ค่าอุปกรณ์ (ช่างซื้อมาเบิก)', contractorMatTotal, paidMaterials, remainMaterials],
     ['ค่าแรงช่าง (รวมทุกงวด)', totalLabor, paidLabor, remainLabor],
-    ['รวมทั้งหมด', totalMaterials + totalLabor, paidMaterials + paidLabor, remainMaterials + remainLabor],
+    ['รวมทั้งหมด', totalMaterials + totalLabor, totalPaidMaterials + paidLabor, remainMaterials + remainLabor],
     ['', '', '', ''],
     ['สรุปค่าแรงแยกตามช่าง (สะสมทุกงวด)', 'ค่าแรง/วัน (บาท)', 'รวมค่าแรง (บาท)', 'จำนวนวันทำงาน']
   ];
@@ -198,44 +208,48 @@ function renderReadableSheets_(data) {
   summarySheet.getRange(1, 1, summaryRows.length, 4).setValues(summaryRows);
   summarySheet.getRange(1, 1, 1, 4).merge().setFontWeight('bold').setFontSize(13).setBackground('#0a0a0a').setFontColor('#ffffff');
   summarySheet.getRange(4, 1, 1, 4).setFontWeight('bold').setBackground('#f7f7f7');
-  summarySheet.getRange(7, 1, 1, 4).setFontWeight('bold').setBackground('#e6f1ed');
-  summarySheet.getRange(9, 1, 1, 4).setFontWeight('bold').setBackground('#f7f7f7');
-  summarySheet.getRange(5, 2, 3, 3).setNumberFormat('#,##0');
+  summarySheet.getRange(8, 1, 1, 4).setFontWeight('bold').setBackground('#e6f1ed');
+  summarySheet.getRange(10, 1, 1, 4).setFontWeight('bold').setBackground('#f7f7f7');
+  summarySheet.getRange(5, 2, 4, 3).setNumberFormat('#,##0');
   if (workers.length > 0) {
-    summarySheet.getRange(10, 2, workers.length, 2).setNumberFormat('#,##0');
+    summarySheet.getRange(11, 2, workers.length, 2).setNumberFormat('#,##0');
   }
   summarySheet.autoResizeColumns(1, 4);
 
   // 2. ค่าอุปกรณ์_บิล
   const billSheet = getOrCreateSheet_(ss, 'ค่าอุปกรณ์_บิล');
   billSheet.clear();
-  const billRows = [['บิล', 'วันที่', 'รายการ', 'จำนวนเงิน (บาท)', 'หมายเหตุ']];
+  const billRows = [['บิล', 'ประเภทผู้ซื้อ', 'วันที่', 'รายการ', 'จำนวนเงิน (บาท)', 'หมายเหตุ']];
   bills.forEach(function (b) {
     const items = b.items || [];
+    const buyerLabel = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
     let billSum = 0;
     items.forEach(function (it, idx) {
       const amt = Number(it.amount) || 0;
       billSum += amt;
       billRows.push([
         idx === 0 ? (b.name || '') : '',
+        idx === 0 ? buyerLabel : '',
         idx === 0 ? (b.date || '') : '',
         it.name || ('รายการที่ ' + (idx + 1)),
         amt,
         idx === 0 ? (b.note || '') : ''
       ]);
     });
-    billRows.push(['รวม ' + (b.name || ''), '', '', billSum, '']);
+    billRows.push(['รวม ' + (b.name || ''), buyerLabel, '', '', billSum, '']);
   });
-  billRows.push(['', '', '', '', '']);
-  billRows.push(['รวมค่าอุปกรณ์ทั้งหมด', '', '', totalMaterials, '']);
-  billRows.push(['จ่ายแล้ว', '', '', paidMaterials, '']);
-  billRows.push(['คงเหลือ', '', '', remainMaterials, '']);
+  billRows.push(['', '', '', '', '', '']);
+  billRows.push(['รวมค่าอุปกรณ์ทั้งหมด', '', '', '', totalMaterials, '']);
+  billRows.push(['เจ้าของซื้อเอง (จ่ายแล้ว)', '', '', '', ownerMatTotal, 'ไม่ค้างจ่ายช่าง']);
+  billRows.push(['ช่างซื้อมาเบิก', '', '', '', contractorMatTotal, '']);
+  billRows.push(['จ่ายคืนค่าของให้ช่างแล้ว', '', '', '', paidMaterials, '']);
+  billRows.push(['คงเหลือต้องจ่ายช่าง', '', '', '', remainMaterials, '']);
 
-  billSheet.getRange(1, 1, billRows.length, 5).setValues(billRows);
-  billSheet.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
-  billSheet.getRange(2, 4, billRows.length - 1, 1).setNumberFormat('#,##0');
-  billSheet.getRange(billRows.length - 2, 1, 3, 5).setFontWeight('bold').setBackground('#fef3c7');
-  billSheet.autoResizeColumns(1, 5);
+  billSheet.getRange(1, 1, billRows.length, 6).setValues(billRows);
+  billSheet.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
+  billSheet.getRange(2, 5, billRows.length - 1, 1).setNumberFormat('#,##0');
+  billSheet.getRange(billRows.length - 4, 1, 5, 6).setFontWeight('bold').setBackground('#fef3c7');
+  billSheet.autoResizeColumns(1, 6);
 
   // 3. ค่าแรงช่าง
   const laborSheet = getOrCreateSheet_(ss, 'ค่าแรงช่าง');
@@ -301,7 +315,7 @@ function renderReadableSheets_(data) {
   payments.forEach(function (p) {
     payRows.push([
       p.date || '',
-      p.category === 'materials' ? 'ค่าอุปกรณ์ / บิล' : 'ค่าแรงช่าง',
+      p.category === 'materials' ? 'คืนค่าของ (บิลช่างซื้อ)' : 'ค่าแรงช่าง',
       Number(p.amount) || 0,
       p.note || ''
     ]);
