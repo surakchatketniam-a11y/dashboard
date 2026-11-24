@@ -203,14 +203,14 @@
     }
     .btn-primary:hover { background: var(--color-primary-press); border-color: var(--color-primary-press); }
 
-    /* เดิมเป็นปุ่มเขียว — ตาม design/ ให้มีปุ่ม filled เพียงปุ่มเดียวต่อแถบ จึงเป็นปุ่ม outline indigo */
+    /* ปุ่มรอง: ขอบเทาแบบเดียวกันทุกปุ่ม (คงชื่อคลาส .btn-green ไว้เพราะมีใช้ใน HTML หลายจุด) ปุ่มทึบม่วงใช้กับปุ่มหลักอย่างเดียว */
     .btn-green {
-      background: var(--color-canvas);
-      border-color: var(--color-primary);
-      color: var(--color-primary);
+      background: transparent;
+      border-color: var(--color-hairline);
+      color: var(--color-ink);
       font-weight: 500;
     }
-    .btn-green:hover { background: var(--color-accent-soft); border-color: var(--color-primary-deep); color: var(--color-primary-deep); }
+    .btn-green:hover { background: var(--color-surface); border-color: #d4d4d4; }
 
     .btn-ghost {
       border: 1px solid transparent;
@@ -321,18 +321,21 @@
       gap: 8px;
     }
     .tab-btn:hover { background: var(--color-surface); color: var(--color-ink); }
+    /* แท็บ/ตัวกรองที่เลือก = พื้นม่วงอ่อน (ไม่ทึบ) เพื่อให้ปุ่มทึบมีอันเดียวคือปุ่มหลัก */
     .tab-btn.active {
-      background: var(--color-primary);
-      border-color: var(--color-primary);
-      color: var(--color-on-primary);
+      background: var(--color-accent-soft);
+      border-color: var(--color-primary-subdued);
+      color: var(--color-primary-deep);
+      font-weight: 600;
     }
+    .tab-btn.active:hover { background: var(--color-accent-soft); color: var(--color-primary-deep); }
     .tab-badge {
       font-family: var(--font-mono);
       font-size: 13px;
       padding: 1px 8px;
       border-radius: var(--radius-full);
-      background: rgba(255, 255, 255, 0.18);
-      color: var(--color-on-primary);
+      background: var(--color-canvas);
+      color: var(--color-primary-deep);
       font-weight: 500;
     }
     .tab-btn:not(.active) .tab-badge {
@@ -547,16 +550,17 @@
     }
     .filter-pill:hover { background: var(--color-surface); color: var(--color-ink); }
     .filter-pill.active {
-      background: var(--color-primary);
-      border-color: var(--color-primary);
-      color: var(--color-on-primary);
+      background: var(--color-accent-soft);
+      border-color: var(--color-primary-subdued);
+      color: var(--color-primary-deep);
+      font-weight: 600;
     }
     .filter-pill .filter-count {
       font-family: var(--font-mono);
       font-size: 13px;
       padding: 0 6px;
       border-radius: var(--radius-full);
-      background: rgba(255, 255, 255, 0.18);
+      background: var(--color-canvas);
     }
     .filter-pill:not(.active) .filter-count {
       background: var(--color-surface);
@@ -1515,6 +1519,7 @@
             <span class="mat-breakdown-pill contractor">ช่างซื้อมาเบิก: <strong class="num" id="ovMatContractor">0 ฿</strong></span>
             <span class="mat-breakdown-pill owner">เจ้าของซื้อเอง: <strong class="num" id="ovMatOwner">0 ฿</strong></span>
           </div>
+          <div id="ovMatOverNote" class="day-notice" style="display:none; margin-bottom:8px;"></div>
           <div class="progress-caption" title="แถบแสดงสัดส่วนที่จ่ายแล้ว เทียบกับยอดรวมทุกบิล">
             <span id="ovMatPct">จ่ายแล้ว 0%</span>
             <span class="num" id="ovMatPctDetail"></span>
@@ -1679,6 +1684,7 @@
             <div class="split-stat-val num text-rose" id="labTabRemain">0 ฿</div>
           </div>
         </div>
+        <div id="labCarryNote" class="card-sub" style="display:none; margin-top:10px;"></div>
       </div>
 
       <div class="card" style="padding:16px;">
@@ -1916,8 +1922,15 @@
         </div>
         <div class="form-group">
           <label>ยอดเงินที่จ่ายปิดงวดครั้งนี้ (บาท)</label>
-          <input type="number" id="closePeriodPayAmt" min="0" step="any" />
+          <input type="number" id="closePeriodPayAmt" min="0" step="any" oninput="updateCloseOverBox()" />
           <div class="card-sub" style="margin-top:4px;">ระบบตั้งค่าเริ่มต้นเท่ากับยอดคงเหลือของงวดนี้ (ถ้าจ่ายครบแล้วก่อนหน้านี้ให้ใส่ 0)</div>
+        </div>
+ <div id="closePeriodOverBox" class="day-notice" style="display:none; margin-bottom:16px;">
+          <div id="closePeriodOverText"></div>
+          <label style="display:flex; align-items:flex-start; gap:8px; margin:8px 0 0; cursor:pointer;">
+            <input type="checkbox" id="closePeriodCarry" checked style="width:auto; height:auto; margin-top:4px;" />
+            <span id="closePeriodCarryLabel"></span>
+          </label>
         </div>
         <div class="form-group">
           <label>หมายเหตุ (ไม่บังคับ)</label>
@@ -1971,9 +1984,10 @@
           <div class="slip-upload-box" id="settleSlipBox"></div>
           <input type="file" id="settleSlipInput" accept="image/*" style="display:none;" onchange="handleModalSlipFile(event, 'settle')" />
         </div>
+        <div id="settleOverWarn" class="day-notice" style="display:none; margin-bottom:12px;"></div>
         <div class="form-group" style="background:var(--color-surface-soft); border:1px solid var(--color-hairline); border-radius:8px; padding:10px 12px; margin-bottom:0;">
           <label style="display:flex; align-items:flex-start; gap:8px; margin:0; cursor:pointer;">
-            <input type="checkbox" id="settleCreatePayment" checked style="width:auto; height:auto; margin-top:4px;" />
+            <input type="checkbox" id="settleCreatePayment" checked onchange="updateSettleTotal()" style="width:auto; height:auto; margin-top:4px;" />
             <span>
               <strong style="font-size:13.5px; color:var(--color-ink);">บันทึกลง "ประวัติจ่ายเงิน" ด้วย (หักยอดค้างจ่ายช่าง)</strong>
               <div style="font-size:12px; color:var(--color-steel); margin-top:2px;">เอาติ๊กออกหากเคยลงยอดจ่ายเหมาไปก่อนหน้านี้แล้ว เพื่อติดสถานะว่าจ่ายแล้วโดยไม่นับเงินซ้ำ</div>
@@ -2012,7 +2026,8 @@
         <div id="payBalanceHint" style="font-size:12.5px; color:var(--color-steel); background:var(--color-surface-soft); border:1px solid var(--color-hairline); border-radius:8px; padding:8px 12px; margin-bottom:14px;"></div>
         <div class="form-group">
           <label>จำนวนเงิน (บาท)</label>
-          <input type="number" id="payAmount" placeholder="เช่น 5000" min="0" step="any" />
+          <input type="number" id="payAmount" placeholder="เช่น 5000" min="0" step="any" oninput="updatePayAmountWarn()" />
+          <div id="payOverWarn" class="day-notice" style="display:none; margin-top:8px;"></div>
         </div>
         <div class="form-group">
           <label>หมายเหตุ / ผู้รับเงิน</label>
@@ -2270,6 +2285,8 @@
       });
       if (!Array.isArray(s.workers)) s.workers = [];
       if (!Array.isArray(s.attendance)) s.attendance = [];
+      // E5: ยอดเบิกเกินที่ยกไปเป็นเงินล่วงหน้าของงวดถัดไป [{ id, periodNo, amount, fromPeriodNo, fromLabel }]
+      if (!Array.isArray(s.laborCarry)) s.laborCarry = [];
       s.attendance.forEach(d => { if (d.isoDate && !parseIso(d.isoDate)) delete d.isoDate; });
       if (!Array.isArray(s.payments)) s.payments = [];
       s.payments.forEach(p => {
@@ -2504,10 +2521,19 @@
       });
 
       const curPeriodNo = state.currentPeriodNo || 1;
+      const activeCarryIn = (state.laborCarry || [])
+        .filter(c => Number(c.periodNo) === curPeriodNo)
+        .reduce((a, c) => a + (Number(c.amount) || 0), 0);
       const activeLaborPaid = state.payments
         .filter(p => p.category === 'labor' && Number(p.periodNo || 1) === curPeriodNo)
-        .reduce((s, p) => s + (Number(p.amount) || 0), 0);
+        .reduce((s, p) => s + (Number(p.amount) || 0), 0) + activeCarryIn;
       const activeLaborRemain = activeLabor - activeLaborPaid;
+      // E4: เงินจ่ายเหมาค่าของที่ยังไม่ผูกกับบิลใดเลย (เสี่ยงถูกนับซ้ำเมื่อตัดจ่ายบิลภายหลัง)
+      const linkedPayIds = new Set(state.bills.map(b => b.paymentId).filter(Boolean));
+      const lumpUnlinked = state.payments
+        .filter(p => p.category === 'materials' && !linkedPayIds.has(p.id))
+        .reduce((a, p) => a + (Number(p.amount) || 0), 0);
+      const overpaidMaterials = Math.max(0, paidMaterials - contractorMatTotal);
 
       // Closed periods labor + all-time cumulative worker totals
       const closedPeriods = state.closedPeriods || [];
@@ -2541,7 +2567,8 @@
         contractorMatTotal, contractorBillCount,
         contractorPaidBillCount, contractorUnpaidBillCount,
         totalMaterials, paidMaterials, totalPaidMaterials, remainMaterials,
-        activeLabor, activeLaborPaid, activeLaborRemain,
+        activeLabor, activeLaborPaid, activeLaborRemain, activeCarryIn,
+        lumpUnlinked, overpaidMaterials,
         activeWorkerTotals, activeWorkerDays,
         closedLabor, closedDaysCount,
         totalLabor, paidLabor, remainLabor,
@@ -2596,6 +2623,13 @@
       const matPct = s.totalMaterials > 0 ? Math.min(100, Math.round((s.totalPaidMaterials / s.totalMaterials) * 100)) : 0;
       document.getElementById('ovMatBar').style.width = matPct + '%';
       document.getElementById('ovMatPct').textContent = `จ่ายแล้ว ${matPct}%`;
+      const overNote = document.getElementById('ovMatOverNote');
+      if (s.overpaidMaterials > 0) {
+        overNote.style.display = 'block';
+        overNote.innerHTML = `<strong>จ่ายคืนค่าของเกินยอดบิลช่างซื้อ ${fmt(s.overpaidMaterials)} ฿</strong> — อาจนับเงินซ้ำ ตรวจรายการในแท็บ "ประวัติจ่ายเงิน"`;
+      } else {
+        overNote.style.display = 'none';
+      }
       document.getElementById('ovMatPctDetail').textContent = `${fmt(s.totalPaidMaterials)} / ${fmt(s.totalMaterials)} ฿`;
 
       // Labor card (all-time project summary)
@@ -2662,6 +2696,14 @@
       document.getElementById('labTabTotal').textContent = fmt(s.activeLabor) + ' ฿';
       document.getElementById('labTabPaid').textContent = fmt(s.activeLaborPaid) + ' ฿';
       document.getElementById('labTabRemain').textContent = fmt(s.activeLaborRemain) + ' ฿';
+      const carryEl = document.getElementById('labCarryNote');
+      if (s.activeCarryIn > 0) {
+        const src = (state.laborCarry || []).filter(c => Number(c.periodNo) === (state.currentPeriodNo || 1)).map(c => c.fromLabel).filter(Boolean).join(', ');
+        carryEl.style.display = 'block';
+        carryEl.innerHTML = `รวมเงินล่วงหน้ายกมา <strong class="num">${fmt(s.activeCarryIn)} ฿</strong>${src ? ' จาก' + esc(src) : ''} อยู่ในยอด "เบิกล่วงหน้างวดนี้"`;
+      } else {
+        carryEl.style.display = 'none';
+      }
       renderLabor(s);
       renderClosedPeriods();
 
@@ -2845,9 +2887,28 @@
       });
       document.getElementById('settleSelectedCount').textContent = `เลือก ${count} บิล`;
       document.getElementById('settleSelectedSum').textContent = fmt(sum) + ' ฿';
+      updateSettleOverWarn(sum);
     }
 
-    function confirmSettleBills() {
+    // E4: ถ้าบันทึกลงประวัติจ่ายเงินด้วย แล้วยอดจ่ายคืนรวมจะเกินยอดบิลช่างซื้อ → เตือนว่าอาจนับซ้ำกับเงินเหมา
+    function settleOverInfo(sum) {
+      const s = calcSummary();
+      const create = document.getElementById('settleCreatePayment').checked;
+      const projected = s.paidMaterials + (create ? sum : 0);
+      const over = Math.max(0, projected - s.contractorMatTotal);
+      return { s, create, projected, over };
+    }
+
+    function updateSettleOverWarn(sum) {
+      const box = document.getElementById('settleOverWarn');
+      const { s, create, over } = settleOverInfo(sum);
+      if (!create || sum <= 0 || over <= 0) { box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      box.innerHTML = `<strong>ระวังนับเงินซ้ำ:</strong> ถ้าบันทึกลงประวัติจ่ายเงินด้วย ยอดจ่ายคืนค่าของรวมจะเป็น <span class="num">${fmt(s.paidMaterials + sum)} ฿</span> เกินยอดบิลช่างซื้อ <span class="num">${fmt(s.contractorMatTotal)} ฿</span> อยู่ <strong class="num">${fmt(over)} ฿</strong>`
+        + (s.lumpUnlinked > 0 ? ` — เคยลงเงินจ่ายเหมาไว้ <span class="num">${fmt(s.lumpUnlinked)} ฿</span> ที่ยังไม่ผูกกับบิลใด ถ้าเงินก้อนนั้นคือค่าบิลเหล่านี้ ให้ <strong>ติ๊ก "บันทึกลงประวัติจ่ายเงิน" ออก</strong> เพื่อติดสถานะจ่ายแล้วโดยไม่นับเงินซ้ำ` : ' — ตรวจรายการในประวัติจ่ายเงินก่อนยืนยัน');
+    }
+
+    async function confirmSettleBills() {
       const selectedIds = [];
       let totalAmt = 0;
       document.querySelectorAll('.settle-bill-chk:checked').forEach(c => {
@@ -2861,6 +2922,16 @@
       const date = document.getElementById('settleDate').value || todayISO();
       const noteInput = document.getElementById('settleNote').value.trim();
       const createPayment = document.getElementById('settleCreatePayment').checked;
+
+      const info = settleOverInfo(totalAmt);
+      if (createPayment && totalAmt > 0 && info.over > 0) {
+        const goOn = await confirmDialog({
+          title: 'ยอดจ่ายเกินยอดบิล อาจนับเงินซ้ำ',
+          body: `ยอดจ่ายคืนค่าของรวมจะเป็น ${fmt(info.projected)} ฿ เกินยอดบิลช่างซื้อ ${fmt(info.s.contractorMatTotal)} ฿ อยู่ ${fmt(info.over)} ฿ ถ้าเคยลงเงินจ่ายเหมาของบิลเหล่านี้ไว้แล้ว ให้ยกเลิกและเอาติ๊ก "บันทึกลงประวัติจ่ายเงิน" ออก`,
+          confirmLabel: 'บันทึกต่อ (ยอดเกิน)'
+        });
+        if (!goOn) return;
+      }
 
       const selectedBills = state.bills.filter(b => selectedIds.includes(b.id));
       const billNames = selectedBills.map(b => b.name).join(', ');
@@ -3345,7 +3416,26 @@
       document.getElementById('closePeriodNote').value = '';
       pendingSlips.closePeriod = '';
       renderSlipUploadBox('closePeriod');
+      document.getElementById('closePeriodCarry').checked = true; // ค่าเริ่มต้น: ยกยอดที่เกิน (กันค่าที่เคยเอาติ๊กออกค้างจากรอบก่อน)
+      updateCloseOverBox();
       openModal('modalClosePeriod');
+    }
+
+    // E5: เบิก/จ่ายรวมเกินค่าแรงของงวด → ถามว่าจะยกยอดที่เกินเป็นเงินล่วงหน้างวดถัดไปไหม
+    function closeOverAmount() {
+      const s = calcSummary();
+      const payAmt = Math.max(0, parseFloat(document.getElementById('closePeriodPayAmt').value) || 0);
+      return Math.max(0, s.activeLaborPaid + payAmt - s.activeLabor);
+    }
+
+    function updateCloseOverBox() {
+      const box = document.getElementById('closePeriodOverBox');
+      const over = closeOverAmount();
+      if (over <= 0) { box.style.display = 'none'; return; }
+      const pNo = state.currentPeriodNo || 1;
+      box.style.display = 'block';
+      document.getElementById('closePeriodOverText').innerHTML = `<strong>เบิก/จ่ายเกินค่าแรงงวดนี้ ${fmt(over)} ฿</strong> (เบิก/จ่ายรวม ${fmt(calcSummary().activeLaborPaid + Math.max(0, parseFloat(document.getElementById('closePeriodPayAmt').value) || 0))} ฿ เทียบกับค่าแรง ${fmt(calcSummary().activeLabor)} ฿)`;
+      document.getElementById('closePeriodCarryLabel').innerHTML = `ยกยอด <strong class="num">${fmt(over)} ฿</strong> นี้เป็น <strong>เงินล่วงหน้างวดที่ ${pNo + 1}</strong> (หักจากค่าแรงงวดหน้า) <span style="display:block; font-size:13px; opacity:0.85;">ถ้าไม่ติ๊ก ยอดที่เกินจะค้างอยู่ในงวดที่ปิดแล้ว และงวดหน้าเริ่มจาก 0</span>`;
     }
 
     function confirmClosePeriod() {
@@ -3355,6 +3445,8 @@
       const closedDate = document.getElementById('closePeriodDate').value || todayISO();
       const payAmt = Math.max(0, parseFloat(document.getElementById('closePeriodPayAmt').value) || 0);
       const note = document.getElementById('closePeriodNote').value.trim();
+      const overAmt = closeOverAmount();
+      const carryOver = overAmt > 0 && document.getElementById('closePeriodCarry').checked ? overAmt : 0;
 
       const firstDay = state.attendance[0] ? state.attendance[0].date : '';
       const lastDay = state.attendance[state.attendance.length - 1] ? state.attendance[state.attendance.length - 1].date : '';
@@ -3393,7 +3485,9 @@
         totalLabor: s.activeLabor,
         paidAdvance: s.activeLaborPaid,
         paidClosing: payAmt,
-        paidTotal: s.activeLaborPaid + payAmt,
+        carriedOut: carryOver,
+        carriedIn: s.activeCarryIn || 0,
+        paidTotal: s.activeLaborPaid + payAmt - carryOver,
         workerSummary,
         attendance: JSON.parse(JSON.stringify(state.attendance)),
         workersSnapshot: JSON.parse(JSON.stringify(state.workers))
@@ -3401,9 +3495,13 @@
 
       state.attendance = [];
       state.currentPeriodNo = pNo + 1;
+      if (carryOver > 0) {
+        if (!Array.isArray(state.laborCarry)) state.laborCarry = [];
+        state.laborCarry.push({ id: uid('cry'), periodNo: pNo + 1, amount: carryOver, fromPeriodNo: pNo, fromLabel: label });
+      }
       closeModal('modalClosePeriod');
       saveState();
-      toast(`ตัดยอดปิด${label}เรียบร้อย — เริ่มงวดที่ ${state.currentPeriodNo} แล้ว`, 'success');
+      toast(`ตัดยอดปิด${label}เรียบร้อย — เริ่มงวดที่ ${state.currentPeriodNo} แล้ว${carryOver > 0 ? ` (ยกยอดเบิกเกิน ${fmt(carryOver)} ฿ ไปงวดหน้า)` : ''}`, 'success');
     }
 
     function toggleClosedPeriodDetail(cpId) {
@@ -3464,7 +3562,7 @@
                   <span style="font-size:12.5px; font-weight:500; color:var(--color-steel); margin-left:6px;">${cp.dateRange ? esc(cp.dateRange) : ''} (${days.length} วัน)</span>
                 </div>
                 <div style="font-size:12.5px; color:var(--color-steel); margin-top:2px;">
-                  ตัดยอดเมื่อ ${esc(cp.closedDate || '—')} • รวมค่าแรง <strong class="num">${fmt(cp.totalLabor)} ฿</strong> • จ่ายรวม <strong class="num text-green">${fmt(cp.paidTotal)} ฿</strong>${cp.note ? ' • ' + esc(cp.note) : ''}
+                  ตัดยอดเมื่อ ${esc(cp.closedDate || '—')} • รวมค่าแรง <strong class="num">${fmt(cp.totalLabor)} ฿</strong> • จ่ายรวม <strong class="num text-green">${fmt(cp.paidTotal)} ฿</strong>${Number(cp.carriedIn) > 0 ? ` • ยกมาจากงวดก่อน <strong class="num">${fmt(cp.carriedIn)} ฿</strong>` : ''}${Number(cp.carriedOut) > 0 ? ` • ยกยอดเบิกเกินไปงวดหน้า <strong class="num">${fmt(cp.carriedOut)} ฿</strong>` : ''}${cp.note ? ' • ' + esc(cp.note) : ''}
                 </div>
               </div>
               <button class="btn btn-sm" onclick="toggleClosedPeriodDetail('${cp.id}')">ดูรายละเอียด</button>
@@ -3760,8 +3858,32 @@
       if (cat === 'materials') {
         hint.innerHTML = `ยอดบิลช่างซื้อมาเบิก <strong class="num">${fmt(s.contractorMatTotal)} ฿</strong> • จ่ายคืนแล้ว <strong class="num text-green">${fmt(s.paidMaterials)} ฿</strong> • ค้างจ่ายค่าของช่าง <strong class="num ${s.remainMaterials > 0 ? 'text-rose' : 'text-green'}">${fmt(s.remainMaterials)} ฿</strong>`;
       } else {
-        hint.innerHTML = `ค่าแรงงวดที่ ${state.currentPeriodNo || 1} รวม <strong class="num">${fmt(s.activeLabor)} ฿</strong> • เบิกแล้ว <strong class="num text-green">${fmt(s.activeLaborPaid)} ฿</strong> • ค้างจ่ายงวดนี้ <strong class="num ${s.activeLaborRemain > 0 ? 'text-rose' : 'text-green'}">${fmt(s.activeLaborRemain)} ฿</strong>`;
+        hint.innerHTML = `ค่าแรงงวดที่ ${state.currentPeriodNo || 1} รวม <strong class="num">${fmt(s.activeLabor)} ฿</strong> • เบิกแล้ว <strong class="num text-green">${fmt(s.activeLaborPaid)} ฿</strong>${s.activeCarryIn > 0 ? ` (รวมยกมา ${fmt(s.activeCarryIn)} ฿)` : ''} • ค้างจ่ายงวดนี้ <strong class="num ${s.activeLaborRemain > 0 ? 'text-rose' : 'text-green'}">${fmt(s.activeLaborRemain)} ฿</strong>`;
       }
+    }
+
+    // E4: จ่ายคืนค่าของเกินยอดค้าง / E5: เบิกค่าแรงเกินยอดงวดนี้ → เตือนทันทีที่พิมพ์
+    function payOverInfo(amount) {
+      const cat = document.getElementById('payCategory').value;
+      const s = calcSummary();
+      if (!(amount > 0)) return null;
+      if (cat === 'materials') {
+        const remain = s.contractorMatTotal - s.paidMaterials;
+        const over = amount - Math.max(0, remain);
+        return over > 0 ? { cat, over, remain, s } : null;
+      }
+      const over = amount - Math.max(0, s.activeLaborRemain);
+      return over > 0 ? { cat, over, remain: s.activeLaborRemain, s } : null;
+    }
+
+    function updatePayAmountWarn() {
+      const box = document.getElementById('payOverWarn');
+      const info = payOverInfo(parseFloat(document.getElementById('payAmount').value));
+      if (!info) { box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      box.innerHTML = info.cat === 'materials'
+        ? `<strong>เกินยอดค้างจ่ายค่าของช่าง ${fmt(info.over)} ฿</strong> (ค้างอยู่ ${fmt(Math.max(0, info.remain))} ฿)${info.s.lumpUnlinked > 0 ? ` — เคยลงเงินเหมาไว้ ${fmt(info.s.lumpUnlinked)} ฿ ที่ยังไม่ผูกบิล ตรวจว่าไม่ได้ลงซ้ำ` : ''}`
+        : `<strong>เกินค่าแรงงวดนี้ที่ค้างจ่าย ${fmt(info.over)} ฿</strong> (ค้างอยู่ ${fmt(Math.max(0, info.remain))} ฿) ถ้าตั้งใจเบิกล่วงหน้า ตอนปิดงวดจะเลือกยกยอดที่เกินไปงวดหน้าได้`;
     }
 
     function openPaymentModal(defaultCat = 'labor') {
@@ -3772,16 +3894,27 @@
       pendingSlips.pay = '';
       renderSlipUploadBox('pay');
       updatePayModalHint();
+      updatePayAmountWarn();
       openModal('modalPayment');
       setTimeout(() => document.getElementById('payAmount').focus(), 80);
     }
 
-    function savePayment() {
+    async function savePayment() {
       const category = document.getElementById('payCategory').value;
       const date = document.getElementById('payDate').value;
       const amount = parseFloat(document.getElementById('payAmount').value);
       const note = document.getElementById('payNote').value.trim();
       if (isNaN(amount) || amount <= 0) { toast('กรุณาใส่จำนวนเงินที่ถูกต้อง', 'error'); return; }
+      const over = payOverInfo(amount);
+      if (over && category === 'materials') {
+        // ค่าของ: จ่ายเกินยอดค้าง = สัญญาณนับซ้ำ ต้องยืนยัน (ค่าแรงเบิกล่วงหน้าเกินได้ตามปกติ จึงเตือนในฟอร์มเท่านั้น)
+        const goOn = await confirmDialog({
+          title: 'จ่ายเกินยอดค้างค่าของ',
+          body: `จำนวนนี้เกินยอดค้างจ่ายค่าของช่าง ${fmt(over.over)} ฿ (ค้างอยู่ ${fmt(Math.max(0, over.remain))} ฿) อาจเป็นการลงเงินซ้ำกับที่จ่ายไปแล้วหรือที่ตัดจ่ายบิลไว้ ตรวจในประวัติจ่ายเงินก่อนบันทึก`,
+          confirmLabel: 'บันทึกต่อ (ยอดเกิน)'
+        });
+        if (!goOn) return;
+      }
       const item = { id: uid('pay'), date, category, amount, note };
       if (category === 'labor') item.periodNo = state.currentPeriodNo || 1;
       if (pendingSlips.pay) item.slipDataUrl = pendingSlips.pay;
@@ -3814,7 +3947,8 @@
       document.getElementById('paySummary').innerHTML = `
         <div><div class="split-stat-label">จ่ายแล้วทั้งหมด</div><div class="split-stat-val num">${fmt(sumOf())} ฿</div></div>
         <div><div class="split-stat-label">คืนค่าของให้ช่าง</div><div class="split-stat-val num">${fmt(sumOf('materials'))} ฿</div></div>
-        <div><div class="split-stat-label">ค่าแรง / เบิกงวด</div><div class="split-stat-val num">${fmt(sumOf('labor'))} ฿</div></div>`;
+        <div><div class="split-stat-label">ค่าแรง / เบิกงวด</div><div class="split-stat-val num">${fmt(sumOf('labor'))} ฿</div></div>`
+        + (calcSummary().overpaidMaterials > 0 ? `<div style="grid-column:1 / -1;" class="day-notice"><strong>จ่ายคืนค่าของเกินยอดบิลช่างซื้อ ${fmt(calcSummary().overpaidMaterials)} ฿</strong> — ตรวจว่ามีรายการที่ลงซ้ำ (เช่น จ่ายเหมา + ตัดจ่ายบิล)</div>` : '');
       // ใหม่สุดอยู่บน: เรียงเฉพาะรายการที่มีวันที่แบบ YYYY-MM-DD ที่เหลือคงลำดับเดิมไว้ท้ายตาราง
       const isIso = d => /^\d{4}-\d{2}-\d{2}$/.test(d || '');
       const filtered = state.payments.filter(p => filter === 'all' || p.category === filter);
