@@ -1307,6 +1307,12 @@
     }
     .toast.success { background: var(--color-brand-dark-900); border: 1px solid var(--app-success); }
     .toast.error { background: var(--color-brand-error); }
+    .toast.undo { display: flex; align-items: center; gap: 12px; padding-right: 8px; }
+    .toast-undo-btn { background: transparent; border: none; color: #ffffff; font-family: var(--font-body); font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; min-height: 36px; padding: 0 12px; border-radius: var(--radius-full); cursor: pointer; }
+    .toast-undo-btn:hover { background: rgba(255, 255, 255, 0.16); }
+    .btn-danger { background: var(--app-danger); border-color: var(--app-danger); color: #ffffff; }
+    .btn-danger:hover { background: #8f1c12; border-color: #8f1c12; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
     @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     .empty-state {
@@ -1356,6 +1362,7 @@
       .tab-btn .tab-badge { display: none; }
       .container { padding-bottom: 96px; }
       .toast-wrap { bottom: 84px; right: 12px; left: 12px; }
+      .toast-undo-btn { min-height: 44px; }
 
       /* Quick actions: primary full width, others side by side */
       .quick-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -2159,6 +2166,27 @@
     </div>
   </div>
 
+  <!-- MODAL: CONFIRM (แทน confirm() ของเบราว์เซอร์) -->
+  <div class="modal-backdrop" id="modalConfirm" style="z-index:150;">
+    <div class="modal" style="max-width:440px;">
+      <div class="modal-head">
+        <h3 id="confirmTitle" style="color:var(--app-danger);">ยืนยัน</h3>
+        <button class="btn-ghost" onclick="settleConfirm(false)">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmBody" style="margin:0 0 12px;"></p>
+        <div id="confirmTypeBox" class="form-group" style="display:none; margin-bottom:0;">
+          <label for="confirmTypeInput" id="confirmTypeLabel"></label>
+          <input type="text" id="confirmTypeInput" autocomplete="off" />
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="settleConfirm(false)">ยกเลิก</button>
+        <button class="btn btn-danger" id="confirmOkBtn" onclick="settleConfirm(true)">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-wrap" id="toastWrap"></div>
 
   <script>
@@ -2253,6 +2281,13 @@
     let state = loadState();
     let config = loadConfig();
     let autoSyncTimer = null;
+    // ---- เลิกทำ (U7): แทน confirm() ของเบราว์เซอร์ ----
+    let stateVersion = 0;
+    let undoSnapshot = null;
+    let undoVersion = -1;
+    let undoTimer = null;
+    let undoPendingTrash = [];
+    let undoToastEl = null;
     let syncConflict = null; // { serverData, serverRevision } เมื่อชีตถูกบันทึกจากเครื่องอื่นไปก่อน (E1)
     let revisionChecking = false;
     let lastRevisionCheck = 0;
@@ -2289,6 +2324,8 @@
     }
 
     function saveState(triggerSync = true) {
+      stateVersion++;
+      if (undoSnapshot !== null && stateVersion !== undoVersion) finalizeUndo(); // มีการแก้ไขอื่นหลังลบ ปุ่มเลิกทำใช้ไม่ได้แล้ว
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       } catch (err) {
@@ -2331,6 +2368,88 @@
 
     function esc(str) {
       return String(str || '').replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
+    }
+
+    function finalizeUndo() {
+      clearTimeout(undoTimer);
+      undoPendingTrash.forEach(trashDriveFile);
+      undoPendingTrash = [];
+      undoSnapshot = null;
+      if (undoToastEl) { undoToastEl.remove(); undoToastEl = null; }
+    }
+
+    // ทำการแก้ไขที่ลบ/ย้อนยาก แล้วแสดง toast "เลิกทำ" 6 วินาที (เก็บสำเนาข้อมูลก่อนแก้ไว้)
+    function performWithUndo(message, mutate) {
+      finalizeUndo();
+      const snap = JSON.stringify(state);
+      const pending = [];
+      mutate(pending);
+      saveState();
+      undoSnapshot = snap;
+      undoVersion = stateVersion;
+      undoPendingTrash = pending;
+      const wrap = document.getElementById('toastWrap');
+      const el = document.createElement('div');
+      el.className = 'toast undo';
+      const span = document.createElement('span');
+      span.textContent = message;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'toast-undo-btn';
+      btn.textContent = 'เลิกทำ';
+      btn.onclick = undoLastAction;
+      el.append(span, btn);
+      wrap.appendChild(el);
+      undoToastEl = el;
+      undoTimer = setTimeout(finalizeUndo, 6000);
+    }
+
+    function undoLastAction() {
+      if (undoSnapshot === null) return;
+      const snap = undoSnapshot;
+      clearTimeout(undoTimer);
+      undoPendingTrash = []; // ไม่ลบไฟล์ใน Drive เพราะเลิกทำแล้ว
+      undoSnapshot = null;
+      if (undoToastEl) { undoToastEl.remove(); undoToastEl = null; }
+      state = normalizeState(JSON.parse(snap));
+      saveState();
+      if (document.getElementById('modalWorkers').classList.contains('open')) renderWorkersEditList();
+      toast('เลิกทำแล้ว', 'success');
+    }
+
+    // ยืนยันด้วยหน้าต่างของแอป (ไม่ใช้ confirm() ของเบราว์เซอร์) typeToConfirm: ต้องพิมพ์คำนี้ก่อนปุ่มยืนยันจึงกดได้
+    let confirmResolver = null;
+    function confirmDialog({ title, body, confirmLabel = 'ยืนยัน', typeToConfirm = '' }) {
+      return new Promise(resolve => {
+        if (confirmResolver) confirmResolver(false);
+        confirmResolver = resolve;
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmBody').textContent = body;
+        const okBtn = document.getElementById('confirmOkBtn');
+        okBtn.textContent = confirmLabel;
+        const typeBox = document.getElementById('confirmTypeBox');
+        const input = document.getElementById('confirmTypeInput');
+        input.value = '';
+        if (typeToConfirm) {
+          typeBox.style.display = 'block';
+          document.getElementById('confirmTypeLabel').textContent = `พิมพ์คำว่า "${typeToConfirm}" เพื่อยืนยัน`;
+          okBtn.disabled = true;
+          input.oninput = () => { okBtn.disabled = input.value.trim() !== typeToConfirm; };
+        } else {
+          typeBox.style.display = 'none';
+          input.oninput = null;
+          okBtn.disabled = false;
+        }
+        openModal('modalConfirm');
+        if (typeToConfirm) setTimeout(() => input.focus(), 50);
+      });
+    }
+
+    function settleConfirm(result) {
+      closeModal('modalConfirm');
+      const r = confirmResolver;
+      confirmResolver = null;
+      if (r) r(result);
     }
 
     function toast(msg, type = '') {
@@ -2779,18 +2898,18 @@
       const linkedPay = bill.paymentId ? state.payments.find(p => p.id === bill.paymentId) : null;
       const otherBillsSamePay = linkedPay ? state.bills.filter(b => b.id !== billId && b.paymentId === linkedPay.id) : [];
 
-      if (linkedPay && otherBillsSamePay.length === 0) {
-        if (!confirm(`ยกเลิกสถานะจ่ายแล้วของ "${bill.name}" และลบรายการจ่ายเงิน ${fmt(linkedPay.amount)} ฿ ที่เชื่อมกันออกด้วยใช่หรือไม่?`)) return;
-        state.payments = state.payments.filter(p => p.id !== linkedPay.id);
-      } else {
-        if (!confirm(`ต้องการยกเลิกสถานะจ่ายแล้วของ "${bill.name}" กลับเป็น "รอจ่ายคืนช่าง" ใช่หรือไม่?`)) return;
-      }
-
-      bill.reimbursed = false;
-      bill.reimbursedDate = '';
-      bill.paymentId = '';
-      saveState();
-      toast(`ยกเลิกตัดบิล "${bill.name}" เรียบร้อย`);
+      const removePay = linkedPay && otherBillsSamePay.length === 0;
+      performWithUndo(
+        removePay ? `ยกเลิกตัดบิล "${bill.name}" และลบรายการจ่าย ${fmt(linkedPay.amount)} ฿` : `ยกเลิกตัดบิล "${bill.name}"`,
+        pending => {
+          if (removePay) {
+            releaseSlip(linkedPay, pending);
+            state.payments = state.payments.filter(p => p.id !== linkedPay.id);
+          }
+          bill.reimbursed = false;
+          bill.reimbursedDate = '';
+          bill.paymentId = '';
+        });
     }
 
     function addNewBillItemRow(focusName = false) {
@@ -2927,17 +3046,19 @@
     function deleteBillItem(billId, itemId) {
       const bill = state.bills.find(b => b.id === billId);
       if (!bill) return;
-      bill.items = bill.items.filter(it => it.id !== itemId);
-      saveState();
+      const item = bill.items.find(it => it.id === itemId);
+      performWithUndo(`ลบรายการ "${(item && item.name) || 'รายการ'}"`, () => {
+        bill.items = bill.items.filter(it => it.id !== itemId);
+      });
     }
 
     function deleteBill(billId) {
       const bill = state.bills.find(b => b.id === billId);
       if (!bill) return;
-      if (!confirm(`ต้องการลบ "${bill.name}" ใช่หรือไม่?`)) return;
-      state.bills = state.bills.filter(b => b.id !== billId);
-      saveState();
-      toast('ลบบิลเรียบร้อย');
+      performWithUndo(`ลบ "${bill.name}" แล้ว`, pending => {
+        releaseSlip(bill, pending);
+        state.bills = state.bills.filter(b => b.id !== billId);
+      });
     }
 
     // ---- LABOR & ATTENDANCE ----
@@ -3188,9 +3309,9 @@
     function deleteDay(dayId) {
       const day = state.attendance.find(d => d.id === dayId);
       if (!day) return;
-      if (!confirm(`ต้องการลบข้อมูลวัน "${day.date}" ใช่หรือไม่?`)) return;
-      state.attendance = state.attendance.filter(d => d.id !== dayId);
-      saveState();
+      performWithUndo(`ลบวัน "${day.date}" แล้ว`, () => {
+        state.attendance = state.attendance.filter(d => d.id !== dayId);
+      });
     }
 
     // ---- CLOSE LABOR PERIOD & ARCHIVE ----
@@ -3398,10 +3519,10 @@
     function deleteWorker(id) {
       const w = state.workers.find(x => x.id === id);
       if (!w) return;
-      if (!confirm(`ต้องการลบช่าง "${w.name}" ออกจากรายชื่อใช่หรือไม่?`)) return;
-      state.workers = state.workers.filter(x => x.id !== id);
-      renderWorkersEditList();
-      saveState();
+      performWithUndo(`ลบช่าง "${w.name}" แล้ว`, () => {
+        state.workers = state.workers.filter(x => x.id !== id);
+        renderWorkersEditList();
+      });
     }
 
     // ---- TRANSFER SLIP UPLOAD & VIEWER ----
@@ -3620,19 +3741,13 @@
       if (viewerPaymentId) {
         const p = state.payments.find(x => x.id === viewerPaymentId);
         if (!p) return;
-        if (!confirm('ต้องการลบสลิปโอนเงินออกจากรายการนี้ใช่หรือไม่?')) return;
-        releaseSlip(p);
         closeModal('modalSlipViewer');
-        saveState();
-        toast('ลบสลิปโอนเงินเรียบร้อย');
+        performWithUndo('ลบสลิปโอนเงินแล้ว', pending => releaseSlip(p, pending));
       } else if (viewerBillId) {
         const b = state.bills.find(x => x.id === viewerBillId);
         if (!b) return;
-        if (!confirm(`ต้องการลบสลิปออกจาก "${b.name}" ใช่หรือไม่?`)) return;
-        releaseSlip(b);
         closeModal('modalSlipViewer');
-        saveState();
-        toast('ลบสลิปออกจากบิลเรียบร้อย');
+        performWithUndo(`ลบสลิปออกจาก "${b.name}" แล้ว`, pending => releaseSlip(b, pending));
       }
     }
 
@@ -3678,16 +3793,19 @@
     }
 
     function deletePayment(id) {
-      if (!confirm('ต้องการลบรายการจ่ายเงินนี้ใช่หรือไม่?')) return;
-      state.bills.forEach(b => {
-        if (b.paymentId === id) {
-          b.reimbursed = false;
-          b.reimbursedDate = '';
-          b.paymentId = '';
-        }
+      const pay = state.payments.find(p => p.id === id);
+      if (!pay) return;
+      performWithUndo(`ลบรายการจ่ายเงิน ${fmt(pay.amount)} ฿ แล้ว`, pending => {
+        state.bills.forEach(b => {
+          if (b.paymentId === id) {
+            b.reimbursed = false;
+            b.reimbursedDate = '';
+            b.paymentId = '';
+          }
+        });
+        releaseSlip(pay, pending);
+        state.payments = state.payments.filter(p => p.id !== id);
       });
-      state.payments = state.payments.filter(p => p.id !== id);
-      saveState();
     }
 
     function renderPayments() {
@@ -3829,11 +3947,16 @@
     }
 
     // ลบไฟล์ใน Drive (ถ้ามี) เมื่อผู้ใช้ลบหรือแทนที่สลิป ทำเบื้องหลัง ไม่ขัดการใช้งาน
-    function releaseSlip(x) {
+    function trashDriveFile(id) {
+      if (id && config.sheetsUrl) sheetsCall({ action: 'trashImage', fileId: id }).catch(() => {});
+    }
+
+    function releaseSlip(x, deferList) {
       if (x.slipFileId) {
         const id = x.slipFileId;
         delete slipImageCache[id];
-        if (config.sheetsUrl) sheetsCall({ action: 'trashImage', fileId: id }).catch(() => {});
+        if (deferList) deferList.push(id); // รอหมดช่วงเลิกทำก่อนค่อยลบไฟล์ใน Drive
+        else trashDriveFile(id);
       }
       delete x.slipFileId;
       delete x.slipDataUrl;
@@ -4064,7 +4187,12 @@
           updateSyncUI();
           return;
         }
-        if (!confirm('ต้องการนำข้อมูลจาก Google Sheets มาแทนที่ข้อมูลในหน้าจอนี้ใช่หรือไม่?')) {
+        const okPull = await confirmDialog({
+          title: 'ดึงข้อมูลจาก Google Sheets?',
+          body: 'ข้อมูลในหน้าจอนี้จะถูกแทนที่ด้วยข้อมูลจากชีต (การแก้ไขที่ยังไม่ได้ซิงค์ในเครื่องนี้จะหายไป) ควรดาวน์โหลดไฟล์สำรองก่อนถ้าไม่แน่ใจ',
+          confirmLabel: 'ดึงข้อมูลมาแทนที่'
+        });
+        if (!okPull) {
           updateSyncUI();
           return;
         }
@@ -4111,10 +4239,8 @@
         try {
           const parsed = JSON.parse(reader.result);
           if (!parsed.bills || !parsed.workers) throw new Error('รูปแบบไฟล์ไม่ถูกต้อง');
-          state = normalizeState(parsed);
-          saveState();
           closeModal('modalBackup');
-          toast('นำเข้าข้อมูลเรียบร้อย', 'success');
+          performWithUndo('นำเข้าข้อมูลจากไฟล์แล้ว', () => { state = normalizeState(parsed); });
         } catch (err) {
           toast('นำเข้าไม่สำเร็จ: ' + err.message, 'error');
         }
@@ -4158,20 +4284,30 @@
       a.click();
     }
 
-    function resetToSampleData() {
-      if (!confirm('คืนค่ากลับเป็นข้อมูลเริ่มต้นจากตารางเดิมของคุณใช่หรือไม่?')) return;
-      state = getDefaultData();
-      saveState();
+    async function resetToSampleData() {
+      const okReset = await confirmDialog({
+        title: 'คืนค่าเป็นข้อมูลเริ่มต้น?',
+        body: 'ข้อมูลบิล ค่าแรง และการจ่ายเงินที่มีอยู่จะถูกแทนที่ด้วยข้อมูลตัวอย่างเริ่มต้น (ถ้าเชื่อม Google Sheets ไว้ จะซิงค์ทับข้อมูลในชีตด้วย) ทำแล้วเลิกทำได้ภายใน 6 วินาที',
+        confirmLabel: 'คืนค่าเริ่มต้น',
+        typeToConfirm: 'ลบ'
+      });
+      if (!okReset) return;
       closeModal('modalBackup');
-      toast('คืนค่าข้อมูลเริ่มต้นเรียบร้อย', 'success');
+      performWithUndo('คืนค่าข้อมูลเริ่มต้นแล้ว', () => { state = getDefaultData(); });
     }
 
-    function clearAllData() {
-      if (!confirm('ต้องการล้างข้อมูลบิล ค่าแรง และการจ่ายเงินทั้งหมดใช่หรือไม่?')) return;
-      state = normalizeState({ projectName: state.projectName, currentPeriodNo: 1, closedPeriods: [], bills: [], workers: state.workers, attendance: [], payments: [] });
-      saveState();
+    async function clearAllData() {
+      const okClear = await confirmDialog({
+        title: 'ล้างข้อมูลทั้งหมด?',
+        body: 'บิล ค่าแรง วันทำงาน และการจ่ายเงินทั้งหมดจะถูกลบ (เหลือเฉพาะรายชื่อช่าง) ถ้าเชื่อม Google Sheets ไว้ ข้อมูลในชีตจะถูกซิงค์ทับด้วย ทำแล้วเลิกทำได้ภายใน 6 วินาที ควรดาวน์โหลดไฟล์สำรองก่อน',
+        confirmLabel: 'ล้างข้อมูลทั้งหมด',
+        typeToConfirm: 'ลบ'
+      });
+      if (!okClear) return;
       closeModal('modalBackup');
-      toast('ล้างข้อมูลทั้งหมดเรียบร้อย');
+      performWithUndo('ล้างข้อมูลทั้งหมดแล้ว', () => {
+        state = normalizeState({ projectName: state.projectName, currentPeriodNo: 1, closedPeriods: [], bills: [], workers: state.workers, attendance: [], payments: [] });
+      });
     }
 
     // ---- EMBEDDED APPS SCRIPT CODE FOR 1-CLICK COPY ----
