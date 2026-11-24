@@ -2126,6 +2126,7 @@
     let state = loadState();
     let config = loadConfig();
     let autoSyncTimer = null;
+    let syncPending = false; // มีการแก้ไขที่รอส่งขึ้น Sheet (ยังไม่ครบ 1.2 วินาที)
     let billFilter = 'all';
     const openAddForms = new Set(); // การ์ดบิลที่เปิดฟอร์มเพิ่มรายการค้างไว้ (กันพับหลัง re-render)
     const pendingSlips = { pay: '', settle: '', closePeriod: '', newBill: '' };
@@ -2163,6 +2164,7 @@
       renderAll();
       if (triggerSync && config.sheetsUrl && config.autoSync) {
         clearTimeout(autoSyncTimer);
+        syncPending = true;
         setSyncPill('syncing', 'รอซิงค์...');
         autoSyncTimer = setTimeout(() => syncPushToSheets(false), 1200);
       }
@@ -2182,8 +2184,10 @@
     }
 
     function todayISO() {
+      // ใช้วันที่ตามเวลาเครื่อง (ไม่ใช้ toISOString ซึ่งเป็น UTC ทำให้ 00:00–07:00 น. เวลาไทยได้วันที่เมื่อวาน)
       const d = new Date();
-      return d.toISOString().slice(0, 10);
+      const p = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
     }
 
     function esc(str) {
@@ -3517,13 +3521,18 @@
 
     async function syncPushToSheets(showNotice = true) {
       if (!config.sheetsUrl) { openSheetsModal(); return; }
+      clearTimeout(autoSyncTimer);
+      syncPending = false;
       setSyncPill('syncing', 'กำลังบันทึกขึ้น Sheet...');
       try {
+        const body = JSON.stringify({ action: 'save', data: state });
         const res = await fetch(config.sheetsUrl, {
           method: 'POST',
           redirect: 'follow',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'save', data: state })
+          body,
+          // keepalive ให้คำขอไม่ถูกยกเลิกตอนปิดแท็บ แต่เบราว์เซอร์จำกัดขนาดไว้ ~64KB จึงใช้เฉพาะข้อมูลที่ไม่ใหญ่
+          keepalive: body.length < 60000
         });
         const json = await res.json();
         if (!json.ok) throw new Error(json.error || 'Save failed');
@@ -3535,6 +3544,13 @@
         if (showNotice) toast('ซิงค์ไม่สำเร็จ: ' + err.message, 'error');
       }
     }
+
+    // E6: ส่งทันทีเมื่อซ่อน/ปิดแท็บ ไม่รอ 1.2 วินาที
+    function flushPendingSync() {
+      if (syncPending && config.sheetsUrl && config.autoSync) syncPushToSheets(false);
+    }
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushPendingSync(); });
+    window.addEventListener('pagehide', flushPendingSync);
 
     async function syncPullFromSheets() {
       if (!config.sheetsUrl) { toast('กรุณาใส่ Web App URL ก่อน', 'error'); return; }
