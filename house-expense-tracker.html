@@ -466,6 +466,29 @@
     .day-notice { background: var(--app-warning-soft); border: 1px solid var(--app-warning-border); color: var(--app-warning); border-radius: var(--radius-md); padding: 8px 12px; font-size: 14px; }
     .btn-link-mini { border: none; background: transparent; color: var(--color-primary); font-family: var(--font-body); font-size: 13px; font-weight: 500; padding: 2px 4px; cursor: pointer; text-decoration: underline; text-decoration-color: var(--color-primary-subdued); text-underline-offset: 3px; }
     .btn-link-mini:hover { color: var(--color-primary-deep); }
+    /* ค้นหา/กรอง */
+    .search-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+    .search-bar input[type="search"] { flex: 1 1 240px; min-width: 0; font-family: var(--font-body); font-size: 15px; height: 40px; padding: 8px 12px; border: 1px solid #a8c3de; border-radius: var(--radius-sm); background: var(--color-canvas); color: var(--color-ink); }
+    .search-bar select { height: 40px; min-width: 0; }
+    .search-date { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--color-steel); }
+    .search-date input { height: 40px; }
+    .search-count { flex: 1 0 100%; font-size: 14px; color: var(--color-steel); }
+    .search-count:empty { display: none; }
+    .bill-cat-select { margin-top: 6px; font-size: 14px; height: 36px; max-width: 100%; padding: 4px 8px; }
+    /* งบประมาณ */
+    .budget-line { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; font-size: 15px; }
+    .budget-row { margin-bottom: 12px; }
+    .budget-sub { font-size: 14px; color: var(--color-steel); margin-top: 4px; }
+    .budget-total { padding: 12px 14px; border: 1px solid var(--color-hairline); border-radius: var(--radius-md); margin-bottom: 14px; background: var(--color-surface); }
+    .budget-total.warn { border-color: var(--app-warning-border); background: var(--app-warning-soft); }
+    .budget-total.over { border-color: var(--app-danger-border); background: var(--app-danger-soft); }
+    .budget-fill { background: var(--color-primary); }
+    .budget-fill.none { background: var(--color-primary-subdued); }
+    .budget-fill.warn { background: var(--app-warning); }
+    .budget-fill.over { background: var(--app-danger); }
+    /* OT / หักเงิน */
+    .att-adj { margin-left: 3px; font-size: 12px; font-weight: 700; color: var(--color-primary-deep); }
+    .att-btn.has-adj { box-shadow: inset 0 0 0 1px var(--color-primary-subdued); }
     .progress-caption {
       display: flex;
       justify-content: space-between;
@@ -1395,6 +1418,17 @@
       #paySummary > div:not(.day-notice) { display: grid; grid-template-rows: subgrid; grid-row: span 2; }
       #paySummary > .day-notice { margin-top: 12px; }
 
+      /* ค้นหา/กรองบนมือถือ: ช่องค้นหาเต็มแถว วันที่สองช่องคู่กัน */
+      .search-bar input[type="search"], .search-bar select:not(#billSearchSort) { flex: 1 1 100%; height: 44px; font-size: 16px; }
+      .search-date { flex: 1 1 calc(50% - 4px); }
+      .search-date input { flex: 1; min-width: 0; height: 44px; font-size: 16px; }
+      .search-bar #billSearchSort { flex: 1 1 60%; height: 44px; font-size: 16px; }
+      .bill-cat-select { height: 44px; font-size: 16px; width: 100%; }
+      .budget-line { flex-wrap: wrap; gap: 2px 12px; }
+      #budgetCard .card-header { flex-wrap: nowrap; align-items: flex-start; gap: 8px; }
+      #budgetCard .card-header > div:first-child { flex: 1; min-width: 0; }
+      #budgetCard .card-header > .btn { flex-shrink: 0; white-space: nowrap; }
+
       /* Quick actions: primary full width, others side by side */
       .quick-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
       .quick-bar .btn:first-child { grid-column: 1 / -1; }
@@ -1674,6 +1708,18 @@
         </div>
       </div>
 
+      <!-- Budget -->
+      <div class="card" id="budgetCard" style="margin-bottom:16px;">
+        <div class="card-header" style="margin-bottom:12px;">
+          <div>
+            <h2 class="card-title">งบประมาณ</h2>
+            <div class="card-sub">เทียบค่าใช้จ่ายจริง (อุปกรณ์ทุกบิล + ค่าแรงทุกงวด) กับงบที่ตั้งไว้</div>
+          </div>
+          <button class="btn btn-sm" onclick="openBudgetModal()">ตั้งงบ</button>
+        </div>
+        <div id="budgetBody"></div>
+      </div>
+
       <!-- Worker Summary Table -->
       <div class="card">
         <div class="card-header">
@@ -1736,6 +1782,22 @@
         </div>
       </div>
 
+      <div class="search-bar" id="billSearchBar">
+        <input type="search" id="billSearchQ" placeholder="ค้นหา ชื่อบิล / ร้าน / รายการ / หมายเหตุ" oninput="onBillSearchChange()" aria-label="ค้นหาบิล" />
+        <select id="billSearchCat" onchange="onBillSearchChange()" aria-label="กรองตามหมวด"></select>
+        <label class="search-date"><span>ตั้งแต่</span><input type="date" id="billSearchFrom" onchange="onBillSearchChange()" /></label>
+        <label class="search-date"><span>ถึง</span><input type="date" id="billSearchTo" onchange="onBillSearchChange()" /></label>
+        <select id="billSearchSort" onchange="onBillSearchChange()" aria-label="เรียงลำดับ">
+          <option value="added">เรียงตามที่เพิ่ม</option>
+          <option value="new">วันที่ ใหม่ → เก่า</option>
+          <option value="old">วันที่ เก่า → ใหม่</option>
+          <option value="big">ยอด มาก → น้อย</option>
+          <option value="small">ยอด น้อย → มาก</option>
+          <option value="name">ชื่อ ก → ฮ</option>
+        </select>
+        <button type="button" class="btn btn-sm" onclick="resetBillSearch()">ล้างตัวกรอง</button>
+        <div class="search-count" id="billSearchCount"></div>
+      </div>
       <div class="bill-filter-bar" id="billFilterBar">
         <button class="filter-pill active" data-filter="all" onclick="setBillFilter('all')">ทั้งหมด <span class="filter-count" id="billCountAll">0</span></button>
         <button class="filter-pill" data-filter="contractor_unpaid" onclick="setBillFilter('contractor_unpaid')">ช่างซื้อ • รอจ่าย <span class="filter-count" id="billCountContractorUnpaid">0</span></button>
@@ -1762,6 +1824,7 @@
             <button class="btn btn-primary btn-sm" onclick="openAddDayModal()">+ เพิ่มวันทำงาน</button>
             <button class="btn btn-sm" onclick="openPaymentModal('labor')">เบิกล่วงหน้า</button>
             <button class="btn btn-sm" onclick="openClosePeriodModal()">ตัดยอดปิดงวด</button>
+            <button class="btn btn-sm" onclick="openPeriodSlip('current')">ใบสรุปงวด</button>
             <button class="btn btn-ghost btn-sm" onclick="openWorkerModal()">จัดการช่าง</button>
           </div>
         </div>
@@ -1820,6 +1883,11 @@
           </div>
         </div>
         <div class="split-stats" id="paySummary" style="margin:0 0 16px; padding:0 0 16px; border-top:none; border-bottom:1px solid var(--color-hairline-soft);"></div>
+        <div class="search-bar" style="margin-bottom:12px;">
+          <input type="search" id="paySearchQ" placeholder="ค้นหา หมายเหตุ / ผู้รับ / จำนวนเงิน" oninput="onPaySearchChange()" aria-label="ค้นหาการจ่ายเงิน" />
+          <label class="search-date"><span>ตั้งแต่</span><input type="date" id="paySearchFrom" onchange="onPaySearchChange()" /></label>
+          <label class="search-date"><span>ถึง</span><input type="date" id="paySearchTo" onchange="onPaySearchChange()" /></label>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -1875,6 +1943,10 @@
         <div class="form-group">
           <label>หมายเหตุ (ไม่บังคับ)</label>
           <input type="text" id="newBillNote" placeholder="เช่น ปูน ทราย เหล็กเส้น" />
+        </div>
+        <div class="form-group">
+          <label for="newBillCategory">หมวดหมู่ (ไม่บังคับ • ใช้ดูสัดส่วนค่าใช้จ่ายและงบประมาณ)</label>
+          <select id="newBillCategory"></select>
         </div>
         <div class="form-group">
           <label>รายการสินค้าในบิล (เพิ่มได้หลายรายการ • กด Enter ที่ช่องราคาเพื่อขึ้นแถวใหม่)</label>
@@ -1963,9 +2035,24 @@
           <button class="btn btn-sm" onclick="quickSetAtt('zero')">ไม่มา (0)</button>
         </div>
         <div class="form-group">
-          <label>กำหนดจำนวนเงินเอง (บาท)</label>
-          <input type="number" id="editAttAmount" min="0" step="any" />
+          <label for="editAttAmount">ค่าแรงฐาน (บาท)</label>
+          <input type="number" id="editAttAmount" min="0" step="any" oninput="updateEditAttTotal()" />
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editAttOt">OT / เพิ่ม (+ บาท)</label>
+            <input type="number" id="editAttOt" min="0" step="any" placeholder="0" oninput="updateEditAttTotal()" />
+          </div>
+          <div class="form-group">
+            <label for="editAttDed">หักเงิน (− บาท)</label>
+            <input type="number" id="editAttDed" min="0" step="any" placeholder="0" oninput="updateEditAttTotal()" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="editAttAdjNote">หมายเหตุ OT / หักเงิน (ไม่บังคับ)</label>
+          <input type="text" id="editAttAdjNote" placeholder="เช่น OT 2 ชม. / หักค่าเสียหาย" />
+        </div>
+        <div class="steps-box" style="margin-bottom:0;">ยอดสุทธิวันนี้ <strong class="num" id="editAttNet">0 ฿</strong></div>
       </div>
       <div class="modal-foot">
         <button class="btn" onclick="closeModal('modalEditAtt')">ยกเลิก</button>
@@ -2279,6 +2366,51 @@
     </div>
   </div>
 
+  <!-- MODAL: BUDGET -->
+  <div class="modal-backdrop" id="modalBudget">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>ตั้งงบประมาณ</h3>
+        <button class="btn-ghost" onclick="closeModal('modalBudget')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="budgetTotalInput">งบรวมโครงการ (บาท)</label>
+          <input type="number" id="budgetTotalInput" min="0" step="any" placeholder="ไม่ตั้งงบรวม" />
+        </div>
+        <div style="font-size:14px; font-weight:600; margin:4px 0 10px;">งบรายหมวด (ไม่บังคับ)</div>
+        <div id="budgetCatList"></div>
+        <div class="card-sub">ระบบเตือนเมื่อใช้ไป 80% ขึ้นไป และเมื่อเกินงบ เว้นว่างถ้าไม่ต้องการตั้งงบหมวดนั้น</div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeModal('modalBudget')">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="saveBudget()">บันทึกงบ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PERIOD SLIP -->
+  <div class="modal-backdrop" id="modalPeriodSlip">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>ใบสรุปค่าแรงรายงวด</h3>
+        <button class="btn-ghost" onclick="closeModal('modalPeriodSlip')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="slipPeriodSel">เลือกงวด</label>
+          <select id="slipPeriodSel" onchange="refreshPeriodSlip()"></select>
+        </div>
+        <img id="slipPreview" alt="ตัวอย่างใบสรุปค่าแรง" style="display:none; width:100%; border:1px solid var(--color-hairline); border-radius:8px;" />
+        <div id="slipEmpty" class="empty-state" style="display:none;">งวดนี้ยังไม่มีข้อมูลค่าแรงให้สรุป</div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="copySlipText()">คัดลอกเป็นข้อความ</button>
+        <button class="btn btn-primary" onclick="shareSlipImage()">แชร์รูป / บันทึกรูป</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: CONFIRM (แทน confirm() ของเบราว์เซอร์) -->
   <div class="modal-backdrop" id="modalConfirm" style="z-index:150;">
     <div class="modal" style="max-width:440px;">
@@ -2321,6 +2453,7 @@
       const year = d.getFullYear() !== new Date().getFullYear() ? ' ' + (d.getFullYear() + 543) : '';
       return `${TH_WEEKDAY[d.getDay()]} ${d.getDate()} ${TH_MONTH[d.getMonth()]}${year}`;
     }
+    const BILL_CATEGORIES = ['โครงสร้าง/ปูน/เหล็ก', 'ไฟฟ้า', 'ประปา/สุขภัณฑ์', 'พื้น/ผนัง/ฝ้า', 'สี/ตกแต่ง', 'ประตู/หน้าต่าง', 'เฟอร์นิเจอร์', 'เครื่องมือ/อุปกรณ์', 'ค่าขนส่ง', 'อื่นๆ'];
     const STORAGE_KEY = 'house_expense_app_v1';
     const CONFIG_KEY = 'house_expense_config_v1';
     // E11: ไม่ฝัง Web App URL ไว้ในโค้ดแล้ว (หน้าเว็บและ repo เป็นสาธารณะ) ให้ใส่ในหน้า 'เชื่อมต่อ Google Sheets' ของแต่ละเครื่อง
@@ -2383,6 +2516,11 @@
       });
       if (!Array.isArray(s.workers)) s.workers = [];
       if (!Array.isArray(s.attendance)) s.attendance = [];
+      // งบประมาณ: { total, byCategory: { 'หมวด': จำนวนเงิน, '__labor': งบค่าแรง } }
+      if (!s.budget || typeof s.budget !== 'object') s.budget = { total: 0, byCategory: {} };
+      if (!s.budget.byCategory || typeof s.budget.byCategory !== 'object') s.budget.byCategory = {};
+      s.budget.total = Number(s.budget.total) || 0;
+      s.bills.forEach(b => { if (typeof b.category !== 'string') b.category = ''; });
       // E5: ยอดเบิกเกินที่ยกไปเป็นเงินล่วงหน้าของงวดถัดไป [{ id, periodNo, amount, fromPeriodNo, fromLabel }]
       if (!Array.isArray(s.laborCarry)) s.laborCarry = [];
       s.attendance.forEach(d => { if (d.isoDate && !parseIso(d.isoDate)) delete d.isoDate; });
@@ -2723,6 +2861,7 @@
     // ---- RENDER ALL ----
     function renderAll() {
       const s = calcSummary();
+      renderBudget();
       document.getElementById('headerProjectName').textContent = state.projectName || DEFAULT_PROJECT_NAME;
       document.getElementById('badgeBills').textContent = state.bills.length;
       document.getElementById('badgeDays').textContent = state.attendance.length + ' วัน';
@@ -2873,12 +3012,12 @@
 
     function renderBills() {
       const container = document.getElementById('billsContainer');
-      const filteredBills = state.bills.filter(b => {
+      const filteredBills = applyBillSearch(state.bills.filter(b => {
         if (billFilter === 'owner') return b.buyerType === 'owner';
         if (billFilter === 'contractor_unpaid') return b.buyerType !== 'owner' && !b.reimbursed;
         if (billFilter === 'contractor_paid') return b.buyerType !== 'owner' && Boolean(b.reimbursed);
         return true;
-      });
+      }));
       if (state.bills.length === 0) {
         container.innerHTML = '<div class="card empty-state" style="grid-column:1/-1;">ยังไม่มีบิลซื้ออุปกรณ์ กดปุ่ม "+ เพิ่มบิลใหม่" ด้านบนเพื่อเริ่มต้น</div>';
         return;
@@ -2949,6 +3088,10 @@
                   <input type="date" class="inline-edit-date" value="${esc(bill.date || '')}" title="วันที่บิล" onchange="updateBillField('${bill.id}', 'date', this.value)" />
                   <input type="text" class="inline-edit-note" value="${esc(bill.note || '')}" placeholder="หมายเหตุ / ชื่อร้าน" onchange="updateBillField('${bill.id}', 'note', this.value)" />
                 </div>
+                <select class="bill-cat-select" aria-label="หมวดหมู่บิล" onchange="updateBillField('${bill.id}', 'category', this.value)">
+                  <option value="">ไม่ระบุหมวด</option>
+                  ${BILL_CATEGORIES.map(c => `<option value="${esc(c)}"${bill.category === c ? ' selected' : ''}>${esc(c)}</option>`).join('')}
+                </select>
                 <button type="button" class="buyer-toggle" onclick="setBillBuyerType('${bill.id}', '${isOwner ? 'contractor' : 'owner'}')" title="${isOwner ? 'เปลี่ยนเป็นช่างซื้อมาเบิก (นับเข้ายอดค้างจ่ายช่าง)' : 'เปลี่ยนเป็นเจ้าของซื้อเอง (ไม่ค้างจ่ายช่าง)'}">${isOwner ? 'เปลี่ยนเป็น ช่างซื้อมาเบิก' : 'เปลี่ยนเป็น เจ้าของซื้อเอง'}</button>
               </div>
               <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
@@ -3172,6 +3315,7 @@
       document.getElementById('newBillName').value = 'บิล ' + (state.bills.length + 1);
       document.getElementById('newBillDate').value = todayISO();
       document.getElementById('newBillNote').value = '';
+      document.getElementById('newBillCategory').value = '';
       const list = document.getElementById('newBillItemsList');
       list.innerHTML = '';
       addNewBillItemRow(false);
@@ -3222,7 +3366,7 @@
       }
       if (!acquireSubmit('saveNewBill')) return;
 
-      const newBillObj = { id: uid('bill'), name, buyerType, reimbursed: false, reimbursedDate: '', paymentId: '', date, note, items };
+      const newBillObj = { id: uid('bill'), name, buyerType, reimbursed: false, reimbursedDate: '', paymentId: '', date, note, category: document.getElementById('newBillCategory').value, items };
       if (pendingSlips.newBill) newBillObj.slipDataUrl = pendingSlips.newBill;
       pendingSlips.newBill = '';
       state.bills.push(newBillObj);
@@ -3321,11 +3465,14 @@
               const val = Number((day.entries || {})[w.id]) || 0;
               rowSum += val;
               const cls = val === 0 ? 'absent' : (val === Number(w.dailyRate) ? 'full' : 'custom');
-              const label = val === 0 ? '—' : fmt(val);
+              const ax = workerAdjOf(day, w.id);
+              const hasAdj = ax.ot > 0 || ax.deduct > 0;
+              const label = (val === 0 ? '—' : fmt(val)) + (hasAdj ? '<span class="att-adj">±</span>' : '');
+              const attTitle = hasAdj ? `ฐาน ${fmt(ax.base)}${ax.ot ? ' + OT ' + fmt(ax.ot) : ''}${ax.deduct ? ' − หัก ' + fmt(ax.deduct) : ''}${ax.note ? ' (' + ax.note + ')' : ''}` : 'คลิกเพื่อสลับ มาเต็มวัน / ไม่มา';
               return `
                 <td class="text-center" data-label="${esc(w.name)} · ${fmt(w.dailyRate)} ฿/วัน">
                   <div class="att-cell">
-                    <button class="att-btn ${cls}" title="คลิกเพื่อสลับ มาเต็มวัน / ไม่มา" onclick="toggleAtt('${day.id}', '${w.id}')">${label}</button>
+                    <button class="att-btn ${cls}${hasAdj ? ' has-adj' : ''}" title="${esc(attTitle)}" onclick="toggleAtt('${day.id}', '${w.id}')">${label}</button>
                     <button class="att-edit-mini" title="กำหนดครึ่งวันหรือใส่ยอดเอง" onclick="openEditAtt('${day.id}', '${w.id}')">✎</button>
                   </div>
                 </td>
@@ -3360,6 +3507,10 @@
       const worker = state.workers.find(w => w.id === workerId);
       if (!day || !worker) return;
       if (!day.entries) day.entries = {};
+      const adj = (day.adj || {})[workerId];
+      // ช่องที่มี OT/หักเงิน: แตะแล้วเปิดหน้าต่างแก้ไข (กันยอด OT หายเงียบๆ)
+      if (adj && (Number(adj.ot) || Number(adj.deduct))) { openEditAtt(dayId, workerId); return; }
+      if (adj) delete day.adj[workerId];
       const cur = Number(day.entries[workerId]) || 0;
       day.entries[workerId] = cur > 0 ? 0 : Number(worker.dailyRate);
       saveState();
@@ -3372,7 +3523,12 @@
       document.getElementById('editAttTitle').textContent = `ค่าแรง ${worker.name} — ${day.date}`;
       document.getElementById('editAttDayId').value = dayId;
       document.getElementById('editAttWorkerId').value = workerId;
-      document.getElementById('editAttAmount').value = Number((day.entries || {})[workerId]) || 0;
+      const x = workerAdjOf(day, workerId);
+      document.getElementById('editAttAmount').value = x.base;
+      document.getElementById('editAttOt').value = x.ot || '';
+      document.getElementById('editAttDed').value = x.deduct || '';
+      document.getElementById('editAttAdjNote').value = x.note || '';
+      updateEditAttTotal();
       openModal('modalEditAtt');
     }
 
@@ -3384,17 +3540,27 @@
       if (mode === 'full') inp.value = Number(worker.dailyRate);
       if (mode === 'half') inp.value = Math.round(Number(worker.dailyRate) / 2);
       if (mode === 'zero') inp.value = 0;
+      updateEditAttTotal();
     }
 
     function saveEditAtt() {
       const dayId = document.getElementById('editAttDayId').value;
       const workerId = document.getElementById('editAttWorkerId').value;
-      const amt = parseFloat(document.getElementById('editAttAmount').value) || 0;
+      const base = parseFloat(document.getElementById('editAttAmount').value) || 0;
+      const ot = parseFloat(document.getElementById('editAttOt').value) || 0;
+      const ded = parseFloat(document.getElementById('editAttDed').value) || 0;
+      const note = document.getElementById('editAttAdjNote').value.trim();
       const day = state.attendance.find(d => d.id === dayId);
       if (!day) return;
+      if (base < 0 || ot < 0 || ded < 0) { toast('ยอดต้องไม่ติดลบ', 'error'); return; }
+      if (base + ot - ded < 0) { toast('ยอดสุทธิติดลบไม่ได้ (หักเงินมากกว่าค่าแรง + OT)', 'error'); return; }
       if (!acquireSubmit('saveEditAtt')) return;
       if (!day.entries) day.entries = {};
-      day.entries[workerId] = amt;
+      day.entries[workerId] = base + ot - ded;
+      if (!day.adj) day.adj = {};
+      if (ot || ded || note) day.adj[workerId] = { base, ot, deduct: ded, note };
+      else delete day.adj[workerId];
+      if (Object.keys(day.adj).length === 0) delete day.adj;
       closeModal('modalEditAtt');
       saveState();
     }
@@ -3495,6 +3661,13 @@
       const existing = state.attendance.find(d => d.isoDate === iso);
       if (existing) {
         existing.entries = Object.assign({}, existing.entries || {}, entries);
+        if (existing.adj) {
+          Object.keys(existing.adj).forEach(wid => {
+            const a = existing.adj[wid];
+            if ((Number(a.base) || 0) + (Number(a.ot) || 0) - (Number(a.deduct) || 0) !== Number(existing.entries[wid])) delete existing.adj[wid];
+          });
+          if (Object.keys(existing.adj).length === 0) delete existing.adj;
+        }
         existing.date = label;
       } else {
         state.attendance.push({ id: uid('day'), date: label, isoDate: iso, entries });
@@ -3630,7 +3803,9 @@
         name: w.name,
         dailyRate: Number(w.dailyRate) || 0,
         days: s.activeWorkerDays[w.id] || 0,
-        total: s.activeWorkerTotals[w.id] || 0
+        total: s.activeWorkerTotals[w.id] || 0,
+        ot: state.attendance.reduce((a, d) => a + workerAdjOf(d, w.id).ot, 0),
+        deduct: state.attendance.reduce((a, d) => a + workerAdjOf(d, w.id).deduct, 0)
       }));
 
       if (!Array.isArray(state.closedPeriods)) state.closedPeriods = [];
@@ -3724,7 +3899,10 @@
                   ตัดยอดเมื่อ ${esc(cp.closedDate || '—')} • รวมค่าแรง <strong class="num">${fmt(cp.totalLabor)} ฿</strong> • จ่ายรวม <strong class="num text-green">${fmt(cp.paidTotal)} ฿</strong>${Number(cp.carriedIn) > 0 ? ` • ยกมาจากงวดก่อน <strong class="num">${fmt(cp.carriedIn)} ฿</strong>` : ''}${Number(cp.carriedOut) > 0 ? ` • ยกยอดเบิกเกินไปงวดหน้า <strong class="num">${fmt(cp.carriedOut)} ฿</strong>` : ''}${cp.note ? ' • ' + esc(cp.note) : ''}
                 </div>
               </div>
-              <button class="btn btn-sm" onclick="toggleClosedPeriodDetail('${cp.id}')">ดูรายละเอียด</button>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn-sm" onclick="openPeriodSlip('${cp.id}')">ใบสรุป</button>
+                <button class="btn btn-sm" onclick="toggleClosedPeriodDetail('${cp.id}')">ดูรายละเอียด</button>
+              </div>
             </div>
             <div id="cp_detail_${cp.id}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--color-hairline);">
               <div class="worker-chips" style="margin-bottom:8px;">${workerBadges}</div>
@@ -4162,7 +4340,7 @@
         + (calcSummary().overpaidMaterials > 0 ? `<div style="grid-column:1 / -1;" class="day-notice"><strong>จ่ายคืนค่าของเกินยอดบิลช่างซื้อ ${fmt(calcSummary().overpaidMaterials)} ฿</strong> — ตรวจว่ามีรายการที่ลงซ้ำ (เช่น จ่ายเหมา + ตัดจ่ายบิล)</div>` : '');
       // ใหม่สุดอยู่บน: เรียงเฉพาะรายการที่มีวันที่แบบ YYYY-MM-DD ที่เหลือคงลำดับเดิมไว้ท้ายตาราง
       const isIso = d => /^\d{4}-\d{2}-\d{2}$/.test(d || '');
-      const filtered = state.payments.filter(p => filter === 'all' || p.category === filter);
+      const filtered = applyPaySearch(state.payments.filter(p => filter === 'all' || p.category === filter));
       const rows = [...filtered.filter(p => isIso(p.date)).sort((a, b) => b.date.localeCompare(a.date)), ...filtered.filter(p => !isIso(p.date))];
       const tbody = document.getElementById('paymentsTableBody');
       if (rows.length === 0) {
@@ -4606,11 +4784,11 @@
       const s = calcSummary();
       const lines = [];
       lines.push('=== สรุปค่าอุปกรณ์ / บิล ===');
-      lines.push('บิล,ประเภทผู้ซื้อ,สถานะจ่ายคืนช่าง,วันที่,รายการ,จำนวนเงิน');
+      lines.push('บิล,ประเภทผู้ซื้อ,สถานะจ่ายคืนช่าง,วันที่,รายการ,จำนวนเงิน,หมวดหมู่');
       state.bills.forEach(b => {
         const buyerLabel = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
         const statusLabel = b.buyerType === 'owner' ? 'เจ้าของจ่ายเองแล้ว' : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' ' + b.reimbursedDate : '')) : 'รอจ่ายคืนช่าง');
-        b.items.forEach(it => lines.push([csvText(b.name), csvText(buyerLabel), csvText(statusLabel), csvText(b.date || ''), csvText(it.name || ''), Number(it.amount) || 0].join(',')));
+        b.items.forEach(it => lines.push([csvText(b.name), csvText(buyerLabel), csvText(statusLabel), csvText(b.date || ''), csvText(it.name || ''), Number(it.amount) || 0, csvText(b.category || '')].join(',')));
       });
       lines.push(`รวมค่าอุปกรณ์ทั้งหมด,,,,,${s.totalMaterials}`);
       lines.push(`เจ้าของซื้อเอง (จ่ายแล้ว),,,,,${s.ownerMatTotal}`);
@@ -5207,7 +5385,371 @@ function renderReadableSheets_(data) {
       }
     }
 
+    // ================= ฟีเจอร์ใหม่: หมวดหมู่บิล, ค้นหา/กรอง, งบประมาณ, OT/หักเงิน, ใบสรุปงวด =================
+    const LABOR_BUDGET_KEY = '__labor';
+    const NO_CATEGORY_KEY = '__none';
+
+    function billTotal(b) { return (b.items || []).reduce((a, it) => a + (Number(it.amount) || 0), 0); }
+
+    function fillCategorySelect(sel, firstLabel, withNone) {
+      if (!sel) return;
+      const cur = sel.value;
+      sel.innerHTML = `<option value="">${esc(firstLabel)}</option>` + (withNone ? `<option value="${NO_CATEGORY_KEY}">ไม่ระบุหมวด</option>` : '')
+        + BILL_CATEGORIES.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      sel.value = cur;
+    }
+
+    function initFeatureUi() {
+      fillCategorySelect(document.getElementById('billSearchCat'), 'ทุกหมวด', true);
+      fillCategorySelect(document.getElementById('newBillCategory'), 'ไม่ระบุหมวด', false);
+    }
+
+    // ---- ค้นหา / กรอง บิล ----
+    let billSearch = { q: '', cat: '', from: '', to: '', sort: 'added' };
+
+    function onBillSearchChange() {
+      billSearch = {
+        q: document.getElementById('billSearchQ').value.trim().toLowerCase(),
+        cat: document.getElementById('billSearchCat').value,
+        from: document.getElementById('billSearchFrom').value,
+        to: document.getElementById('billSearchTo').value,
+        sort: document.getElementById('billSearchSort').value
+      };
+      renderBills();
+    }
+
+    function resetBillSearch() {
+      ['billSearchQ', 'billSearchFrom', 'billSearchTo'].forEach(id => { document.getElementById(id).value = ''; });
+      document.getElementById('billSearchCat').value = '';
+      document.getElementById('billSearchSort').value = 'added';
+      onBillSearchChange();
+    }
+
+    function billSearchActive() {
+      return Boolean(billSearch.q || billSearch.cat || billSearch.from || billSearch.to || billSearch.sort !== 'added');
+    }
+
+    function applyBillSearch(list) {
+      const sq = billSearch;
+      let out = list.filter(b => {
+        if (sq.q) {
+          const hay = [b.name, b.note, b.category, ...(b.items || []).map(it => it.name)].join(' ').toLowerCase();
+          if (!hay.includes(sq.q)) return false;
+        }
+        if (sq.cat === NO_CATEGORY_KEY) { if (b.category) return false; }
+        else if (sq.cat && b.category !== sq.cat) return false;
+        if (sq.from || sq.to) {
+          if (!parseIso(b.date)) return false;
+          if (sq.from && b.date < sq.from) return false;
+          if (sq.to && b.date > sq.to) return false;
+        }
+        return true;
+      });
+      // บิลที่ไม่มีวันที่ไปอยู่ท้ายสุดเสมอ ไม่ว่าจะเรียงใหม่→เก่าหรือเก่า→ใหม่
+      const byDate = dir => (a, b) => {
+        const da = a.date || '', db = b.date || '';
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return dir * da.localeCompare(db);
+      };
+      if (sq.sort === 'new') out = [...out].sort(byDate(-1));
+      else if (sq.sort === 'old') out = [...out].sort(byDate(1));
+      else if (sq.sort === 'big') out = [...out].sort((a, b) => billTotal(b) - billTotal(a));
+      else if (sq.sort === 'small') out = [...out].sort((a, b) => billTotal(a) - billTotal(b));
+      else if (sq.sort === 'name') out = [...out].sort((a, b) => String(a.name).localeCompare(String(b.name), 'th'));
+      const cnt = document.getElementById('billSearchCount');
+      if (cnt) cnt.textContent = billSearchActive() ? `พบ ${out.length} จาก ${list.length} บิล • รวม ${fmt(out.reduce((a, b) => a + billTotal(b), 0))} ฿` : '';
+      return out;
+    }
+
+    // ---- ค้นหา ประวัติจ่ายเงิน ----
+    let paySearch = { q: '', from: '', to: '' };
+    function onPaySearchChange() {
+      paySearch = { q: document.getElementById('paySearchQ').value.trim().toLowerCase(), from: document.getElementById('paySearchFrom').value, to: document.getElementById('paySearchTo').value };
+      renderPayments();
+    }
+    function applyPaySearch(list) {
+      return list.filter(p => {
+        if (paySearch.q && !(String(p.note || '') + ' ' + p.amount).toLowerCase().includes(paySearch.q)) return false;
+        if (paySearch.from || paySearch.to) {
+          if (!parseIso(p.date)) return false;
+          if (paySearch.from && p.date < paySearch.from) return false;
+          if (paySearch.to && p.date > paySearch.to) return false;
+        }
+        return true;
+      });
+    }
+
+    // ---- งบประมาณ ----
+    function budgetStatus(spent, budget) {
+      if (!(budget > 0)) return 'none';
+      const r = spent / budget;
+      return r > 1 ? 'over' : (r >= 0.8 ? 'warn' : 'ok');
+    }
+
+    function budgetRowsData() {
+      const b = state.budget || { total: 0, byCategory: {} };
+      const spent = {};
+      state.bills.forEach(x => { const k = x.category || NO_CATEGORY_KEY; spent[k] = (spent[k] || 0) + billTotal(x); });
+      spent[LABOR_BUDGET_KEY] = calcSummary().totalLabor;
+      const keys = [...BILL_CATEGORIES, NO_CATEGORY_KEY, LABOR_BUDGET_KEY].filter(k => (spent[k] || 0) > 0 || (Number(b.byCategory[k]) || 0) > 0);
+      return {
+        b,
+        rows: keys.map(k => ({ key: k, label: k === LABOR_BUDGET_KEY ? 'ค่าแรงช่าง' : (k === NO_CATEGORY_KEY ? 'ไม่ระบุหมวด' : k), spent: spent[k] || 0, budget: Number(b.byCategory[k]) || 0 }))
+      };
+    }
+
+    function renderBudget() {
+      const body = document.getElementById('budgetBody');
+      if (!body) return;
+      const s = calcSummary();
+      const { b, rows } = budgetRowsData();
+      const total = Number(b.total) || 0;
+      const alerts = [];
+      let html = '';
+      if (total > 0) {
+        const st = budgetStatus(s.totalAll, total);
+        const pct = Math.round(s.totalAll / total * 100);
+        if (st === 'over') alerts.push(`ใช้เกินงบรวม ${fmt(s.totalAll - total)} ฿`);
+        else if (st === 'warn') alerts.push(`ใช้งบรวมไปแล้ว ${pct}% (ใกล้เต็ม)`);
+        html += `<div class="budget-total ${st}">
+          <div class="budget-line"><strong>งบรวมโครงการ</strong><span class="num">${fmt(s.totalAll)} / ${fmt(total)} ฿ (${pct}%)</span></div>
+          <div class="progress-track"><div class="progress-fill budget-fill ${st}" style="width:${Math.min(100, pct)}%"></div></div>
+          <div class="budget-sub">${total - s.totalAll >= 0 ? `คงเหลืองบ <strong class="num">${fmt(total - s.totalAll)} ฿</strong>` : `<strong class="num text-rose">เกินงบ ${fmt(s.totalAll - total)} ฿</strong>`}</div>
+        </div>`;
+      } else {
+        html += '<div class="card-sub" style="margin-bottom:12px;">ยังไม่ได้ตั้งงบรวม กด "ตั้งงบ" เพื่อกำหนดงบรวมและงบรายหมวด ระบบจะเตือนเมื่อใช้ไปเกิน 80% และเมื่อเกินงบ</div>';
+      }
+      const maxSpent = Math.max(1, ...rows.map(r => r.spent));
+      html += rows.length === 0 ? '<div class="card-sub">ยังไม่มีรายการค่าใช้จ่าย</div>' : rows.map(r => {
+        const st = budgetStatus(r.spent, r.budget);
+        const pct = r.budget > 0 ? Math.round(r.spent / r.budget * 100) : null;
+        if (st === 'over') alerts.push(`${r.label} เกินงบ ${fmt(r.spent - r.budget)} ฿`);
+        else if (st === 'warn') alerts.push(`${r.label} ใช้ไป ${pct}% ของงบ`);
+        const width = r.budget > 0 ? Math.min(100, pct) : Math.round(r.spent / maxSpent * 100);
+        return `<div class="budget-row">
+          <div class="budget-line"><span>${esc(r.label)}</span><span class="num">${fmt(r.spent)} ฿${r.budget > 0 ? ` / ${fmt(r.budget)} ฿ (${pct}%)` : ''}</span></div>
+          <div class="progress-track" style="margin:4px 0 0;"><div class="progress-fill budget-fill ${r.budget > 0 ? st : 'none'}" style="width:${width}%"></div></div>
+        </div>`;
+      }).join('');
+      if (alerts.length) html = `<div class="day-notice" style="margin-bottom:12px;"><strong>แจ้งเตือนงบประมาณ:</strong> ${alerts.map(esc).join(' • ')}</div>` + html;
+      body.innerHTML = html;
+    }
+
+    function openBudgetModal() {
+      const b = state.budget || { total: 0, byCategory: {} };
+      document.getElementById('budgetTotalInput').value = Number(b.total) || '';
+      document.getElementById('budgetCatList').innerHTML = [...BILL_CATEGORIES, LABOR_BUDGET_KEY].map(k => `
+        <div class="form-group" style="margin-bottom:10px;">
+          <label for="bud_${BILL_CATEGORIES.indexOf(k) >= 0 ? BILL_CATEGORIES.indexOf(k) : 'labor'}">${k === LABOR_BUDGET_KEY ? 'ค่าแรงช่าง' : esc(k)}</label>
+          <input type="number" min="0" step="any" class="bud-input" data-key="${esc(k)}" id="bud_${BILL_CATEGORIES.indexOf(k) >= 0 ? BILL_CATEGORIES.indexOf(k) : 'labor'}" value="${Number(b.byCategory[k]) || ''}" placeholder="ไม่ตั้งงบ" />
+        </div>`).join('');
+      openModal('modalBudget');
+    }
+
+    function saveBudget() {
+      const total = parseFloat(document.getElementById('budgetTotalInput').value);
+      const byCategory = {};
+      let bad = false;
+      document.querySelectorAll('.bud-input').forEach(inp => {
+        if (inp.value === '') return;
+        const v = parseFloat(inp.value);
+        if (isNaN(v) || v < 0) { bad = true; return; }
+        if (v > 0) byCategory[inp.dataset.key] = v;
+      });
+      if (bad || (document.getElementById('budgetTotalInput').value !== '' && (isNaN(total) || total < 0))) { toast('งบต้องเป็นตัวเลขไม่ติดลบ', 'error'); return; }
+      if (!acquireSubmit('saveBudget')) return;
+      state.budget = { total: total > 0 ? total : 0, byCategory };
+      closeModal('modalBudget');
+      saveState();
+      toast('บันทึกงบประมาณแล้ว', 'success');
+    }
+
+    // ---- OT / หักเงิน ในช่องเช็คชื่อ ----
+    // entries[workerId] = ยอดสุทธิ (ฐาน + OT − หัก) เสมอ เพื่อให้ยอดรวม/รายงานเดิมทั้งหมดถูกต้อง ส่วนรายละเอียดเก็บใน day.adj[workerId] = { base, ot, deduct, note }
+    function workerAdjOf(day, wid) {
+      const eff = Number((day.entries || {})[wid]) || 0;
+      const a = (day.adj || {})[wid];
+      if (a) return { base: Number(a.base) || 0, ot: Number(a.ot) || 0, deduct: Number(a.deduct) || 0, note: a.note || '', eff };
+      return { base: eff, ot: 0, deduct: 0, note: '', eff };
+    }
+
+    function updateEditAttTotal() {
+      const base = parseFloat(document.getElementById('editAttAmount').value) || 0;
+      const ot = parseFloat(document.getElementById('editAttOt').value) || 0;
+      const ded = parseFloat(document.getElementById('editAttDed').value) || 0;
+      const net = base + ot - ded;
+      const el = document.getElementById('editAttNet');
+      el.textContent = fmt(net) + ' ฿';
+      el.style.color = net < 0 ? 'var(--app-danger)' : '';
+    }
+
+    // ---- ใบสรุปงวด (รูป + ข้อความ แชร์ LINE) ----
+    function periodSlipData(sel) {
+      const cur = sel === 'current';
+      const cp = cur ? null : (state.closedPeriods || []).find(c => c.id === sel);
+      if (!cur && !cp) return null;
+      const days = cur ? state.attendance : (cp.attendance || []);
+      const workers = cur ? visibleWorkers() : (cp.workersSnapshot || []);
+      const first = days[0] ? days[0].date : '', last = days[days.length - 1] ? days[days.length - 1].date : '';
+      const range = cur ? (first && last && first !== last ? `${first} – ${last}` : first) : (cp.dateRange || '');
+      const rows = workers.map(w => {
+        let n = 0, base = 0, ot = 0, ded = 0, net = 0;
+        days.forEach(d => {
+          if (d.entries && Object.prototype.hasOwnProperty.call(d.entries, w.id)) {
+            const x = workerAdjOf(d, w.id);
+            if (x.eff > 0) n++;
+            base += x.base; ot += x.ot; ded += x.deduct; net += x.eff;
+          }
+        });
+        return { name: w.name, days: n, base, ot, deduct: ded, net };
+      }).filter(r => r.days > 0 || r.net !== 0);
+      const sum = k => rows.reduce((a, r) => a + r[k], 0);
+      const s = calcSummary();
+      const paid = cur ? s.activeLaborPaid : (Number(cp.paidTotal) || 0);
+      const totalNet = sum('net');
+      return {
+        title: cur ? `งวดที่ ${state.currentPeriodNo || 1} (กำลังทำงาน)` : cp.label,
+        range, rows, totalDays: days.length,
+        totals: { days: sum('days'), base: sum('base'), ot: sum('ot'), deduct: sum('deduct'), net: totalNet },
+        paid, remain: totalNet - paid,
+        carried: cur ? s.activeCarryIn : (Number(cp.carriedIn) || 0),
+        carriedOut: cur ? 0 : (Number(cp.carriedOut) || 0)
+      };
+    }
+
+    function periodSlipText(d) {
+      const L = [];
+      L.push(`${state.projectName || DEFAULT_PROJECT_NAME}`);
+      L.push(`สรุปค่าแรง ${d.title}${d.range ? ' (' + d.range + ')' : ''}`);
+      L.push('');
+      d.rows.forEach(r => {
+        let line = `• ${r.name}: ${r.days} วัน ค่าแรง ${fmt(r.base)}`;
+        if (r.ot) line += ` + OT ${fmt(r.ot)}`;
+        if (r.deduct) line += ` − หัก ${fmt(r.deduct)}`;
+        line += ` = ${fmt(r.net)} บาท`;
+        L.push(line);
+      });
+      L.push('');
+      L.push(`รวมค่าแรง ${fmt(d.totals.net)} บาท`);
+      L.push(`เบิก/จ่ายแล้ว ${fmt(d.paid)} บาท${d.carried ? ` (รวมยกมา ${fmt(d.carried)})` : ''}`);
+      L.push(d.remain >= 0 ? `คงเหลือต้องจ่าย ${fmt(d.remain)} บาท` : `จ่ายเกิน ${fmt(-d.remain)} บาท`);
+      return L.join('\n');
+    }
+
+    async function drawPeriodSlip(d) {
+      try { await document.fonts.load('600 22px Anuphan'); await document.fonts.load('400 20px Anuphan'); } catch (e) { /* ใช้ฟอนต์สำรอง */ }
+      const FONT = "Anuphan, 'Noto Sans Thai', sans-serif";
+      const W = 720, pad = 28, rowH = 44;
+      const H = 150 + 44 + d.rows.length * rowH + 52 + 150;
+      const c = document.createElement('canvas');
+      c.width = W * 2; c.height = H * 2;
+      const x = c.getContext('2d');
+      x.scale(2, 2);
+      x.fillStyle = '#ffffff'; x.fillRect(0, 0, W, H);
+      x.fillStyle = '#533afd'; x.fillRect(0, 0, W, 96);
+      x.fillStyle = '#ffffff'; x.textBaseline = 'middle';
+      x.font = `500 20px ${FONT}`; x.fillText(state.projectName || DEFAULT_PROJECT_NAME, pad, 30);
+      x.font = `600 28px ${FONT}`; x.fillText(`สรุปค่าแรง ${d.title}`, pad, 66);
+      x.fillStyle = '#273951'; x.font = `400 20px ${FONT}`;
+      x.fillText(d.range ? `ช่วงวันที่ ${d.range} • ${d.totalDays} วันทำงาน` : `${d.totalDays} วันทำงาน`, pad, 124);
+      const cols = { name: pad, days: 330, base: 430, ot: 520, ded: 610, net: W - pad };
+      let y = 150;
+      x.fillStyle = '#f6f9fc'; x.fillRect(0, y, W, 40);
+      x.fillStyle = '#64748d'; x.font = `500 17px ${FONT}`;
+      x.textAlign = 'left'; x.fillText('ช่าง', cols.name, y + 20);
+      x.textAlign = 'right';
+      x.fillText('วัน', cols.days, y + 20); x.fillText('ค่าแรง', cols.base, y + 20); x.fillText('OT', cols.ot, y + 20); x.fillText('หัก', cols.ded, y + 20); x.fillText('สุทธิ', cols.net, y + 20);
+      y += 44;
+      const fitText = (t, max) => { let s = String(t); while (x.measureText(s).width > max && s.length > 1) s = s.slice(0, -1); return s === String(t) ? s : s + '…'; };
+      d.rows.forEach(r => {
+        x.fillStyle = '#0d253d'; x.font = `500 20px ${FONT}`; x.textAlign = 'left';
+        x.fillText(fitText(r.name, 190), cols.name, y + rowH / 2 - 2);
+        x.textAlign = 'right'; x.font = `400 20px ${FONT}`;
+        x.fillText(String(r.days), cols.days, y + rowH / 2 - 2);
+        x.fillText(fmt(r.base), cols.base, y + rowH / 2 - 2);
+        x.fillStyle = r.ot ? '#067647' : '#a3aeb9'; x.fillText(r.ot ? '+' + fmt(r.ot) : '–', cols.ot, y + rowH / 2 - 2);
+        x.fillStyle = r.deduct ? '#b42318' : '#a3aeb9'; x.fillText(r.deduct ? '−' + fmt(r.deduct) : '–', cols.ded, y + rowH / 2 - 2);
+        x.fillStyle = '#0d253d'; x.font = `600 20px ${FONT}`; x.fillText(fmt(r.net), cols.net, y + rowH / 2 - 2);
+        x.fillStyle = '#e3e8ee'; x.fillRect(pad, y + rowH - 1, W - pad * 2, 1);
+        y += rowH;
+      });
+      x.fillStyle = '#eeebff'; x.fillRect(0, y, W, 48);
+      x.fillStyle = '#4434d4'; x.font = `600 21px ${FONT}`; x.textAlign = 'left'; x.fillText('รวมทั้งหมด', cols.name, y + 24);
+      x.textAlign = 'right';
+      x.fillText(String(d.totals.days), cols.days, y + 24); x.fillText(fmt(d.totals.base), cols.base, y + 24);
+      x.fillText(d.totals.ot ? '+' + fmt(d.totals.ot) : '–', cols.ot, y + 24); x.fillText(d.totals.deduct ? '−' + fmt(d.totals.deduct) : '–', cols.ded, y + 24); x.fillText(fmt(d.totals.net), cols.net, y + 24);
+      y += 48 + 28;
+      x.textAlign = 'left'; x.fillStyle = '#273951'; x.font = `400 21px ${FONT}`;
+      x.fillText('เบิก/จ่ายแล้ว' + (d.carried ? ` (รวมยกมา ${fmt(d.carried)})` : ''), pad, y); x.textAlign = 'right'; x.fillStyle = '#067647'; x.font = `600 21px ${FONT}`; x.fillText(fmt(d.paid) + ' บาท', W - pad, y);
+      y += 40;
+      x.textAlign = 'left'; x.fillStyle = '#273951'; x.font = `600 24px ${FONT}`; x.fillText(d.remain >= 0 ? 'คงเหลือต้องจ่าย' : 'จ่ายเกิน', pad, y);
+      x.textAlign = 'right'; x.fillStyle = d.remain > 0 ? '#b42318' : '#067647'; x.fillText(fmt(Math.abs(d.remain)) + ' บาท', W - pad, y);
+      y += 44;
+      x.textAlign = 'left'; x.fillStyle = '#a3aeb9'; x.font = `400 15px ${FONT}`;
+      x.fillText(`ออกเอกสารเมื่อ ${formatThaiShortDate(todayISO())}`, pad, y);
+      return c;
+    }
+
+    let slipCanvas = null;
+    function fillSlipPeriodOptions() {
+      const sel = document.getElementById('slipPeriodSel');
+      const prev = sel.value;
+      sel.innerHTML = `<option value="current">งวดที่ ${state.currentPeriodNo || 1} (กำลังทำงาน)</option>` + (state.closedPeriods || []).map(cp => `<option value="${esc(cp.id)}">${esc(cp.label)}${cp.dateRange ? ' • ' + esc(cp.dateRange) : ''}</option>`).join('');
+      if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+    }
+
+    async function refreshPeriodSlip() {
+      const d = periodSlipData(document.getElementById('slipPeriodSel').value);
+      const img = document.getElementById('slipPreview');
+      const empty = document.getElementById('slipEmpty');
+      if (!d || d.rows.length === 0) { img.style.display = 'none'; empty.style.display = 'block'; slipCanvas = null; return; }
+      empty.style.display = 'none';
+      slipCanvas = await drawPeriodSlip(d);
+      img.src = slipCanvas.toDataURL('image/png');
+      img.style.display = 'block';
+    }
+
+    function openPeriodSlip(sel) {
+      fillSlipPeriodOptions();
+      if (sel) document.getElementById('slipPeriodSel').value = sel;
+      openModal('modalPeriodSlip');
+      refreshPeriodSlip();
+    }
+
+    async function shareSlipImage() {
+      if (!slipCanvas) { toast('ยังไม่มีข้อมูลให้สร้างใบสรุป', 'error'); return; }
+      const d = periodSlipData(document.getElementById('slipPeriodSel').value);
+      const blob = await new Promise(r => slipCanvas.toBlob(r, 'image/png'));
+      const file = new File([blob], `สรุปค่าแรง-${d.title.replace(/[^A-Za-z0-9ก-๙._-]+/g, '_')}.png`, { type: 'image/png' });
+      try {
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: `สรุปค่าแรง ${d.title}`, text: periodSlipText(d) });
+          return;
+        }
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+      toast('บันทึกรูปแล้ว นำไปส่งใน LINE ได้เลย', 'success');
+    }
+
+    async function copySlipText() {
+      const d = periodSlipData(document.getElementById('slipPeriodSel').value);
+      if (!d) return;
+      const text = periodSlipText(d);
+      try { await navigator.clipboard.writeText(text); toast('คัดลอกข้อความแล้ว วางใน LINE ได้เลย', 'success'); }
+      catch (e) {
+        const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+        toast('คัดลอกข้อความแล้ว วางใน LINE ได้เลย', 'success');
+      }
+    }
+
+
     // Initial render
+    initFeatureUi();
     renderAll();
     checkServerRevision();
     scheduleSlipOffload();
