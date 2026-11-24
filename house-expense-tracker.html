@@ -272,6 +272,8 @@
       background: var(--app-success);
       box-shadow: 0 0 0 3px rgba(6, 118, 71, 0.18);
     }
+    .sync-pill.connected { padding: 8px 12px; min-height: 36px; }
+    .sync-pill.connected #syncStatusText { display: none; }
     .sync-pill.syncing {
       background: var(--app-info-soft);
       border-color: var(--app-info-border);
@@ -1381,9 +1383,6 @@
         <button class="sync-pill" id="syncStatusPill" onclick="openSheetsModal()" title="ตั้งค่าการเชื่อมต่อ Google Sheets">
           <span class="sync-dot"></span>
           <span id="syncStatusText">ยังไม่เชื่อม Google Sheets</span>
-        </button>
-        <button class="btn btn-sm" id="btnManualSync" onclick="syncPushToSheets(true)" style="display:none;">
-          ซิงค์เลย
         </button>
         <button class="btn btn-sm" onclick="openBackupModal()">ข้อมูล / สำรอง</button>
       </div>
@@ -3444,16 +3443,16 @@
       const pill = document.getElementById('syncStatusPill');
       pill.className = 'sync-pill ' + mode;
       document.getElementById('syncStatusText').textContent = text;
+      // เชื่อมแล้ว: โชว์เฉพาะไฟเขียวเพื่อประหยัดที่ (ข้อความอยู่ใน tooltip/aria-label)
+      pill.title = text;
+      pill.setAttribute('aria-label', text);
     }
 
     function updateSyncUI() {
-      const manualBtn = document.getElementById('btnManualSync');
       if (config.sheetsUrl) {
-        manualBtn.style.display = 'inline-flex';
         const timeStr = config.lastSync ? new Date(config.lastSync).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '';
         setSyncPill('connected', timeStr ? `เชื่อม Sheet แล้ว (${timeStr})` : 'เชื่อม Google Sheets แล้ว');
       } else {
-        manualBtn.style.display = 'none';
         setSyncPill('', 'ยังไม่เชื่อม Google Sheets');
       }
     }
