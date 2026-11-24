@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>บันทึกค่าใช้จ่ายสร้างบ้าน — เชื่อมต่อ Google Sheets</title>
+  <title>บันทึกค่าใช้จ่ายสร้างสำนักงานบริษัท VIJITA BOTANICS Co, Ltd — เชื่อมต่อ Google Sheets</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Anuphan:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -1319,6 +1319,25 @@
       .quick-bar .btn:first-child { grid-column: 1 / -1; }
       .card-header > div:last-child:not(:only-child) { width: 100%; }
 
+      /* Modals -> bottom sheet */
+      .modal-backdrop { padding: 0; align-items: flex-end; }
+      .modal, .modal-lg {
+        max-width: none; max-height: 92vh; max-height: 92dvh;
+        border-radius: 16px 16px 0 0; border-bottom: none;
+      }
+      .modal-head { padding: 8px 8px 8px 16px; min-height: 56px; }
+      .modal-head .btn-ghost { min-width: 44px; min-height: 44px; font-size: 18px; }
+      .modal-body { padding: 16px; }
+      .modal-foot {
+        position: sticky; bottom: 0; z-index: 2;
+        flex-direction: column-reverse; gap: 8px;
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      }
+      .modal-foot .btn { width: 100%; }
+      .modal input[type="text"], .modal input[type="number"], .modal input[type="date"], .modal select, .modal textarea { font-size: 16px; min-height: 44px; }
+      .modal textarea { height: auto; }
+      .modal .btn { min-height: 44px; }
+
       /* Touch targets >= 44px in bill cards */
       .bill-card .btn-danger-ghost, .bill-item-row .btn-danger-ghost { min-width: 44px; min-height: 44px; font-size: 14px; }
       .buyer-toggle { min-height: 44px; display: inline-flex; align-items: center; margin-top: 0; }
@@ -1375,7 +1394,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9 21v-6h6v6"/></svg>
         </div>
         <div>
-          <div class="brand-title" id="headerProjectName">บันทึกค่าใช้จ่ายสร้างบ้าน</div>
+          <div class="brand-title" id="headerProjectName">บันทึกค่าใช้จ่ายสร้างสำนักงานบริษัท VIJITA BOTANICS Co, Ltd</div>
           <div class="brand-sub">ซื้ออุปกรณ์ &amp; ค่าแรงช่าง • เชื่อมต่อ Google Sheets</div>
         </div>
       </div>
@@ -1731,7 +1750,7 @@
       </div>
       <div class="modal-foot">
         <button class="btn" onclick="closeModal('modalAddDay')">ยกเลิก</button>
-        <button class="btn btn-green" onclick="saveNewDay()">บันทึกวันทำงาน</button>
+        <button class="btn btn-primary" onclick="saveNewDay()">บันทึกวันทำงาน</button>
       </div>
     </div>
   </div>
@@ -1875,7 +1894,7 @@
       </div>
       <div class="modal-foot">
         <button class="btn" onclick="closeModal('modalSettleBills')">ยกเลิก</button>
-        <button class="btn btn-green" onclick="confirmSettleBills()">ยืนยันตัดจ่ายบิล</button>
+        <button class="btn btn-primary" onclick="confirmSettleBills()">ยืนยันตัดจ่ายบิล</button>
       </div>
     </div>
   </div>
@@ -2033,6 +2052,8 @@
   <div class="toast-wrap" id="toastWrap"></div>
 
   <script>
+    const DEFAULT_PROJECT_NAME = 'บันทึกค่าใช้จ่ายสร้างสำนักงานบริษัท VIJITA BOTANICS Co, Ltd';
+    const LEGACY_PROJECT_NAME = 'บันทึกค่าใช้จ่ายสร้างบ้าน'; // ชื่อเดิมที่บันทึกไว้ในข้อมูลเก่า จะย้ายเป็นชื่อใหม่อัตโนมัติ
     const STORAGE_KEY = 'house_expense_app_v1';
     const CONFIG_KEY = 'house_expense_config_v1';
     const DEFAULT_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxohluawjJDQsiBAOOv8duBEIld0bXcBYDEPu5dihd2-RkR76QQnbcxNm9cnvyPrcIq/exec';
@@ -2040,7 +2061,7 @@
     // ข้อมูลเริ่มต้นจากตารางที่คุณส่งมา
     function getDefaultData() {
       return {
-        projectName: 'บันทึกค่าใช้จ่ายสร้างบ้าน',
+        projectName: DEFAULT_PROJECT_NAME,
         currentPeriodNo: 1,
         closedPeriods: [],
         bills: [
@@ -2082,6 +2103,7 @@
 
     function normalizeState(rawState) {
       const s = rawState || getDefaultData();
+      if (!s.projectName || s.projectName === LEGACY_PROJECT_NAME) s.projectName = DEFAULT_PROJECT_NAME;
       if (!Array.isArray(s.closedPeriods)) s.closedPeriods = [];
       if (!s.currentPeriodNo) s.currentPeriodNo = s.closedPeriods.length + 1;
       if (!Array.isArray(s.bills)) s.bills = [];
@@ -2285,7 +2307,7 @@
     // ---- RENDER ALL ----
     function renderAll() {
       const s = calcSummary();
-      document.getElementById('headerProjectName').textContent = state.projectName || 'บันทึกค่าใช้จ่ายสร้างบ้าน';
+      document.getElementById('headerProjectName').textContent = state.projectName || DEFAULT_PROJECT_NAME;
       document.getElementById('badgeBills').textContent = state.bills.length;
       document.getElementById('badgeDays').textContent = state.attendance.length + ' วัน';
       document.getElementById('badgePayments').textContent = state.payments.length;
@@ -3544,12 +3566,12 @@
 
     // ---- BACKUP & SETTINGS ----
     function openBackupModal() {
-      document.getElementById('projectNameInput').value = state.projectName || 'บันทึกค่าใช้จ่ายสร้างบ้าน';
+      document.getElementById('projectNameInput').value = state.projectName || DEFAULT_PROJECT_NAME;
       openModal('modalBackup');
     }
 
     function saveProjectName() {
-      state.projectName = document.getElementById('projectNameInput').value.trim() || 'บันทึกค่าใช้จ่ายสร้างบ้าน';
+      state.projectName = document.getElementById('projectNameInput').value.trim() || DEFAULT_PROJECT_NAME;
       saveState();
       toast('บันทึกชื่อโครงการเรียบร้อย', 'success');
     }
@@ -3729,7 +3751,7 @@ function renderReadableSheets_(data) {
   const summarySheet = getOrCreateSheet_(ss, 'สรุปภาพรวม');
   summarySheet.clear();
   const summaryRows = [
-    [(data.projectName || 'โครงการสร้างบ้าน') + ' — สรุปค่าใช้จ่ายทั้งหมด', '', '', ''],
+    [(data.projectName || 'โครงการสร้างสำนักงาน') + ' — สรุปค่าใช้จ่ายทั้งหมด', '', '', ''],
     ['อัปเดตล่าสุด', Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss'), '', ''],
     ['', '', '', ''],
     ['หมวดหมู่', 'ยอดรวม (บาท)', 'จ่ายแล้ว (บาท)', 'คงเหลือต้องจ่ายช่าง (บาท)'],
