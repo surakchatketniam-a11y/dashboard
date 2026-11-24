@@ -223,9 +223,9 @@ function renderReadableSheets_(data) {
   bills.forEach(function (b) {
     const items = b.items || [];
     const buyerLabel = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
-    const statusLabel = b.buyerType === 'owner'
+    const statusLabel = (b.buyerType === 'owner'
       ? 'เจ้าของจ่ายเองแล้ว'
-      : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' (' + b.reimbursedDate + ')' : '')) : 'รอจ่ายคืนช่าง');
+      : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' (' + b.reimbursedDate + ')' : '')) : 'รอจ่ายคืนช่าง')) + (b.slipDataUrl ? ' • มีสลิป' : '');
     let billSum = 0;
     items.forEach(function (it, idx) {
       const amt = Number(it.amount) || 0;

@@ -1445,6 +1445,7 @@
       </div>
 
       <div class="bills-grid" id="billsContainer"></div>
+      <input type="file" id="attachBillSlipInput" accept="image/*" style="display:none;" onchange="handleAttachSlipToBill(event)" />
     </section>
 
     <!-- TAB 3: LABOR / ATTENDANCE -->
@@ -1574,13 +1575,18 @@
           <label>หมายเหตุ (ไม่บังคับ)</label>
           <input type="text" id="newBillNote" placeholder="เช่น ปูน ทราย เหล็กเส้น" />
         </div>
-        <div class="form-group" style="margin-bottom:0;">
+        <div class="form-group">
           <label>รายการสินค้าในบิล (เพิ่มได้หลายรายการ • กด Enter ที่ช่องราคาเพื่อขึ้นแถวใหม่)</label>
           <div class="new-bill-items-list" id="newBillItemsList"></div>
           <div class="new-bill-items-footer">
             <button type="button" class="btn btn-sm" onclick="addNewBillItemRow(true)">+ เพิ่มรายการ</button>
             <div class="new-bill-live-total" id="newBillLiveTotal">0 รายการ • <span class="num">0 ฿</span></div>
           </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label id="newBillSlipLabel">แนบรูปบิล / ใบเสร็จ (ไม่บังคับ • ย่อขนาดอัตโนมัติ)</label>
+          <div class="slip-upload-box" id="newBillSlipBox"></div>
+          <input type="file" id="newBillSlipInput" accept="image/*" style="display:none;" onchange="handleModalSlipFile(event, 'newBill')" />
         </div>
       </div>
       <div class="modal-foot">
@@ -1986,9 +1992,11 @@
     let config = loadConfig();
     let autoSyncTimer = null;
     let billFilter = 'all';
-    const pendingSlips = { pay: '', settle: '', closePeriod: '' };
+    const pendingSlips = { pay: '', settle: '', closePeriod: '', newBill: '' };
     let slipTargetPaymentId = null;
+    let slipTargetBillId = null;
     let viewerPaymentId = null;
+    let viewerBillId = null;
 
     function loadState() {
       try {
@@ -2263,6 +2271,12 @@
       document.getElementById('newBillBuyerType').value = val;
       document.getElementById('optBuyerContractor').classList.toggle('active', val === 'contractor');
       document.getElementById('optBuyerOwner').classList.toggle('active', val === 'owner');
+      const slipLabel = document.getElementById('newBillSlipLabel');
+      if (slipLabel) {
+        slipLabel.textContent = val === 'owner'
+          ? 'แนบสลิปโอนเงิน / ใบเสร็จ (เจ้าของซื้อเอง • ไม่บังคับ)'
+          : 'แนบรูปบิล / ใบเสร็จ (ไม่บังคับ • ย่อขนาดอัตโนมัติ)';
+      }
     }
 
     function setBillBuyerType(billId, type) {
@@ -2313,18 +2327,35 @@
               </div>
             `).join('');
 
+        const linkedPay = (!isOwner && bill.paymentId) ? state.payments.find(p => p.id === bill.paymentId) : null;
+        const ownerSlipBtn = bill.slipDataUrl
+          ? `<button type="button" class="slip-pill-btn" onclick="openBillSlipViewer('${bill.id}')" title="คลิกเพื่อดูสลิปโอนเงิน">ดูสลิป</button>`
+          : `<button type="button" class="slip-add-btn" onclick="triggerAttachSlipToBill('${bill.id}')" title="แนบสลิปโอนเงิน / ใบเสร็จ">+ แนบสลิป</button>`;
+        const contractorSlipBtn = bill.slipDataUrl
+          ? `<button type="button" class="slip-pill-btn" onclick="openBillSlipViewer('${bill.id}')" title="ดูรูปบิลที่แนบไว้">ดูรูปบิล</button>`
+          : (linkedPay && linkedPay.slipDataUrl
+              ? `<button type="button" class="slip-pill-btn" onclick="openPaymentSlipViewer('${linkedPay.id}')" title="ดูสลิปโอนคืนช่าง">ดูสลิปโอน</button>`
+              : '');
+
         const statusBarHtml = isOwner
           ? `<div class="bill-status-bar owner">
-               <span class="bill-status-label"><span class="bill-status-dot"></span>เจ้าของซื้อเอง • เก็บยอดค่าใช้จ่ายแล้ว</span>
+               <span class="bill-status-label"><span class="bill-status-dot"></span>เจ้าของซื้อเอง • จ่ายเองแล้ว</span>
+               <div style="display:flex; align-items:center; gap:6px;">${ownerSlipBtn}</div>
              </div>`
           : isSettled
             ? `<div class="bill-status-bar paid">
                  <span class="bill-status-label"><span class="bill-status-dot"></span>จ่ายคืนช่างแล้ว${bill.reimbursedDate ? ' (' + esc(bill.reimbursedDate) + ')' : ''}</span>
-                 <button type="button" class="btn-unsettle-mini" onclick="unsettleBill('${bill.id}')" title="ยกเลิกสถานะจ่ายแล้ว">ยกเลิกตัดบิล</button>
+                 <div style="display:flex; align-items:center; gap:6px;">
+                   ${contractorSlipBtn}
+                   <button type="button" class="btn-unsettle-mini" onclick="unsettleBill('${bill.id}')" title="ยกเลิกสถานะจ่ายแล้ว">ยกเลิกตัดบิล</button>
+                 </div>
                </div>`
             : `<div class="bill-status-bar unpaid">
                  <span class="bill-status-label"><span class="bill-status-dot"></span>รอจ่ายคืนช่าง</span>
-                 <button type="button" class="btn-settle-mini" onclick="openSettleBillsModal('${bill.id}')">✓ ตัดจ่ายบิลนี้</button>
+                 <div style="display:flex; align-items:center; gap:6px;">
+                   ${contractorSlipBtn}
+                   <button type="button" class="btn-settle-mini" onclick="openSettleBillsModal('${bill.id}')">✓ ตัดจ่ายบิลนี้</button>
+                 </div>
                </div>`;
 
         return `
@@ -2533,6 +2564,8 @@
       list.innerHTML = '';
       addNewBillItemRow(false);
       addNewBillItemRow(false);
+      pendingSlips.newBill = '';
+      renderSlipUploadBox('newBill');
       selectNewBillBuyerType(billFilter === 'owner' ? 'owner' : 'contractor');
       openModal('modalNewBill');
       setTimeout(() => {
@@ -2556,7 +2589,10 @@
         }
       });
 
-      state.bills.push({ id: uid('bill'), name, buyerType, reimbursed: false, reimbursedDate: '', paymentId: '', date, note, items });
+      const newBillObj = { id: uid('bill'), name, buyerType, reimbursed: false, reimbursedDate: '', paymentId: '', date, note, items };
+      if (pendingSlips.newBill) newBillObj.slipDataUrl = pendingSlips.newBill;
+      pendingSlips.newBill = '';
+      state.bills.push(newBillObj);
       closeModal('modalNewBill');
       saveState();
       const typeLabel = buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
@@ -3015,8 +3051,8 @@
     }
 
     function renderSlipUploadBox(targetKey) {
-      const boxMap = { pay: 'paySlipBox', settle: 'settleSlipBox', closePeriod: 'closePeriodSlipBox' };
-      const inputMap = { pay: 'paySlipInput', settle: 'settleSlipInput', closePeriod: 'closePeriodSlipInput' };
+      const boxMap = { pay: 'paySlipBox', settle: 'settleSlipBox', closePeriod: 'closePeriodSlipBox', newBill: 'newBillSlipBox' };
+      const inputMap = { pay: 'paySlipInput', settle: 'settleSlipInput', closePeriod: 'closePeriodSlipInput', newBill: 'newBillSlipInput' };
       const box = document.getElementById(boxMap[targetKey]);
       if (!box) return;
       const dataUrl = pendingSlips[targetKey];
@@ -3065,7 +3101,8 @@
       const dataUrl = pendingSlips[targetKey];
       if (!dataUrl) return;
       viewerPaymentId = null;
-      document.getElementById('slipViewerTitle').textContent = 'ตัวอย่างสลิปโอนเงิน';
+      viewerBillId = null;
+      document.getElementById('slipViewerTitle').textContent = 'ตัวอย่างสลิป / รูปบิล';
       document.getElementById('slipViewerMeta').textContent = 'ยังไม่ได้บันทึก — จะถูกแนบเมื่อกดปุ่มบันทึก';
       document.getElementById('slipViewerImg').src = dataUrl;
       document.getElementById('slipDownloadLink').href = dataUrl;
@@ -3078,12 +3115,29 @@
       const p = state.payments.find(x => x.id === paymentId);
       if (!p || !p.slipDataUrl) return;
       viewerPaymentId = paymentId;
+      viewerBillId = null;
       const catText = p.category === 'materials' ? 'คืนค่าของ (บิลช่าง)' : 'ค่าแรงช่าง';
       document.getElementById('slipViewerTitle').textContent = `สลิปโอนเงิน — ${fmt(p.amount)} ฿`;
       document.getElementById('slipViewerMeta').textContent = `${p.date || 'ไม่ระบุวันที่'} • ${catText}${p.note ? ' • ' + p.note : ''}`;
       document.getElementById('slipViewerImg').src = p.slipDataUrl;
       document.getElementById('slipDownloadLink').href = p.slipDataUrl;
       document.getElementById('slipDownloadLink').download = `slip-${p.date || todayISO()}-${p.amount}.jpg`;
+      document.getElementById('slipViewerLeftActions').style.display = 'flex';
+      openModal('modalSlipViewer');
+    }
+
+    function openBillSlipViewer(billId) {
+      const b = state.bills.find(x => x.id === billId);
+      if (!b || !b.slipDataUrl) return;
+      viewerPaymentId = null;
+      viewerBillId = billId;
+      const sum = (b.items || []).reduce((a, it) => a + (Number(it.amount) || 0), 0);
+      const typeText = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
+      document.getElementById('slipViewerTitle').textContent = `สลิป / รูปบิล — ${b.name}`;
+      document.getElementById('slipViewerMeta').textContent = `${b.date || 'ไม่ระบุวันที่'} • ${typeText} • รวม ${fmt(sum)} ฿${b.note ? ' • ' + b.note : ''}`;
+      document.getElementById('slipViewerImg').src = b.slipDataUrl;
+      document.getElementById('slipDownloadLink').href = b.slipDataUrl;
+      document.getElementById('slipDownloadLink').download = `bill-slip-${b.date || todayISO()}-${sum}.jpg`;
       document.getElementById('slipViewerLeftActions').style.display = 'flex';
       openModal('modalSlipViewer');
     }
@@ -3095,9 +3149,19 @@
       inp.click();
     }
 
+    function triggerAttachSlipToBill(billId) {
+      slipTargetBillId = billId;
+      const inp = document.getElementById('attachBillSlipInput');
+      inp.value = '';
+      inp.click();
+    }
+
     function triggerReplaceSlipFromViewer() {
-      if (!viewerPaymentId) return;
-      triggerAttachSlip(viewerPaymentId);
+      if (viewerPaymentId) {
+        triggerAttachSlip(viewerPaymentId);
+      } else if (viewerBillId) {
+        triggerAttachSlipToBill(viewerBillId);
+      }
     }
 
     async function handleAttachSlipToPayment(event) {
@@ -3120,15 +3184,44 @@
       }
     }
 
+    async function handleAttachSlipToBill(event) {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = '';
+      if (!file || !slipTargetBillId) return;
+      const b = state.bills.find(x => x.id === slipTargetBillId);
+      if (!b) return;
+      try {
+        b.slipDataUrl = await compressSlipImage(file);
+        saveState();
+        if (viewerBillId === b.id && document.getElementById('modalSlipViewer').classList.contains('open')) {
+          openBillSlipViewer(b.id);
+        }
+        toast(`แนบสลิปให้ "${b.name}" เรียบร้อย`, 'success');
+      } catch (err) {
+        toast(err.message || 'แนบสลิปไม่สำเร็จ', 'error');
+      } finally {
+        slipTargetBillId = null;
+      }
+    }
+
     function removeSlipFromViewer() {
-      if (!viewerPaymentId) return;
-      const p = state.payments.find(x => x.id === viewerPaymentId);
-      if (!p) return;
-      if (!confirm('ต้องการลบสลิปโอนเงินออกจากรายการนี้ใช่หรือไม่?')) return;
-      delete p.slipDataUrl;
-      closeModal('modalSlipViewer');
-      saveState();
-      toast('ลบสลิปโอนเงินเรียบร้อย');
+      if (viewerPaymentId) {
+        const p = state.payments.find(x => x.id === viewerPaymentId);
+        if (!p) return;
+        if (!confirm('ต้องการลบสลิปโอนเงินออกจากรายการนี้ใช่หรือไม่?')) return;
+        delete p.slipDataUrl;
+        closeModal('modalSlipViewer');
+        saveState();
+        toast('ลบสลิปโอนเงินเรียบร้อย');
+      } else if (viewerBillId) {
+        const b = state.bills.find(x => x.id === viewerBillId);
+        if (!b) return;
+        if (!confirm(`ต้องการลบสลิปออกจาก "${b.name}" ใช่หรือไม่?`)) return;
+        delete b.slipDataUrl;
+        closeModal('modalSlipViewer');
+        saveState();
+        toast('ลบสลิปออกจากบิลเรียบร้อย');
+      }
     }
 
     // ---- PAYMENTS ----
@@ -3537,7 +3630,7 @@ function renderReadableSheets_(data) {
   const billRows = [['บิล', 'ประเภทผู้ซื้อ', 'สถานะจ่ายคืนช่าง', 'วันที่', 'รายการ', 'จำนวนเงิน (บาท)', 'หมายเหตุ']];
   bills.forEach(function (b) {
     const buyerLabel = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
-    const statusLabel = b.buyerType === 'owner' ? 'เจ้าของจ่ายเองแล้ว' : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' (' + b.reimbursedDate + ')' : '')) : 'รอจ่ายคืนช่าง');
+    const statusLabel = (b.buyerType === 'owner' ? 'เจ้าของจ่ายเองแล้ว' : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' (' + b.reimbursedDate + ')' : '')) : 'รอจ่ายคืนช่าง')) + (b.slipDataUrl ? ' • มีสลิป' : '');
     let billSum = 0;
     (b.items || []).forEach(function (it, idx) {
       const amt = Number(it.amount) || 0;
