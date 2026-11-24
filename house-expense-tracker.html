@@ -424,8 +424,23 @@
     }
     /* .card + .card เพิ่ม margin-top ให้การ์ดที่สองจนเริ่มต่ำกว่าและสูงไม่เท่ากัน */
     .two-col > .card { margin-top: 0; }
+    /* เดสก์ท็อป: ให้แถว (หัวการ์ด / ป้าย / แถบ / ตัวเลข) ของการ์ดสองใบอยู่ระดับเดียวกันเสมอ แม้ป้ายฝั่งใดฝั่งหนึ่งขึ้นหลายบรรทัด */
+    @media (min-width: 769px) {
+      .two-col { row-gap: 0; }
+      .two-col > .card { display: grid; grid-template-rows: subgrid; grid-row: span 5; }
+    }
 
     /* Progress Bar */
+    .progress-caption {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--color-steel);
+      margin-top: 4px;
+    }
+    .progress-caption span:first-child { color: var(--color-ink); font-weight: 500; }
+    .mat-breakdown-pill.accent { background: var(--color-accent-soft); border-color: var(--color-primary-subdued); color: var(--color-primary-deep); }
     .progress-track {
       height: 8px;
       background: var(--color-surface);
@@ -1466,6 +1481,10 @@
             <span class="mat-breakdown-pill contractor">ช่างซื้อมาเบิก: <strong class="num" id="ovMatContractor">0 ฿</strong></span>
             <span class="mat-breakdown-pill owner">เจ้าของซื้อเอง: <strong class="num" id="ovMatOwner">0 ฿</strong></span>
           </div>
+          <div class="progress-caption" title="แถบแสดงสัดส่วนที่จ่ายแล้ว เทียบกับยอดรวมทุกบิล">
+            <span id="ovMatPct">จ่ายแล้ว 0%</span>
+            <span class="num" id="ovMatPctDetail"></span>
+          </div>
           <div class="progress-track"><div class="progress-fill" id="ovMatBar" style="width:0%"></div></div>
           <div class="split-stats">
             <div>
@@ -1492,6 +1511,14 @@
               <div class="card-sub" id="ovLabCount">0 วันทำงาน • 0 คน</div>
             </div>
             <button class="btn btn-sm" onclick="switchTab('labor')">ดูตารางช่าง →</button>
+          </div>
+          <div class="mat-breakdown-bar">
+            <span class="mat-breakdown-pill accent">งวดนี้: <strong class="num" id="ovLabActive">0 ฿</strong></span>
+            <span class="mat-breakdown-pill">ปิดงวดแล้ว: <strong class="num" id="ovLabClosed">0 ฿</strong></span>
+          </div>
+          <div class="progress-caption" title="แถบแสดงสัดส่วนที่เบิก/จ่ายแล้ว เทียบกับค่าแรงรวมทุกงวด">
+            <span id="ovLabPct">เบิก/จ่ายแล้ว 0%</span>
+            <span class="num" id="ovLabPctDetail"></span>
           </div>
           <div class="progress-track"><div class="progress-fill" id="ovLabBar" style="width:0%"></div></div>
           <div class="split-stats">
@@ -2382,6 +2409,8 @@
       ovMatRemainEl.className = 'split-stat-val num ' + (s.remainMaterials > 0 ? 'text-rose' : 'text-green');
       const matPct = s.totalMaterials > 0 ? Math.min(100, Math.round((s.totalPaidMaterials / s.totalMaterials) * 100)) : 0;
       document.getElementById('ovMatBar').style.width = matPct + '%';
+      document.getElementById('ovMatPct').textContent = `จ่ายแล้ว ${matPct}%`;
+      document.getElementById('ovMatPctDetail').textContent = `${fmt(s.totalPaidMaterials)} / ${fmt(s.totalMaterials)} ฿`;
 
       // Labor card (all-time project summary)
       const totalDaysAll = (s.closedDaysCount || 0) + state.attendance.length;
@@ -2392,6 +2421,10 @@
       document.getElementById('ovLabRemain').textContent = fmt(s.remainLabor) + ' ฿';
       const labPct = s.totalLabor > 0 ? Math.min(100, Math.round((s.paidLabor / s.totalLabor) * 100)) : 0;
       document.getElementById('ovLabBar').style.width = labPct + '%';
+      document.getElementById('ovLabPct').textContent = `เบิก/จ่ายแล้ว ${labPct}%`;
+      document.getElementById('ovLabPctDetail').textContent = `${fmt(s.paidLabor)} / ${fmt(s.totalLabor)} ฿`;
+      document.getElementById('ovLabActive').textContent = fmt(s.activeLabor) + ' ฿';
+      document.getElementById('ovLabClosed').textContent = fmt(s.closedLabor) + ' ฿';
 
       // Worker Summary Table
       const wtBody = document.getElementById('ovWorkerTable');
