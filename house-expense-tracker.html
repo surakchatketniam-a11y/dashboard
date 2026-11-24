@@ -1399,10 +1399,42 @@
       .modal textarea { height: auto; }
       .modal .btn { min-height: 44px; }
 
+      /* ===== แท็บบิลบนมือถือ ===== */
+      /* สรุปด้านบน: ซ่อนคำอธิบายยาว ปุ่มหลักเต็มความกว้าง ปุ่มรองคู่กัน เพื่อให้เห็นบิลเร็วขึ้น */
+      .mat-summary { padding: 16px; }
+      .mat-summary .mat-desc { display: none; }
+      .mat-summary .card-header { gap: 10px; }
+      .mat-actions { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+      .mat-actions .btn-primary { grid-column: 1 / -1; }
+      .mat-summary .split-stats { gap: 12px 16px; }
+      .mat-summary .split-stat-val { font-size: 18px; }
+      /* ตัวกรอง 2x2 แตะง่าย ไม่ต้องเลื่อนข้าง */
+      .bill-filter-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+      .bill-filter-bar .filter-pill { justify-content: center; min-height: 44px; padding: 6px 8px; }
+      /* การ์ดบิลกระชับ: วันที่ + หมายเหตุอยู่แถวเดียว, ลดระยะห่าง, ช่องแก้ไข 16px กัน iOS ซูม */
+      .bills-grid { gap: 12px; }
+      .bill-head { padding: 12px 14px 0; }
+      .bill-card input.inline-edit-title, .bill-card input.inline-edit-note, .bill-card input.inline-edit-date,
+      .bill-card input.inline-edit-item, .bill-card input.inline-edit-amt { font-size: 16px; }
+      /* ช่องแก้ไขในการ์ด: แตะง่าย (รายการ 44px, หัวบิล 40px) */
+      .bill-card input.inline-edit-item, .bill-card input.inline-edit-amt { min-height: 44px; }
+      .bill-card input.inline-edit-title, .bill-card input.inline-edit-note, .bill-card input.inline-edit-date { min-height: 40px; }
+      .btn-settle-mini, .btn-unsettle-mini { min-height: 44px; }
+      .buyer-toggle { margin-top: 0; }
+      .bill-status-bar { padding: 4px 14px; }
+      .bill-items { padding: 4px 14px; }
+      .bill-item-row { padding: 2px 0; }
+      .bill-add-details > summary { padding: 0 14px 4px; }
+      .bill-add-details[open] > summary { padding-bottom: 0; }
+      .bill-add-form { padding: 6px 12px 12px; flex-wrap: wrap; }
+      .bill-add-form .inp-name { flex: 1 1 100%; }
+      .bill-add-form .inp-amt { flex: 1 1 auto; width: auto; }
+      .bill-add-form input { font-size: 16px; height: 44px; }
+
       /* Touch targets >= 44px in bill cards */
       .bill-card .btn-danger-ghost, .bill-item-row .btn-danger-ghost { min-width: 44px; min-height: 44px; font-size: 14px; }
       .buyer-toggle { min-height: 44px; display: inline-flex; align-items: center; margin-top: 0; }
-      .btn-settle-mini, .btn-unsettle-mini, .slip-pill-btn, .slip-add-btn { min-height: 40px; }
+      .slip-pill-btn, .slip-add-btn { min-height: 40px; }
       .bill-add-details > summary { padding-top: 0; min-height: 44px; display: flex; align-items: center; }
       .filter-pill { min-height: 40px; }
 
@@ -1444,6 +1476,12 @@
       #tab-payments tr:hover td { background: transparent; }
       #tab-payments td.empty-state { grid-column: 1 / -1; }
       #tab-payments tbody tr:has(td.empty-state) { display: block; border: none; }
+    }
+    /* จอกว้างกว่า 480px (แท็บเล็ตเล็ก): วันที่ + หมายเหตุอยู่แถวเดียว ส่วนมือถือจริง (<=480px) เรียงบน-ล่างกันหมายเหตุถูกตัด */
+    @media (min-width: 481px) and (max-width: 768px) {
+      .bill-meta-row { flex-direction: row; align-items: center; gap: 6px; }
+      .bill-card .bill-meta-row input.inline-edit-note { flex: 1 1 auto; width: auto; min-width: 0; }
+      .bill-card input.inline-edit-date { width: 138px; }
     }
   </style>
 </head>
@@ -1610,13 +1648,13 @@
 
     <!-- TAB 2: MATERIALS / BILLS -->
     <section id="tab-materials" class="tab-panel">
-      <div class="card" style="margin-bottom:16px;">
+      <div class="card mat-summary" style="margin-bottom:16px;">
         <div class="card-header" style="margin-bottom:8px;">
           <div>
             <h2 class="card-title">สรุปค่าอุปกรณ์ / บิลทั้งหมด</h2>
-            <div class="card-sub">แยกบิล "ช่างซื้อมาเบิก" (ต้องจ่ายเงินคืนช่าง) และ "เจ้าของซื้อเอง" (เก็บยอดค่าใช้จ่ายรวม) — คลิกแก้ไขหรือสลับประเภทได้ทันที</div>
+            <div class="card-sub mat-desc">แยกบิล "ช่างซื้อมาเบิก" (ต้องจ่ายเงินคืนช่าง) และ "เจ้าของซื้อเอง" (เก็บยอดค่าใช้จ่ายรวม) — คลิกแก้ไขหรือสลับประเภทได้ทันที</div>
           </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <div class="mat-actions" style="display:flex; gap:8px; flex-wrap:wrap;">
             <button class="btn btn-primary" onclick="openNewBillModal()">+ เพิ่มบิลใหม่</button>
             <button class="btn btn-green" onclick="openSettleBillsModal()">ตัดจ่ายหลายบิล</button>
             <button class="btn" onclick="openPaymentModal('materials')">จ่ายคืนค่าของ (เหมา)</button>
