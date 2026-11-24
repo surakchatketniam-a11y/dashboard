@@ -431,6 +431,31 @@
     }
 
     /* Progress Bar */
+    /* เช็คชื่อรายวัน: ชิปช่างแตะสลับสถานะ */
+    .day-chip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+    .day-chip {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+      min-height: 76px; padding: 10px 12px; border-radius: var(--radius-md);
+      border: 1px solid var(--color-hairline); background: var(--color-canvas); color: var(--color-ink);
+      font-family: var(--font-body); text-align: left; cursor: pointer;
+      transition: background-color 0.12s, border-color 0.12s, transform 0.08s;
+    }
+    .day-chip:active { transform: scale(0.98); }
+    .day-chip-name { font-size: 16px; font-weight: 600; }
+    .day-chip-state { font-size: 14px; }
+    .day-chip-amt { font-size: 14px; color: var(--color-steel); }
+    .day-chip[data-state="full"] { background: var(--app-success-soft); border-color: var(--app-success-border); }
+    .day-chip[data-state="full"] .day-chip-state { color: var(--app-success); font-weight: 600; }
+    .day-chip[data-state="half"] { background: var(--app-warning-soft); border-color: var(--app-warning-border); }
+    .day-chip[data-state="half"] .day-chip-state { color: var(--app-warning); font-weight: 600; }
+    .day-chip[data-state="absent"] { background: var(--color-canvas); border: 1px dashed #a8c3de; }
+    .day-chip[data-state="absent"] .day-chip-state { color: var(--color-steel); }
+    .day-chip[data-state="custom"] { background: var(--color-accent-soft); border-color: var(--color-primary-subdued); }
+    .day-chip[data-state="custom"] .day-chip-state { color: var(--color-primary-deep); font-weight: 600; }
+    .day-chip-legend { margin-top: 8px; font-size: 14px; color: var(--color-steel); }
+    .day-notice { background: var(--app-warning-soft); border: 1px solid var(--app-warning-border); color: var(--app-warning); border-radius: var(--radius-md); padding: 8px 12px; font-size: 14px; }
+    .btn-link-mini { border: none; background: transparent; color: var(--color-primary); font-family: var(--font-body); font-size: 13px; font-weight: 500; padding: 2px 4px; cursor: pointer; text-decoration: underline; text-decoration-color: var(--color-primary-subdued); text-underline-offset: 3px; }
+    .btn-link-mini:hover { color: var(--color-primary-deep); }
     .progress-caption {
       display: flex;
       justify-content: space-between;
@@ -1379,6 +1404,8 @@
       .matrix-table tfoot tr { background: var(--color-surface); }
       .matrix-table tfoot td { background: transparent; border-top: none; }
       .att-btn { min-width: 96px; min-height: 44px; }
+      .btn-link-mini { min-height: 44px; }
+      .day-chip { min-height: 84px; }
       .att-edit-mini { min-width: 44px; min-height: 44px; }
       #tab-labor .table-wrap { border: none; background: transparent; overflow: visible; }
       #tab-labor .card { padding: 12px; }
@@ -1445,7 +1472,7 @@
     <section id="tab-overview" class="tab-panel active">
       <div class="quick-bar">
         <button class="btn btn-primary" onclick="openNewBillModal()">+ เพิ่มบิลซื้ออุปกรณ์</button>
-        <button class="btn btn-green" onclick="openAddDayModal()">+ เช็คชื่อช่างรายวัน</button>
+        <button class="btn btn-green" onclick="openAddDayModal()">+ เช็คชื่อวันนี้</button>
         <button class="btn" onclick="openPaymentModal()">+ บันทึกจ่ายเงิน / เบิกงวด</button>
       </div>
 
@@ -1764,25 +1791,48 @@
   <div class="modal-backdrop" id="modalAddDay">
     <div class="modal">
       <div class="modal-head">
-        <h3>เพิ่มวันทำงานช่าง</h3>
+        <h3>เช็คชื่อช่างรายวัน</h3>
         <button class="btn-ghost" onclick="closeModal('modalAddDay')">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label>วันที่ทำงาน (ใส่วันที่ เช่น 24 หรือ 24/11/2026)</label>
-          <input type="text" id="newDayLabel" placeholder="เช่น 24" />
+          <label for="newDayDate">วันที่ทำงาน</label>
+          <input type="date" id="newDayDate" onchange="onNewDayDateChange()" />
+          <div id="newDayNotice" class="day-notice" style="display:none; margin-top:8px;"></div>
         </div>
         <div class="form-group">
-          <label style="display:flex; justify-content:space-between; align-items:center;">
-            <span>เลือกช่างที่มาทำงานวันนี้</span>
-            <button type="button" class="btn btn-sm" onclick="toggleAllNewDayWorkers(true)">ติ๊กครบทุกคน</button>
+          <label style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <span>แตะชื่อช่างเพื่อเปลี่ยนสถานะ</span>
+            <button type="button" class="btn btn-sm" onclick="setAllNewDay('full')">มาครบทุกคน</button>
           </label>
-          <div id="newDayWorkersList" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;"></div>
+          <div id="newDayWorkersList" class="day-chip-grid"></div>
+          <div class="day-chip-legend">แตะซ้ำสลับ: เต็มวัน → ครึ่งวัน → ไม่มา → เต็มวัน &nbsp;•&nbsp; รวมวันนี้ <strong class="num" id="newDayTotal">0 ฿</strong></div>
         </div>
       </div>
       <div class="modal-foot">
         <button class="btn" onclick="closeModal('modalAddDay')">ยกเลิก</button>
         <button class="btn btn-primary" onclick="saveNewDay()">บันทึกวันทำงาน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SET REAL DATE FOR A LEGACY DAY (U3) -->
+  <div class="modal-backdrop" id="modalSetDay">
+    <div class="modal" style="max-width:420px;">
+      <div class="modal-head">
+        <h3>ตั้งวันที่จริงให้วันทำงาน</h3>
+        <button class="btn-ghost" onclick="closeModal('modalSetDay')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="setDayCurrent" style="margin:0 0 12px;"></p>
+        <div class="form-group">
+          <label for="setDayDate">วันที่จริง</label>
+          <input type="date" id="setDayDate" />
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeModal('modalSetDay')">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="saveSetDay()">บันทึกวันที่</button>
       </div>
     </div>
   </div>
@@ -2114,6 +2164,22 @@
   <script>
     const DEFAULT_PROJECT_NAME = 'บันทึกค่าใช้จ่ายสร้างสำนักงานบริษัท VIJITA BOTANICS Co, Ltd';
     const LEGACY_PROJECT_NAME = 'บันทึกค่าใช้จ่ายสร้างบ้าน'; // ชื่อเดิมที่บันทึกไว้ในข้อมูลเก่า จะย้ายเป็นชื่อใหม่อัตโนมัติ
+    // ---- วันที่ (U3): เก็บเป็น isoDate (YYYY-MM-DD) แสดงเป็น "จ. 24 พ.ย." ----
+    const TH_WEEKDAY = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+    const TH_MONTH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    function parseIso(iso) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+      if (!m) return null;
+      const d = new Date(+m[1], +m[2] - 1, +m[3]);
+      if (d.getFullYear() !== +m[1] || d.getMonth() !== +m[2] - 1 || d.getDate() !== +m[3]) return null;
+      return d;
+    }
+    function formatThaiShortDate(iso) {
+      const d = parseIso(iso);
+      if (!d) return '';
+      const year = d.getFullYear() !== new Date().getFullYear() ? ' ' + (d.getFullYear() + 543) : '';
+      return `${TH_WEEKDAY[d.getDay()]} ${d.getDate()} ${TH_MONTH[d.getMonth()]}${year}`;
+    }
     const STORAGE_KEY = 'house_expense_app_v1';
     const CONFIG_KEY = 'house_expense_config_v1';
     // E11: ไม่ฝัง Web App URL ไว้ในโค้ดแล้ว (หน้าเว็บและ repo เป็นสาธารณะ) ให้ใส่ในหน้า 'เชื่อมต่อ Google Sheets' ของแต่ละเครื่อง
@@ -2176,6 +2242,7 @@
       });
       if (!Array.isArray(s.workers)) s.workers = [];
       if (!Array.isArray(s.attendance)) s.attendance = [];
+      s.attendance.forEach(d => { if (d.isoDate && !parseIso(d.isoDate)) delete d.isoDate; });
       if (!Array.isArray(s.payments)) s.payments = [];
       s.payments.forEach(p => {
         if (p.category === 'labor' && !p.periodNo) p.periodNo = 1;
@@ -2920,7 +2987,7 @@
             }).join('');
             return `
               <tr>
-                <td class="att-date"><strong>${esc(day.date)}</strong></td>
+                <td class="att-date"><strong>${esc(day.date)}</strong>${day.isoDate ? '' : ` <button type="button" class="btn-link-mini" onclick="openSetDay('${day.id}')" title="ตั้งเป็นวันที่จริง เพื่อเรียงลำดับและกันวันซ้ำ">ตั้งวันที่</button>`}</td>
                 ${cells}
                 <td class="text-right num att-sum" data-label="รวมวันนี้"><strong>${fmt(rowSum)} ฿</strong></td>
                 <td class="text-center att-del"><button class="btn-danger-ghost" title="ลบวันนี้" onclick="deleteDay('${day.id}')">✕</button></td>
@@ -2985,39 +3052,137 @@
       saveState();
     }
 
+    // ---- เช็คชื่อรายวัน (U2): ชิปชื่อช่างแตะสลับ เต็มวัน → ครึ่งวัน → ไม่มา ----
+    let newDayStates = {};   // workerId -> 'full' | 'half' | 'absent' | 'custom'
+    let newDayCustom = {};   // workerId -> ยอดที่กำหนดเอง (เมื่อแก้วันเดิมที่เคยใส่ยอดเอง)
+    let newDayLoadedExisting = false;
+
+    function newDayAmount(w, st) {
+      const rate = Number(w.dailyRate) || 0;
+      if (st === 'full') return rate;
+      if (st === 'half') return Math.round(rate / 2);
+      if (st === 'custom') return Number(newDayCustom[w.id]) || 0;
+      return 0;
+    }
+
+    function newDayStateLabel(st) {
+      return { full: 'เต็มวัน', half: 'ครึ่งวัน', absent: 'ไม่มา', custom: 'กำหนดเอง' }[st] || '';
+    }
+
+    function renderNewDayChips() {
+      let total = 0;
+      document.getElementById('newDayWorkersList').innerHTML = state.workers.map(w => {
+        const st = newDayStates[w.id] || 'full';
+        const amt = newDayAmount(w, st);
+        total += amt;
+        return `<button type="button" class="day-chip" data-state="${st}" onclick="cycleNewDayWorker('${w.id}')" aria-label="${esc(w.name)} ${newDayStateLabel(st)} แตะเพื่อเปลี่ยน">
+          <span class="day-chip-name">${esc(w.name)}</span>
+          <span class="day-chip-state">${newDayStateLabel(st)}</span>
+          <span class="day-chip-amt num">${st === 'absent' ? '—' : fmt(amt) + ' ฿'}</span>
+        </button>`;
+      }).join('');
+      document.getElementById('newDayTotal').textContent = fmt(total) + ' ฿';
+    }
+
+    function cycleNewDayWorker(wid) {
+      const cur = newDayStates[wid] || 'full';
+      newDayStates[wid] = { full: 'half', half: 'absent', absent: 'full', custom: 'full' }[cur];
+      renderNewDayChips();
+    }
+
+    function setAllNewDay(st) {
+      state.workers.forEach(w => { newDayStates[w.id] = st; });
+      renderNewDayChips();
+    }
+
+    // เลือกวันที่ที่มีบันทึกอยู่แล้ว: โหลดสถานะเดิมมาแก้ (ไม่เพิ่มวันซ้ำ)
+    function onNewDayDateChange() {
+      const iso = document.getElementById('newDayDate').value;
+      const notice = document.getElementById('newDayNotice');
+      const existing = parseIso(iso) ? state.attendance.find(d => d.isoDate === iso) : null;
+      if (existing) {
+        newDayCustom = {};
+        state.workers.forEach(w => {
+          const v = Number((existing.entries || {})[w.id]) || 0;
+          const rate = Number(w.dailyRate) || 0;
+          if (v === 0) newDayStates[w.id] = 'absent';
+          else if (v === rate) newDayStates[w.id] = 'full';
+          else if (v === Math.round(rate / 2)) newDayStates[w.id] = 'half';
+          else { newDayStates[w.id] = 'custom'; newDayCustom[w.id] = v; }
+        });
+        newDayLoadedExisting = true;
+        notice.style.display = 'block';
+        notice.textContent = `มีบันทึกวันที่ ${formatThaiShortDate(iso)} แล้ว — การบันทึกจะแก้ไขวันเดิม ไม่เพิ่มวันซ้ำ`;
+      } else {
+        if (newDayLoadedExisting) { setAllNewDay('full'); newDayCustom = {}; }
+        newDayLoadedExisting = false;
+        notice.style.display = 'none';
+      }
+      renderNewDayChips();
+    }
+
     function openAddDayModal() {
-      const d = new Date();
-      document.getElementById('newDayLabel').value = `วันที่ ${d.getDate()}/${d.getMonth() + 1}`;
-      const list = document.getElementById('newDayWorkersList');
-      list.innerHTML = state.workers.map(w => `
-        <label style="display:flex; align-items:center; justify-content:space-between; padding:8px 11px; border:1px solid var(--border); border-radius:9px; cursor:pointer; background:var(--surface-soft);">
-          <span style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" class="new-day-chk" data-wid="${w.id}" checked style="width:auto;" />
-            <strong>${esc(w.name)}</strong>
-          </span>
-          <span class="num text-muted" style="font-size:13px;">${fmt(w.dailyRate)} ฿</span>
-        </label>
-      `).join('');
+      newDayStates = {};
+      newDayCustom = {};
+      newDayLoadedExisting = false;
+      state.workers.forEach(w => { newDayStates[w.id] = 'full'; });
+      document.getElementById('newDayDate').value = todayISO();
+      onNewDayDateChange();
       openModal('modalAddDay');
     }
 
-    function toggleAllNewDayWorkers(checked) {
-      document.querySelectorAll('.new-day-chk').forEach(c => c.checked = checked);
+    function sortAttendance() {
+      // วันที่ยังไม่มี isoDate (ข้อมูลเก่า) คงลำดับเดิมไว้ข้างหน้า ส่วนวันที่มี isoDate เรียงตามวันที่
+      const legacy = state.attendance.filter(d => !parseIso(d.isoDate));
+      const dated = state.attendance.filter(d => parseIso(d.isoDate)).sort((a, b) => a.isoDate.localeCompare(b.isoDate));
+      state.attendance = [...legacy, ...dated];
     }
 
     function saveNewDay() {
-      const label = document.getElementById('newDayLabel').value.trim();
-      if (!label) { toast('กรุณาระบุวันที่', 'error'); return; }
+      const iso = document.getElementById('newDayDate').value;
+      if (!parseIso(iso)) { toast('กรุณาเลือกวันที่', 'error'); return; }
       const entries = {};
-      document.querySelectorAll('.new-day-chk').forEach(chk => {
-        const wid = chk.dataset.wid;
-        const w = state.workers.find(x => x.id === wid);
-        entries[wid] = chk.checked && w ? Number(w.dailyRate) : 0;
-      });
-      state.attendance.push({ id: uid('day'), date: label, entries });
+      state.workers.forEach(w => { entries[w.id] = newDayAmount(w, newDayStates[w.id] || 'full'); });
+      const label = formatThaiShortDate(iso);
+      const existing = state.attendance.find(d => d.isoDate === iso);
+      if (existing) {
+        existing.entries = Object.assign({}, existing.entries || {}, entries);
+        existing.date = label;
+      } else {
+        state.attendance.push({ id: uid('day'), date: label, isoDate: iso, entries });
+        sortAttendance();
+      }
       closeModal('modalAddDay');
       saveState();
-      toast('เพิ่มวันทำงาน "' + label + '" เรียบร้อย', 'success');
+      toast((existing ? 'แก้ไขวันทำงาน "' : 'เพิ่มวันทำงาน "') + label + '" เรียบร้อย', 'success');
+    }
+
+    // ตั้งวันที่จริงให้วันทำงานเก่าที่เคยพิมพ์เป็นข้อความ
+    let setDayTargetId = null;
+    function openSetDay(dayId) {
+      const day = state.attendance.find(d => d.id === dayId);
+      if (!day) return;
+      setDayTargetId = dayId;
+      document.getElementById('setDayCurrent').textContent = `วันเดิมที่บันทึกไว้เป็นข้อความ: "${day.date}"`;
+      document.getElementById('setDayDate').value = '';
+      openModal('modalSetDay');
+    }
+
+    function saveSetDay() {
+      const day = state.attendance.find(d => d.id === setDayTargetId);
+      const iso = document.getElementById('setDayDate').value;
+      if (!day) return;
+      if (!parseIso(iso)) { toast('กรุณาเลือกวันที่', 'error'); return; }
+      if (state.attendance.some(d => d.id !== day.id && d.isoDate === iso)) {
+        toast(`มีบันทึกวันที่ ${formatThaiShortDate(iso)} อยู่แล้ว เลือกวันอื่น หรือลบวันซ้ำก่อน`, 'error');
+        return;
+      }
+      day.isoDate = iso;
+      day.date = formatThaiShortDate(iso);
+      sortAttendance();
+      closeModal('modalSetDay');
+      saveState();
+      toast('ตั้งวันที่เป็น ' + day.date + ' แล้ว', 'success');
     }
 
     function deleteDay(dayId) {
