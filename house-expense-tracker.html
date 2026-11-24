@@ -1458,24 +1458,39 @@
       /* Attendance matrix -> one card per day */
       .matrix-table, .matrix-table tbody, .matrix-table tfoot, .matrix-table tr, .matrix-table td { display: block; width: 100%; }
       .matrix-table thead { display: none; }
-      .matrix-table tr { position: relative; border: 1px solid var(--color-hairline); border-radius: var(--radius-lg); margin-bottom: 12px; padding: 4px 12px 8px; background: var(--color-canvas); }
+      /* ใหม่สุดอยู่บน (เช็คชื่อทุกวัน ไม่ต้องเลื่อนไปท้ายรายการ) และช่างเรียงเป็น 2 คอลัมน์ ให้การ์ดสั้นลง */
+      .matrix-table tbody { display: flex; flex-direction: column-reverse; }
+      .matrix-table tr { position: relative; display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; border: 1px solid var(--color-hairline); border-radius: var(--radius-lg); margin-bottom: 10px; padding: 4px 12px 8px; background: var(--color-canvas); }
+      .matrix-table td.att-date, .matrix-table td.att-sum { grid-column: 1 / -1; }
       .matrix-table td, .matrix-table td:first-child { position: static; border: none; border-right: none; background: transparent; padding: 6px 0; text-align: left; }
       .matrix-table td.att-date { font-size: 16px; padding: 10px 40px 6px 0; border-bottom: 1px solid var(--color-hairline-soft); }
-      .matrix-table td[data-label] { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-      .matrix-table td[data-label]::before { content: attr(data-label); font-size: 14px; color: var(--color-steel); flex: 1; min-width: 0; }
-      .matrix-table td.att-sum { border-top: 1px solid var(--color-hairline-soft); margin-top: 4px; padding-top: 10px; font-weight: 600; }
+      .matrix-table td[data-label] { display: flex; flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; }
+      .matrix-table td[data-label]::before { content: attr(data-label); font-size: 13px; color: var(--color-steel); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .matrix-table td .att-cell { display: flex; width: 100%; gap: 4px; }
+      .matrix-table td .att-btn { flex: 1 1 auto; min-width: 0; }
+      .matrix-table td.att-sum { flex-direction: row; align-items: center; justify-content: space-between; border-top: 1px solid var(--color-hairline-soft); margin-top: 4px; padding-top: 10px; font-weight: 600; }
+      .matrix-table td.att-sum::before { font-size: 14px; }
       .matrix-table td.att-del { position: absolute; top: 4px; right: 4px; width: auto; padding: 0; }
       .matrix-table td.att-del:empty { display: none; }
       .matrix-table td.att-del .btn-danger-ghost { min-width: 44px; min-height: 44px; font-size: 16px; }
       .matrix-table tbody tr:hover td:first-child { background: transparent; }
       .matrix-table tfoot tr { background: var(--color-surface); }
       .matrix-table tfoot td { background: transparent; border-top: none; }
-      .att-btn { min-width: 96px; min-height: 44px; }
+      .att-btn { min-height: 44px; }
       .btn-link-mini { min-height: 44px; }
       .day-chip { min-height: 84px; }
       .att-edit-mini { min-width: 44px; min-height: 44px; }
       #tab-labor .table-wrap { border: none; background: transparent; overflow: visible; }
       #tab-labor .card { padding: 12px; }
+      /* กรอบของตารางเช็คชื่อ: ไม่ต้องมีกรอบซ้อนกรอบการ์ดรายวัน */
+      #tab-labor .card:has(#attendanceMatrix) { border: none; padding: 0 !important; background: transparent; }
+      /* หัวการ์ดค่าแรง: ปุ่มหลักเต็มความกว้าง ปุ่มรองคู่กัน ปุ่มจัดการช่างเป็นข้อความ */
+      .labor-actions { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+      .labor-actions .btn-primary { grid-column: 1 / -1; }
+      .labor-actions .btn-ghost { grid-column: 1 / -1; min-height: 44px; }
+      /* ตัวเลข 3 ช่อง: ป้ายยาวกว่าบรรทัดเดียวก็ให้ยอดอยู่ระดับเดียวกัน */
+      #tab-labor .split-stats { grid-template-rows: auto auto; row-gap: 0; align-items: start; }
+      #tab-labor .split-stats > div { display: grid; grid-template-rows: subgrid; grid-row: span 2; }
 
       /* Payments table -> cards */
       #tab-payments table, #tab-payments tbody, #tab-payments tr, #tab-payments td { display: block; width: 100%; }
@@ -1723,7 +1738,7 @@
             </div>
             <div class="card-sub">แตะช่องในตารางเพื่อสลับมา/ไม่มา · ✎ ใส่ครึ่งวันหรือยอดเอง</div>
           </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <div class="labor-actions" style="display:flex; gap:8px; flex-wrap:wrap;">
             <button class="btn btn-primary btn-sm" onclick="openAddDayModal()">+ เพิ่มวันทำงาน</button>
             <button class="btn btn-sm" onclick="openPaymentModal('labor')">เบิกล่วงหน้า</button>
             <button class="btn btn-sm" onclick="openClosePeriodModal()">ตัดยอดปิดงวด</button>
