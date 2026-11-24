@@ -14,6 +14,9 @@ const SPREADSHEET_ID = '1h83g2owxnyFiiW0s7WWiEmmbh1fquDp00uOtS4ETetU';
 const DATA_SHEET_NAME = '_AppData';
 const CHUNK_SIZE = 40000;
 const TOKEN_PROP = 'APP_TOKEN';
+// โฟลเดอร์ Drive สำหรับเก็บรูปสลิป/ใบเสร็จ (E2: ย้ายรูปออกจากข้อมูลหลักที่ซิงค์กับชีต)
+const SLIP_FOLDER_ID = '1kelNbtEpJCwdncnP6kqCHRZpCEJIzGhQ';
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
 function initAuthorize() {
   const ss = getSpreadsheet_();
@@ -38,6 +41,75 @@ function setupAppToken() {
   }
   Logger.log('APP_TOKEN = ' + token);
   return token;
+}
+
+// ---------- รูปสลิปใน Google Drive ----------
+// รันครั้งเดียวจากตัวแก้ไข Apps Script: ขออนุญาตใช้ Drive และตรวจว่าโฟลเดอร์ปลอดภัยพอจะเก็บสลิป
+function checkSlipFolder() {
+  const folder = getSlipFolder_();
+  const access = String(folder.getSharingAccess());
+  Logger.log('โฟลเดอร์: ' + folder.getName());
+  Logger.log('การแชร์ของโฟลเดอร์: ' + access);
+  if (access === 'PRIVATE') {
+    Logger.log('OK: โฟลเดอร์เป็นแบบจำกัด พร้อมเก็บสลิป');
+  } else {
+    Logger.log('คำเตือน: โฟลเดอร์ถูกแชร์แบบ ' + access + ' — ระบบจะไม่อัปโหลดสลิปจนกว่าจะเปลี่ยนเป็น "จำกัด (Restricted)" เพราะสลิปมีข้อมูลบัญชีและยอดเงิน');
+  }
+  return access;
+}
+
+function getSlipFolder_() {
+  return DriveApp.getFolderById(SLIP_FOLDER_ID);
+}
+
+function slipFolderIsPrivate_(folder) {
+  return folder.getSharingAccess() === DriveApp.Access.PRIVATE;
+}
+
+function safeFileName_(name, ext) {
+  let n = String(name || ('slip-' + Date.now())).replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 80);
+  if (!/\.(jpg|png|webp)$/i.test(n)) n += '.' + ext;
+  return n;
+}
+
+// เข้าถึงได้เฉพาะไฟล์ที่อยู่ในโฟลเดอร์สลิป (กันการอ่าน/ลบไฟล์อื่นใน Drive ด้วย fileId ที่เดามา)
+function getSlipFile_(fileId) {
+  if (!/^[A-Za-z0-9_-]{10,}$/.test(String(fileId || ''))) return null;
+  let file;
+  try { file = DriveApp.getFileById(fileId); } catch (_) { return null; }
+  const parents = file.getParents();
+  while (parents.hasNext()) {
+    if (parents.next().getId() === SLIP_FOLDER_ID) return file;
+  }
+  return null;
+}
+
+function uploadImage_(payload) {
+  const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+\/=]+)$/.exec(String(payload.dataUrl || ''));
+  if (!m) return { ok: false, error: 'รูปแบบรูปไม่ถูกต้อง (รองรับ JPG/PNG/WebP)' };
+  const bytes = Utilities.base64Decode(m[2]);
+  if (bytes.length > MAX_IMAGE_BYTES) return { ok: false, error: 'รูปใหญ่เกิน 4MB' };
+  const folder = getSlipFolder_();
+  if (!slipFolderIsPrivate_(folder)) {
+    return { ok: false, code: 'FOLDER_SHARED', error: 'โฟลเดอร์ Drive ถูกแชร์แบบลิงก์/สาธารณะ — เปลี่ยนเป็น "จำกัด (Restricted)" ก่อน ระบบจึงจะเก็บสลิป' };
+  }
+  const ext = m[1] === 'image/png' ? 'png' : (m[1] === 'image/webp' ? 'webp' : 'jpg');
+  const file = folder.createFile(Utilities.newBlob(bytes, m[1], safeFileName_(payload.name, ext)));
+  return { ok: true, fileId: file.getId(), name: file.getName() };
+}
+
+function getImage_(payload) {
+  const file = getSlipFile_(payload.fileId);
+  if (!file) return { ok: false, error: 'ไม่พบรูปในโฟลเดอร์สลิป' };
+  const blob = file.getBlob();
+  return { ok: true, dataUrl: 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes()) };
+}
+
+function trashImage_(payload) {
+  const file = getSlipFile_(payload.fileId);
+  if (!file) return { ok: false, error: 'ไม่พบรูปในโฟลเดอร์สลิป' };
+  file.setTrashed(true);
+  return { ok: true };
 }
 
 function getExpectedToken_() {
@@ -121,6 +193,16 @@ function doPost(e) {
 
     if (action === 'ping' || action === 'load') {
       return handleRead_(action);
+    }
+
+    if (action === 'uploadImage' || action === 'getImage' || action === 'trashImage') {
+      // รูปสลิปมีข้อมูลการเงิน: ต้องตั้งรหัสเข้าถึงก่อนจึงจะใช้ Drive ได้
+      if (!getExpectedToken_()) {
+        return jsonResponse({ ok: false, error: 'ต้องตั้งรหัสเข้าถึง (setupAppToken) ก่อนใช้ Drive' });
+      }
+      if (action === 'uploadImage') return jsonResponse(uploadImage_(payload));
+      if (action === 'getImage') return jsonResponse(getImage_(payload));
+      return jsonResponse(trashImage_(payload));
     }
 
     if (action === 'save') {
@@ -335,7 +417,7 @@ function renderReadableSheets_(data) {
     const buyerLabel = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
     const statusLabel = (b.buyerType === 'owner'
       ? 'เจ้าของจ่ายเองแล้ว'
-      : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' (' + b.reimbursedDate + ')' : '')) : 'รอจ่ายคืนช่าง')) + (b.slipDataUrl ? ' • มีสลิป' : '');
+      : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' (' + b.reimbursedDate + ')' : '')) : 'รอจ่ายคืนช่าง')) + ((b.slipDataUrl || b.slipFileId) ? ' • มีสลิป' : '');
     let billSum = 0;
     items.forEach(function (it, idx) {
       const amt = Number(it.amount) || 0;
@@ -431,7 +513,7 @@ function renderReadableSheets_(data) {
       p.date || '',
       p.category === 'materials' ? 'คืนค่าของ (บิลช่างซื้อ)' : 'ค่าแรงช่าง',
       Number(p.amount) || 0,
-      p.slipDataUrl ? 'มีสลิป' : '—',
+      (p.slipDataUrl || p.slipFileId) ? 'มีสลิป' : '—',
       p.note || ''
     ]);
   });

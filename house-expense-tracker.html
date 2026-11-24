@@ -2201,6 +2201,7 @@
         config.dirty = true;
         try { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); } catch (e) {}
       }
+      if (triggerSync && config.sheetsUrl) scheduleSlipOffload();
       if (triggerSync && config.sheetsUrl && config.autoSync && !syncConflict) {
         clearTimeout(autoSyncTimer);
         syncPending = true;
@@ -2513,12 +2514,12 @@
             `).join('');
 
         const linkedPay = (!isOwner && bill.paymentId) ? state.payments.find(p => p.id === bill.paymentId) : null;
-        const ownerSlipBtn = bill.slipDataUrl
+        const ownerSlipBtn = hasSlip(bill)
           ? `<button type="button" class="slip-pill-btn" onclick="openBillSlipViewer('${bill.id}')" title="คลิกเพื่อดูสลิปโอนเงิน">ดูสลิป</button>`
           : `<button type="button" class="slip-add-btn" onclick="triggerAttachSlipToBill('${bill.id}')" title="แนบสลิปโอนเงิน / ใบเสร็จ">+ แนบสลิป</button>`;
-        const contractorSlipBtn = bill.slipDataUrl
+        const contractorSlipBtn = hasSlip(bill)
           ? `<button type="button" class="slip-pill-btn" onclick="openBillSlipViewer('${bill.id}')" title="ดูรูปบิลที่แนบไว้">ดูรูปบิล</button>`
-          : (linkedPay && linkedPay.slipDataUrl
+          : (linkedPay && hasSlip(linkedPay)
               ? `<button type="button" class="slip-pill-btn" onclick="openPaymentSlipViewer('${linkedPay.id}')" title="ดูสลิปโอนคืนช่าง">ดูสลิปโอน</button>`
               : '');
 
@@ -3296,35 +3297,54 @@
       openModal('modalSlipViewer');
     }
 
+    // แสดงรูปในตัวดูสลิป (ดึงจาก Drive ถ้ารูปไม่ได้อยู่ในเครื่อง)
+    async function showSlipImage(x, expectId) {
+      const img = document.getElementById('slipViewerImg');
+      const link = document.getElementById('slipDownloadLink');
+      img.removeAttribute('src');
+      link.removeAttribute('href');
+      const meta = document.getElementById('slipViewerMeta');
+      const baseMeta = meta.textContent;
+      if (!x.slipDataUrl) meta.textContent = baseMeta + ' • กำลังโหลดรูปจาก Drive...';
+      try {
+        const src = await getSlipSrc(x);
+        if (expectId && (viewerPaymentId || viewerBillId) !== expectId) return; // ผู้ใช้เปลี่ยนไปดูรายการอื่นแล้ว
+        img.src = src;
+        link.href = src;
+        meta.textContent = baseMeta;
+      } catch (err) {
+        meta.textContent = baseMeta;
+        toast(err.message || 'โหลดรูปไม่สำเร็จ', 'error');
+      }
+    }
+
     function openPaymentSlipViewer(paymentId) {
       const p = state.payments.find(x => x.id === paymentId);
-      if (!p || !p.slipDataUrl) return;
+      if (!p || !hasSlip(p)) return;
       viewerPaymentId = paymentId;
       viewerBillId = null;
       const catText = p.category === 'materials' ? 'คืนค่าของ (บิลช่าง)' : 'ค่าแรงช่าง';
       document.getElementById('slipViewerTitle').textContent = `สลิปโอนเงิน — ${fmt(p.amount)} ฿`;
       document.getElementById('slipViewerMeta').textContent = `${p.date || 'ไม่ระบุวันที่'} • ${catText}${p.note ? ' • ' + p.note : ''}`;
-      document.getElementById('slipViewerImg').src = p.slipDataUrl;
-      document.getElementById('slipDownloadLink').href = p.slipDataUrl;
       document.getElementById('slipDownloadLink').download = `slip-${p.date || todayISO()}-${p.amount}.jpg`;
       document.getElementById('slipViewerLeftActions').style.display = 'flex';
       openModal('modalSlipViewer');
+      showSlipImage(p, paymentId);
     }
 
     function openBillSlipViewer(billId) {
       const b = state.bills.find(x => x.id === billId);
-      if (!b || !b.slipDataUrl) return;
+      if (!b || !hasSlip(b)) return;
       viewerPaymentId = null;
       viewerBillId = billId;
       const sum = (b.items || []).reduce((a, it) => a + (Number(it.amount) || 0), 0);
       const typeText = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
       document.getElementById('slipViewerTitle').textContent = `สลิป / รูปบิล — ${b.name}`;
       document.getElementById('slipViewerMeta').textContent = `${b.date || 'ไม่ระบุวันที่'} • ${typeText} • รวม ${fmt(sum)} ฿${b.note ? ' • ' + b.note : ''}`;
-      document.getElementById('slipViewerImg').src = b.slipDataUrl;
-      document.getElementById('slipDownloadLink').href = b.slipDataUrl;
       document.getElementById('slipDownloadLink').download = `bill-slip-${b.date || todayISO()}-${sum}.jpg`;
       document.getElementById('slipViewerLeftActions').style.display = 'flex';
       openModal('modalSlipViewer');
+      showSlipImage(b, billId);
     }
 
     function triggerAttachSlip(paymentId) {
@@ -3356,7 +3376,9 @@
       const p = state.payments.find(x => x.id === slipTargetPaymentId);
       if (!p) return;
       try {
-        p.slipDataUrl = await compressSlipImage(file);
+        const newSlip = await compressSlipImage(file);
+        releaseSlip(p); // ถ้ามีรูปเดิมใน Drive ให้ย้ายไปถังขยะ
+        p.slipDataUrl = newSlip;
         saveState();
         if (viewerPaymentId === p.id && document.getElementById('modalSlipViewer').classList.contains('open')) {
           openPaymentSlipViewer(p.id);
@@ -3376,7 +3398,9 @@
       const b = state.bills.find(x => x.id === slipTargetBillId);
       if (!b) return;
       try {
-        b.slipDataUrl = await compressSlipImage(file);
+        const newSlip = await compressSlipImage(file);
+        releaseSlip(b);
+        b.slipDataUrl = newSlip;
         saveState();
         if (viewerBillId === b.id && document.getElementById('modalSlipViewer').classList.contains('open')) {
           openBillSlipViewer(b.id);
@@ -3394,7 +3418,7 @@
         const p = state.payments.find(x => x.id === viewerPaymentId);
         if (!p) return;
         if (!confirm('ต้องการลบสลิปโอนเงินออกจากรายการนี้ใช่หรือไม่?')) return;
-        delete p.slipDataUrl;
+        releaseSlip(p);
         closeModal('modalSlipViewer');
         saveState();
         toast('ลบสลิปโอนเงินเรียบร้อย');
@@ -3402,7 +3426,7 @@
         const b = state.bills.find(x => x.id === viewerBillId);
         if (!b) return;
         if (!confirm(`ต้องการลบสลิปออกจาก "${b.name}" ใช่หรือไม่?`)) return;
-        delete b.slipDataUrl;
+        releaseSlip(b);
         closeModal('modalSlipViewer');
         saveState();
         toast('ลบสลิปออกจากบิลเรียบร้อย');
@@ -3480,7 +3504,7 @@
         return;
       }
       tbody.innerHTML = rows.map(p => {
-        const slipCell = p.slipDataUrl
+        const slipCell = hasSlip(p)
           ? `<button type="button" class="slip-pill-btn" onclick="openPaymentSlipViewer('${p.id}')" title="คลิกเพื่อดูสลิปโอนเงิน">ดูสลิป</button>`
           : `<button type="button" class="slip-add-btn" onclick="triggerAttachSlip('${p.id}')" title="แนบสลิปโอนเงิน">+ แนบสลิป</button>`;
         return `
@@ -3579,6 +3603,89 @@
         keepalive: Boolean(opts.keepalive) && body.length < 60000
       });
       return await res.json();
+    }
+
+    // ---- รูปสลิป: เก็บใน Google Drive (E2) แทนการฝัง base64 ในข้อมูลหลัก ----
+    const slipImageCache = {};
+    let slipOffloadRunning = false;
+    let slipOffloadRetryAt = 0;
+    let slipOffloadWarned = false;
+    let slipOffloadTimer = null;
+
+    function hasSlip(x) { return Boolean(x && (x.slipDataUrl || x.slipFileId)); }
+
+    async function getSlipSrc(x) {
+      if (x.slipDataUrl) return x.slipDataUrl;
+      if (!x.slipFileId) return '';
+      if (slipImageCache[x.slipFileId]) return slipImageCache[x.slipFileId];
+      const json = await sheetsCall({ action: 'getImage', fileId: x.slipFileId });
+      if (json.code === 'AUTH') throw new Error('ต้องใส่รหัสเข้าถึงก่อนจึงจะดูรูปจาก Drive ได้');
+      if (!json.ok) throw new Error(json.error || 'โหลดรูปไม่สำเร็จ');
+      slipImageCache[x.slipFileId] = json.dataUrl;
+      return json.dataUrl;
+    }
+
+    // ลบไฟล์ใน Drive (ถ้ามี) เมื่อผู้ใช้ลบหรือแทนที่สลิป ทำเบื้องหลัง ไม่ขัดการใช้งาน
+    function releaseSlip(x) {
+      if (x.slipFileId) {
+        const id = x.slipFileId;
+        delete slipImageCache[id];
+        if (config.sheetsUrl) sheetsCall({ action: 'trashImage', fileId: id }).catch(() => {});
+      }
+      delete x.slipFileId;
+      delete x.slipDataUrl;
+    }
+
+    function collectSlipHolders(node, out = []) {
+      if (Array.isArray(node)) { node.forEach(n => collectSlipHolders(n, out)); return out; }
+      if (node && typeof node === 'object') {
+        if (typeof node.slipDataUrl === 'string' && node.slipDataUrl.startsWith('data:image/')) out.push(node);
+        Object.values(node).forEach(v => { if (v && typeof v === 'object') collectSlipHolders(v, out); });
+      }
+      return out;
+    }
+
+    function scheduleSlipOffload() {
+      clearTimeout(slipOffloadTimer);
+      slipOffloadTimer = setTimeout(offloadSlips, 2500);
+    }
+
+    // ย้ายรูปที่ยังฝังอยู่ในข้อมูลไปเก็บใน Drive แล้วเหลือแค่ fileId ถ้าอัปโหลดไม่สำเร็จ รูปยังอยู่ในแอปเหมือนเดิม (ไม่หาย)
+    async function offloadSlips() {
+      if (slipOffloadRunning || !config.sheetsUrl || Date.now() < slipOffloadRetryAt) return;
+      const holders = collectSlipHolders(state);
+      if (!holders.length) return;
+      slipOffloadRunning = true;
+      let changed = false;
+      try {
+        for (const h of holders) {
+          const dataUrl = h.slipDataUrl;
+          const json = await sheetsCall({ action: 'uploadImage', dataUrl, name: `${h.date || todayISO()}_${h.id || Date.now()}.jpg` });
+          if (json.code === 'AUTH') { onSyncAuthFail(false); break; }
+          if (!json.ok) {
+            slipOffloadRetryAt = Date.now() + 5 * 60 * 1000;
+            if (!slipOffloadWarned) {
+              slipOffloadWarned = true;
+              toast('ยังเก็บรูปสลิปลง Drive ไม่ได้: ' + (json.error || 'ไม่ทราบสาเหตุ') + ' (รูปยังอยู่ในแอป ไม่หาย)', 'error');
+            }
+            break;
+          }
+          // ระหว่างอัปโหลดผู้ใช้อาจลบ/แทนที่สลิปไปแล้ว หรือข้อมูลถูกแทนที่จากชีต
+          if (h.slipDataUrl === dataUrl && collectSlipHolders(state).includes(h)) {
+            h.slipFileId = json.fileId;
+            delete h.slipDataUrl;
+            slipImageCache[json.fileId] = dataUrl;
+            changed = true;
+          } else if (json.fileId) {
+            sheetsCall({ action: 'trashImage', fileId: json.fileId }).catch(() => {});
+          }
+        }
+      } catch (e) {
+        slipOffloadRetryAt = Date.now() + 5 * 60 * 1000;
+      } finally {
+        slipOffloadRunning = false;
+      }
+      if (changed) saveState();
     }
 
     function onSyncAuthFail(showNotice = true) {
@@ -3881,6 +3988,9 @@ const SPREADSHEET_ID = ''; // ไม่ต้องใส่ถ้าสร้�
 const DATA_SHEET_NAME = '_AppData';
 const CHUNK_SIZE = 40000;
 const TOKEN_PROP = 'APP_TOKEN';
+// โฟลเดอร์ Drive สำหรับเก็บรูปสลิป/ใบเสร็จ (E2: ย้ายรูปออกจากข้อมูลหลักที่ซิงค์กับชีต)
+const SLIP_FOLDER_ID = ''; // ใส่ ID โฟลเดอร์ Drive สำหรับเก็บรูปสลิป (ปล่อยว่างถ้าไม่ใช้ฟีเจอร์นี้)
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
 function initAuthorize() {
   const ss = getSpreadsheet_();
@@ -3905,6 +4015,75 @@ function setupAppToken() {
   }
   Logger.log('APP_TOKEN = ' + token);
   return token;
+}
+
+// ---------- รูปสลิปใน Google Drive ----------
+// รันครั้งเดียวจากตัวแก้ไข Apps Script: ขออนุญาตใช้ Drive และตรวจว่าโฟลเดอร์ปลอดภัยพอจะเก็บสลิป
+function checkSlipFolder() {
+  const folder = getSlipFolder_();
+  const access = String(folder.getSharingAccess());
+  Logger.log('โฟลเดอร์: ' + folder.getName());
+  Logger.log('การแชร์ของโฟลเดอร์: ' + access);
+  if (access === 'PRIVATE') {
+    Logger.log('OK: โฟลเดอร์เป็นแบบจำกัด พร้อมเก็บสลิป');
+  } else {
+    Logger.log('คำเตือน: โฟลเดอร์ถูกแชร์แบบ ' + access + ' — ระบบจะไม่อัปโหลดสลิปจนกว่าจะเปลี่ยนเป็น "จำกัด (Restricted)" เพราะสลิปมีข้อมูลบัญชีและยอดเงิน');
+  }
+  return access;
+}
+
+function getSlipFolder_() {
+  return DriveApp.getFolderById(SLIP_FOLDER_ID);
+}
+
+function slipFolderIsPrivate_(folder) {
+  return folder.getSharingAccess() === DriveApp.Access.PRIVATE;
+}
+
+function safeFileName_(name, ext) {
+  let n = String(name || ('slip-' + Date.now())).replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 80);
+  if (!/\\.(jpg|png|webp)$/i.test(n)) n += '.' + ext;
+  return n;
+}
+
+// เข้าถึงได้เฉพาะไฟล์ที่อยู่ในโฟลเดอร์สลิป (กันการอ่าน/ลบไฟล์อื่นใน Drive ด้วย fileId ที่เดามา)
+function getSlipFile_(fileId) {
+  if (!/^[A-Za-z0-9_-]{10,}$/.test(String(fileId || ''))) return null;
+  let file;
+  try { file = DriveApp.getFileById(fileId); } catch (_) { return null; }
+  const parents = file.getParents();
+  while (parents.hasNext()) {
+    if (parents.next().getId() === SLIP_FOLDER_ID) return file;
+  }
+  return null;
+}
+
+function uploadImage_(payload) {
+  const m = /^data:(image\\/(?:jpeg|png|webp));base64,([A-Za-z0-9+\\/=]+)$/.exec(String(payload.dataUrl || ''));
+  if (!m) return { ok: false, error: 'รูปแบบรูปไม่ถูกต้อง (รองรับ JPG/PNG/WebP)' };
+  const bytes = Utilities.base64Decode(m[2]);
+  if (bytes.length > MAX_IMAGE_BYTES) return { ok: false, error: 'รูปใหญ่เกิน 4MB' };
+  const folder = getSlipFolder_();
+  if (!slipFolderIsPrivate_(folder)) {
+    return { ok: false, code: 'FOLDER_SHARED', error: 'โฟลเดอร์ Drive ถูกแชร์แบบลิงก์/สาธารณะ — เปลี่ยนเป็น "จำกัด (Restricted)" ก่อน ระบบจึงจะเก็บสลิป' };
+  }
+  const ext = m[1] === 'image/png' ? 'png' : (m[1] === 'image/webp' ? 'webp' : 'jpg');
+  const file = folder.createFile(Utilities.newBlob(bytes, m[1], safeFileName_(payload.name, ext)));
+  return { ok: true, fileId: file.getId(), name: file.getName() };
+}
+
+function getImage_(payload) {
+  const file = getSlipFile_(payload.fileId);
+  if (!file) return { ok: false, error: 'ไม่พบรูปในโฟลเดอร์สลิป' };
+  const blob = file.getBlob();
+  return { ok: true, dataUrl: 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes()) };
+}
+
+function trashImage_(payload) {
+  const file = getSlipFile_(payload.fileId);
+  if (!file) return { ok: false, error: 'ไม่พบรูปในโฟลเดอร์สลิป' };
+  file.setTrashed(true);
+  return { ok: true };
 }
 
 function getExpectedToken_() {
@@ -3988,6 +4167,16 @@ function doPost(e) {
 
     if (action === 'ping' || action === 'load') {
       return handleRead_(action);
+    }
+
+    if (action === 'uploadImage' || action === 'getImage' || action === 'trashImage') {
+      // รูปสลิปมีข้อมูลการเงิน: ต้องตั้งรหัสเข้าถึงก่อนจึงจะใช้ Drive ได้
+      if (!getExpectedToken_()) {
+        return jsonResponse({ ok: false, error: 'ต้องตั้งรหัสเข้าถึง (setupAppToken) ก่อนใช้ Drive' });
+      }
+      if (action === 'uploadImage') return jsonResponse(uploadImage_(payload));
+      if (action === 'getImage') return jsonResponse(getImage_(payload));
+      return jsonResponse(trashImage_(payload));
     }
 
     if (action === 'save') {
@@ -4202,7 +4391,7 @@ function renderReadableSheets_(data) {
     const buyerLabel = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
     const statusLabel = (b.buyerType === 'owner'
       ? 'เจ้าของจ่ายเองแล้ว'
-      : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' (' + b.reimbursedDate + ')' : '')) : 'รอจ่ายคืนช่าง')) + (b.slipDataUrl ? ' • มีสลิป' : '');
+      : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' (' + b.reimbursedDate + ')' : '')) : 'รอจ่ายคืนช่าง')) + ((b.slipDataUrl || b.slipFileId) ? ' • มีสลิป' : '');
     let billSum = 0;
     items.forEach(function (it, idx) {
       const amt = Number(it.amount) || 0;
@@ -4298,7 +4487,7 @@ function renderReadableSheets_(data) {
       p.date || '',
       p.category === 'materials' ? 'คืนค่าของ (บิลช่างซื้อ)' : 'ค่าแรงช่าง',
       Number(p.amount) || 0,
-      p.slipDataUrl ? 'มีสลิป' : '—',
+      (p.slipDataUrl || p.slipFileId) ? 'มีสลิป' : '—',
       p.note || ''
     ]);
   });
@@ -4328,6 +4517,7 @@ function renderReadableSheets_(data) {
     // Initial render
     renderAll();
     checkServerRevision();
+    scheduleSlipOffload();
   </script>
 </body>
 </html>
