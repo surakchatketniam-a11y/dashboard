@@ -6,36 +6,40 @@
   <title>บันทึกค่าใช้จ่ายสร้างบ้าน — เชื่อมต่อ Google Sheets</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Anuphan:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Anuphan:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     /* Mintlify Design System Tokens (from DESIGN.md + tokens.css) */
     :root {
-      --color-primary: #0a0a0a;
+      /* design/tokens.css (indigo / navy ink) */
+      --color-primary: #533afd;
+      --color-primary-deep: #4434d4;
+      --color-primary-press: #2e2b8c;
+      --color-primary-soft: #665efd;
+      --color-primary-subdued: #b9b9f9;
+      --color-brand-dark-900: #1c1e54;
+      --color-accent-soft: #eeebff;
       --color-on-primary: #ffffff;
-      --color-brand-green: #00d4a4;
-      --color-brand-green-deep: #00b48a;
-      --color-brand-green-soft: #7cebcb;
       --color-brand-tag: #3772cf;
       --color-brand-warn: #c37d0d;
       --color-brand-annotate: #1ba673;
       --color-brand-error: #d45656;
-      --color-brand-cursor: #888888;
+      --color-brand-cursor: #64748d;
       --color-canvas: #ffffff;
-      --color-canvas-dark: #0a0a0a;
-      --color-surface: #f7f7f7;
-      --color-surface-soft: #fafafa;
-      --color-surface-code: #1c1c1e;
-      --color-hairline: #e5e5e5;
-      --color-hairline-soft: #ededed;
-      --color-hairline-dark: #1f1f1f;
-      --color-ink: #0a0a0a;
-      --color-charcoal: #1c1c1e;
-      --color-slate: #3a3a3c;
-      --color-steel: #5a5a5c;
-      --color-stone: #888888;
-      --color-muted: #a8a8aa;
+      --color-canvas-dark: #1c1e54;
+      --color-surface: #f6f9fc;
+      --color-surface-soft: #f6f9fc;
+      --color-surface-code: #1c1e54;
+      --color-hairline: #e3e8ee;
+      --color-hairline-soft: #f1f4f7;
+      --color-hairline-dark: #1c1e54;
+      --color-ink: #0d253d;
+      --color-charcoal: #0d253d;
+      --color-slate: #273951;
+      --color-steel: #64748d;
+      --color-stone: #64748d;
+      --color-muted: #a3aeb9;
       --color-on-dark: #ffffff;
-      --color-on-dark-muted: #b3b3b3;
+      --color-on-dark-muted: #b9c3d0;
 
       --app-danger: #b44949;
       --app-danger-soft: #f8eded;
@@ -67,7 +71,8 @@
 
       --font-display: Inter, 'Anuphan', 'Noto Sans Thai', system-ui, sans-serif;
       --font-body: Inter, 'Anuphan', 'Noto Sans Thai', system-ui, sans-serif;
-      --font-mono: 'JetBrains Mono', 'Noto Sans Thai', ui-monospace, monospace;
+      /* ตัวเลขเงินใช้ฟอนต์ body + tnum (ตาม DESIGN.md) ไม่ใช้ monospace */
+      --font-mono: Inter, 'Anuphan', 'Noto Sans Thai', system-ui, sans-serif;
 
       /* Aliases for inline styles */
       --border: var(--color-hairline);
@@ -94,17 +99,20 @@
       letter-spacing: 0;
       overflow-wrap: break-word;
       -webkit-font-smoothing: antialiased;
+      font-feature-settings: "tnum";
+      font-variant-numeric: tabular-nums;
     }
 
     .num {
       font-family: var(--font-mono);
+      font-feature-settings: "tnum";
       font-variant-numeric: tabular-nums;
       letter-spacing: 0;
     }
 
     code {
       font-family: var(--font-mono);
-      font-size: 13px;
+      font-size: 14px;
       background: var(--color-surface);
       color: var(--color-charcoal);
       padding: 2px 6px;
@@ -141,7 +149,7 @@
       height: 36px;
       border-radius: var(--radius-md);
       background: var(--color-primary);
-      color: var(--color-brand-green);
+      color: var(--color-on-primary);
       display: grid;
       place-items: center;
       flex-shrink: 0;
@@ -154,7 +162,7 @@
       color: var(--color-ink);
     }
     .brand-sub {
-      font-size: 12.5px;
+      font-size: 13px;
       color: var(--color-steel);
       line-height: 1.4;
     }
@@ -186,22 +194,23 @@
     }
     .btn:hover { background: var(--color-surface); border-color: #d4d4d4; }
     .btn:active { transform: scale(0.98); }
-    .btn:focus-visible { outline: 2px solid var(--color-brand-green); outline-offset: 2px; }
+    .btn:focus-visible, .tab-btn:focus-visible, .filter-pill:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
     .btn-primary {
       background: var(--color-primary);
       border-color: var(--color-primary);
       color: var(--color-on-primary);
     }
-    .btn-primary:hover { background: var(--color-charcoal); border-color: var(--color-charcoal); }
+    .btn-primary:hover { background: var(--color-primary-press); border-color: var(--color-primary-press); }
 
+    /* เดิมเป็นปุ่มเขียว — ตาม design/ ให้มีปุ่ม filled เพียงปุ่มเดียวต่อแถบ จึงเป็นปุ่ม outline indigo */
     .btn-green {
-      background: var(--color-brand-green);
-      border-color: var(--color-brand-green);
+      background: var(--color-canvas);
+      border-color: var(--color-primary);
       color: var(--color-primary);
-      font-weight: 600;
+      font-weight: 500;
     }
-    .btn-green:hover { background: var(--color-brand-green-deep); border-color: var(--color-brand-green-deep); }
+    .btn-green:hover { background: var(--color-accent-soft); border-color: var(--color-primary-deep); color: var(--color-primary-deep); }
 
     .btn-ghost {
       border: 1px solid transparent;
@@ -223,12 +232,12 @@
       border-radius: var(--radius-full);
       cursor: pointer;
       font-family: inherit;
-      font-size: 12.5px;
+      font-size: 13px;
       font-weight: 500;
     }
     .btn-danger-ghost:hover { background: var(--app-danger-soft); }
 
-    .btn-sm { padding: 6px 14px; font-size: 13px; }
+    .btn-sm { padding: 6px 14px; font-size: 14px; }
 
     /* Sync Pill */
     .sync-pill {
@@ -238,7 +247,7 @@
       padding: 6px 14px;
       border-radius: var(--radius-full);
       font-family: var(--font-body);
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 500;
       border: 1px solid var(--color-hairline);
       background: var(--color-surface);
@@ -260,8 +269,8 @@
       color: var(--color-ink);
     }
     .sync-pill.connected .sync-dot {
-      background: var(--color-brand-green);
-      box-shadow: 0 0 0 3px rgba(0, 212, 164, 0.22);
+      background: var(--app-success);
+      box-shadow: 0 0 0 3px rgba(6, 118, 71, 0.18);
     }
     .sync-pill.syncing {
       background: var(--app-info-soft);
@@ -315,7 +324,7 @@
     }
     .tab-badge {
       font-family: var(--font-mono);
-      font-size: 11.5px;
+      font-size: 13px;
       padding: 1px 8px;
       border-radius: var(--radius-full);
       background: rgba(255, 255, 255, 0.18);
@@ -354,14 +363,15 @@
     }
     .card-title {
       font-family: var(--font-display);
-      font-size: 18px;
-      font-weight: 600;
+      font-size: 20px;
+      font-weight: 400;
       line-height: 1.4;
+      letter-spacing: 0;
       color: var(--color-ink);
       margin: 0;
     }
     .card-sub {
-      font-size: 13.5px;
+      font-size: 14px;
       color: var(--color-steel);
       margin-top: 2px;
     }
@@ -376,28 +386,28 @@
       background: var(--color-canvas);
       border: 1px solid var(--color-hairline);
       border-radius: var(--radius-lg);
-      padding: 20px 24px;
+      padding: 24px;
     }
-    /* Featured KPI Card (Mintlify pricing-card-featured treatment) */
+    /* Featured KPI Card (indigo border) */
     .kpi-card.highlight {
       background: var(--color-canvas);
-      border: 2px solid var(--color-brand-green);
-      box-shadow: rgba(0, 212, 164, 0.08) 0px 8px 24px;
+      border: 2px solid var(--color-primary);
+      box-shadow: rgba(83, 58, 253, 0.08) 0px 8px 24px;
     }
     .kpi-label {
-      font-size: 13.5px;
+      font-size: 14px;
       color: var(--color-steel);
       font-weight: 500;
     }
     .kpi-value {
-      font-size: 28px;
-      font-weight: 600;
+      font-size: 32px;
+      font-weight: 300;
       line-height: 1.35;
       margin-top: 6px;
       color: var(--color-ink);
     }
     .kpi-foot {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--color-steel);
       margin-top: 6px;
     }
@@ -419,7 +429,7 @@
     }
     .progress-fill {
       height: 100%;
-      background: var(--color-brand-green);
+      background: var(--color-primary);
       border-radius: var(--radius-full);
       transition: width 0.3s ease;
     }
@@ -434,9 +444,9 @@
     .split-stats.four-col {
       grid-template-columns: repeat(4, 1fr);
     }
-    .split-stat-label { font-size: 12.5px; color: var(--color-steel); }
+    .split-stat-label { font-size: 13px; color: var(--color-steel); }
     .split-stat-val { font-size: 17px; font-weight: 600; margin-top: 2px; color: var(--color-ink); }
-    .split-stat-sub { font-size: 12px; color: var(--color-steel); margin-top: 2px; }
+    .split-stat-sub { font-size: 13px; color: var(--color-steel); margin-top: 2px; }
 
     /* Bill Buyer Type Styles */
     .mat-breakdown-bar {
@@ -449,7 +459,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 12.5px;
+      font-size: 13px;
       padding: 4px 10px;
       border-radius: var(--radius-full);
       border: 1px solid var(--color-hairline);
@@ -484,7 +494,7 @@
       background: var(--color-canvas);
       color: var(--color-steel);
       font-family: var(--font-body);
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.15s;
@@ -497,7 +507,7 @@
     }
     .filter-pill .filter-count {
       font-family: var(--font-mono);
-      font-size: 11.5px;
+      font-size: 13px;
       padding: 0 6px;
       border-radius: var(--radius-full);
       background: rgba(255, 255, 255, 0.18);
@@ -507,35 +517,27 @@
       color: var(--color-steel);
     }
 
-    .bill-card.type-contractor {
-      border-top: 3px solid var(--app-warning);
-    }
-    .bill-card.type-contractor.is-settled {
-      border-top: 3px solid var(--app-success);
-    }
-    .bill-card.type-owner {
-      border-top: 3px solid var(--app-info);
-    }
+    /* ลดความรก: สถานะบอกด้วยแถบสถานะอย่างเดียว ไม่ซ้ำด้วยขอบบนสี */
     .bill-status-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
       padding: 8px 18px;
-      font-size: 12.5px;
+      font-size: 13px;
       border-bottom: 1px solid var(--color-hairline-soft);
       background: var(--color-canvas);
     }
     .bill-status-bar.unpaid {
-      background: var(--app-warning-soft);
+      background: var(--color-canvas);
       color: var(--app-warning);
     }
     .bill-status-bar.paid {
-      background: var(--app-success-soft);
+      background: var(--color-canvas);
       color: var(--app-success);
     }
     .bill-status-bar.owner {
-      background: var(--app-info-soft);
+      background: var(--color-canvas);
       color: var(--app-info);
     }
     .bill-status-label {
@@ -556,7 +558,7 @@
       background: var(--color-canvas);
       color: var(--app-success);
       font-family: var(--font-body);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
       padding: 3px 10px;
       border-radius: var(--radius-full);
@@ -574,7 +576,7 @@
       background: transparent;
       color: var(--color-steel);
       font-family: var(--font-body);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 500;
       padding: 2px 8px;
       border-radius: var(--radius-full);
@@ -647,7 +649,7 @@
       padding-top: 4px;
     }
     .new-bill-live-total {
-      font-size: 13.5px;
+      font-size: 14px;
       font-weight: 600;
       color: var(--color-ink);
       background: var(--color-surface);
@@ -670,7 +672,7 @@
       transition: border-color 0.15s, background-color 0.15s;
     }
     .slip-upload-box:hover {
-      border-color: var(--color-brand-green);
+      border-color: var(--color-primary);
       background: var(--color-canvas);
     }
     .slip-preview-wrap {
@@ -695,7 +697,7 @@
       padding: 4px 10px;
       border-radius: var(--radius-full);
       font-family: var(--font-body);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       border: 1px solid var(--app-info-border);
@@ -715,7 +717,7 @@
       padding: 4px 10px;
       border-radius: var(--radius-full);
       font-family: var(--font-body);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 500;
       cursor: pointer;
       border: 1px dashed var(--color-hairline);
@@ -751,7 +753,7 @@
       background: transparent;
       color: var(--color-steel);
       font-family: var(--font-body);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 500;
       padding: 3px 10px;
       border-radius: var(--radius-full);
@@ -772,6 +774,32 @@
       font-weight: 600;
       box-shadow: inset 0 0 0 1px var(--app-info-border);
     }
+
+    .buyer-toggle {
+      border: none;
+      background: transparent;
+      color: var(--color-steel);
+      font-family: var(--font-body);
+      font-size: 13px;
+      padding: 2px 0;
+      margin-top: 4px;
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-color: var(--color-hairline);
+      text-underline-offset: 3px;
+    }
+    .buyer-toggle:hover { color: var(--color-primary); text-decoration-color: currentColor; }
+    .bill-add-details > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 10px 18px 14px;
+      font-size: 14px;
+      color: var(--color-primary);
+      font-weight: 500;
+    }
+    .bill-add-details > summary::-webkit-details-marker { display: none; }
+    .bill-add-details > summary:hover { color: var(--color-primary-deep); }
+    .bill-add-details[open] > summary { padding-bottom: 0; color: var(--color-steel); }
 
     .buyer-type-grid {
       display: grid;
@@ -805,7 +833,7 @@
     .buyer-type-option.active.contractor .buyer-type-option-title { color: var(--app-warning); }
     .buyer-type-option.active.owner .buyer-type-option-title { color: var(--app-info); }
     .buyer-type-option-desc {
-      font-size: 12px;
+      font-size: 13px;
       color: var(--color-steel);
       margin-top: 2px;
       line-height: 1.45;
@@ -840,9 +868,8 @@
       overflow: hidden;
     }
     .bill-head {
-      padding: 16px 18px;
-      background: var(--color-surface-soft);
-      border-bottom: 1px solid var(--color-hairline-soft);
+      padding: 16px 18px 8px;
+      background: var(--color-canvas);
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
@@ -854,14 +881,14 @@
       color: var(--color-ink);
     }
     .bill-meta {
-      font-size: 12.5px;
+      font-size: 13px;
       color: var(--color-steel);
       margin-top: 2px;
     }
-    .inline-edit-title,
-    .inline-edit-note,
-    .inline-edit-item,
-    .inline-edit-amt {
+    .bill-card input.inline-edit-title,
+    .bill-card input.inline-edit-note,
+    .bill-card input.inline-edit-item,
+    .bill-card input.inline-edit-amt {
       background: transparent;
       border: 1px solid transparent;
       border-radius: var(--radius-sm);
@@ -870,19 +897,19 @@
       margin-left: -6px;
       transition: background-color 0.15s, border-color 0.15s;
     }
-    .inline-edit-title {
+    .bill-card input.inline-edit-title {
       font-weight: 600;
       font-size: 15.5px;
       color: var(--color-ink);
       width: 100%;
     }
-    .inline-edit-note {
-      font-size: 12.5px;
+    .bill-card input.inline-edit-note {
+      font-size: 13px;
       color: var(--color-steel);
       flex: 1;
       min-width: 0;
     }
-    .inline-edit-date {
+    .bill-card input.inline-edit-date {
       background: transparent;
       border: 1px solid transparent;
       border-radius: var(--radius-sm);
@@ -890,20 +917,20 @@
       padding: 2px 6px;
       margin-left: -6px;
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: 13px;
       color: var(--color-steel);
       width: 132px;
       flex-shrink: 0;
       transition: background-color 0.15s, border-color 0.15s;
     }
-    .inline-edit-date:hover {
+    .bill-card input.inline-edit-date:hover {
       background: var(--color-canvas);
       border-color: var(--color-hairline);
     }
-    .inline-edit-date:focus {
+    .bill-card input.inline-edit-date:focus {
       background: var(--color-canvas);
-      border-color: var(--color-brand-green);
-      box-shadow: 0 0 0 2px rgba(0, 212, 164, 0.18);
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(83, 58, 253, 0.18);
     }
     .bill-meta-row {
       display: flex;
@@ -912,13 +939,13 @@
       margin-top: 3px;
       flex-wrap: wrap;
     }
-    .inline-edit-item {
+    .bill-card input.inline-edit-item {
       font-size: 14px;
       color: var(--color-ink);
       flex: 1;
       min-width: 0;
     }
-    .inline-edit-amt {
+    .bill-card input.inline-edit-amt {
       font-family: var(--font-mono);
       font-size: 14px;
       font-weight: 600;
@@ -927,27 +954,27 @@
       text-align: right;
       margin-left: 0;
     }
-    .inline-edit-title:hover,
-    .inline-edit-note:hover,
-    .inline-edit-item:hover,
-    .inline-edit-amt:hover {
+    .bill-card input.inline-edit-title:hover,
+    .bill-card input.inline-edit-note:hover,
+    .bill-card input.inline-edit-item:hover,
+    .bill-card input.inline-edit-amt:hover {
       background: var(--color-canvas);
       border-color: var(--color-hairline);
     }
-    .inline-edit-title:focus,
-    .inline-edit-note:focus,
-    .inline-edit-item:focus,
-    .inline-edit-amt:focus {
+    .bill-card input.inline-edit-title:focus,
+    .bill-card input.inline-edit-note:focus,
+    .bill-card input.inline-edit-item:focus,
+    .bill-card input.inline-edit-amt:focus {
       background: var(--color-canvas);
-      border-color: var(--color-brand-green);
-      box-shadow: 0 0 0 2px rgba(0, 212, 164, 0.18);
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(83, 58, 253, 0.18);
     }
     .bill-sum-badge {
       background: var(--color-surface);
       color: var(--color-ink);
       border: 1px solid var(--color-hairline);
       font-weight: 600;
-      font-size: 13.5px;
+      font-size: 14px;
       padding: 3px 10px;
       border-radius: var(--radius-full);
       white-space: nowrap;
@@ -967,37 +994,36 @@
     }
     .bill-item-row:last-child { border-bottom: none; }
     .bill-add-form {
-      padding: 12px 14px;
-      background: var(--color-surface-soft);
-      border-top: 1px solid var(--color-hairline-soft);
+      padding: 8px 14px 14px;
+      background: var(--color-canvas);
       display: flex;
       gap: 8px;
       align-items: center;
     }
     .bill-add-form input {
-      font-size: 13.5px;
+      font-size: 14px;
       padding: 6px 10px;
       height: 36px;
     }
     .bill-add-form .inp-name { flex: 1; min-width: 0; }
     .bill-add-form .inp-amt { width: 96px; text-align: right; font-family: var(--font-mono); }
 
-    /* Inputs (Mintlify text-input + brand-green focus) */
+    /* Inputs (design/ text-input: radius 6px, hairline-input border, indigo focus) */
     input[type="text"], input[type="number"], input[type="date"], select, textarea {
       font-family: var(--font-body);
-      font-size: 14px;
+      font-size: 15px;
       color: var(--color-ink);
       background: var(--color-canvas);
-      border: 1px solid var(--color-hairline);
-      border-radius: var(--radius-md);
+      border: 1px solid #a8c3de;
+      border-radius: var(--radius-sm);
       padding: 8px 12px;
       height: 40px;
       outline: none;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
     input:focus, select:focus, textarea:focus {
-      border-color: var(--color-brand-green);
-      box-shadow: 0 0 0 2px rgba(0, 212, 164, 0.2);
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(83, 58, 253, 0.2);
     }
 
     /* Tables (Mintlify Feature Comparison Table) */
@@ -1022,7 +1048,7 @@
       background: var(--color-surface-soft);
       font-weight: 600;
       color: var(--color-steel);
-      font-size: 13px;
+      font-size: 14px;
       border-bottom: 1px solid var(--color-hairline);
     }
     tr:last-child td { border-bottom: none; }
@@ -1055,12 +1081,13 @@
       gap: 4px;
     }
     .att-btn {
-      min-width: 74px;
-      padding: 5px 10px;
-      border-radius: var(--radius-full);
+      min-width: 84px;
+      min-height: 36px;
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
       border: 1px solid var(--color-hairline);
       font-family: var(--font-mono);
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.12s;
@@ -1078,23 +1105,26 @@
       color: var(--app-warning);
     }
     .att-btn.absent {
-      background: var(--color-surface);
-      border-color: var(--color-hairline-soft);
-      color: var(--color-muted);
+      background: var(--color-canvas);
+      border: 1px dashed var(--color-hairline-input, #a8c3de);
+      color: var(--color-steel);
     }
-    .att-btn.absent:hover { background: #efefef; color: var(--color-steel); }
+    .att-btn.absent:hover { background: var(--color-surface); color: var(--color-ink); }
     .att-edit-mini {
       border: none;
       background: transparent;
-      color: var(--color-muted);
+      color: var(--color-steel);
       cursor: pointer;
+      min-width: 32px;
+      min-height: 32px;
       padding: 3px 5px;
-      border-radius: var(--radius-xs);
-      font-size: 12px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
     }
     .att-edit-mini:hover { background: var(--color-surface); color: var(--color-ink); }
 
-    /* Worker chips */
+    /* Worker chips: ซ้ำกับหัวตาราง (ชื่อ + ค่าแรง/วัน) จึงซ่อนในแท็บค่าแรง */
+    #workerChips { display: none; }
     .worker-chips {
       display: flex;
       gap: 8px;
@@ -1109,7 +1139,7 @@
       border: 1px solid var(--color-hairline);
       border-radius: var(--radius-full);
       padding: 6px 14px;
-      font-size: 13.5px;
+      font-size: 14px;
     }
     .worker-chip strong { color: var(--color-ink); font-weight: 600; }
     .worker-rate {
@@ -1118,7 +1148,7 @@
       color: var(--color-steel);
       font-family: var(--font-mono);
       font-weight: 500;
-      font-size: 12px;
+      font-size: 13px;
       padding: 1px 8px;
       border-radius: var(--radius-full);
     }
@@ -1128,7 +1158,7 @@
       display: inline-block;
       padding: 2px 10px;
       border-radius: var(--radius-sm);
-      font-size: 12.5px;
+      font-size: 13px;
       font-weight: 600;
     }
     .cat-materials { background: var(--color-surface); color: var(--color-ink); border: 1px solid var(--color-hairline); }
@@ -1183,7 +1213,7 @@
     .form-group { margin-bottom: 16px; }
     .form-group label {
       display: block;
-      font-size: 13.5px;
+      font-size: 14px;
       font-weight: 500;
       color: var(--color-charcoal);
       margin-bottom: 6px;
@@ -1200,7 +1230,7 @@
       border: 1px solid var(--color-hairline);
       border-radius: var(--radius-md);
       padding: 16px 18px;
-      font-size: 13.5px;
+      font-size: 14px;
       line-height: 1.7;
       margin-bottom: 16px;
     }
@@ -1218,16 +1248,16 @@
       gap: 8px;
     }
     .toast {
-      background: var(--color-primary);
+      background: var(--color-brand-dark-900);
       color: var(--color-on-dark);
       padding: 11px 18px;
       border-radius: var(--radius-full);
-      font-size: 13.5px;
+      font-size: 14px;
       font-weight: 500;
       box-shadow: rgba(0, 0, 0, 0.16) 0px 12px 24px -4px;
       animation: slideUp 0.2s ease;
     }
-    .toast.success { background: var(--color-primary); border: 1px solid var(--color-brand-green); }
+    .toast.success { background: var(--color-brand-dark-900); border: 1px solid var(--app-success); }
     .toast.error { background: var(--color-brand-error); }
     @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -1455,15 +1485,15 @@
           <div>
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
               <h2 class="card-title">ตารางค่าแรงช่าง</h2>
-              <span class="bill-sum-badge" id="currentPeriodBadge" style="background:var(--color-primary); color:var(--color-on-primary); border-color:var(--color-primary);">งวดที่ 1 (กำลังทำงาน)</span>
+              <span class="bill-sum-badge" id="currentPeriodBadge" style="background:var(--color-accent-soft); color:var(--color-primary-deep); border-color:var(--color-primary-subdued);">งวดที่ 1 (กำลังทำงาน)</span>
             </div>
-            <div class="card-sub">คลิกปุ่มในตารางเพื่อสลับ "มาทำงาน / ไม่มา" หรือกด ✎ เพื่อใส่ครึ่งวัน/กำหนดเอง — เมื่อจ่ายครบแล้วกด "ตัดยอดปิดงวด" เพื่อเริ่มงวดใหม่</div>
+            <div class="card-sub">แตะช่องในตารางเพื่อสลับมา/ไม่มา · ✎ ใส่ครึ่งวันหรือยอดเอง</div>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="btn btn-sm" onclick="openWorkerModal()">+ เพิ่ม / แก้ไขช่าง</button>
-            <button class="btn btn-green btn-sm" onclick="openAddDayModal()">+ เพิ่มวันทำงาน</button>
-            <button class="btn btn-sm" onclick="openPaymentModal('labor')">เบิกล่วงหน้างวดนี้</button>
-            <button class="btn btn-primary btn-sm" onclick="openClosePeriodModal()">ตัดยอดปิดงวด</button>
+            <button class="btn btn-primary btn-sm" onclick="openAddDayModal()">+ เพิ่มวันทำงาน</button>
+            <button class="btn btn-sm" onclick="openPaymentModal('labor')">เบิกล่วงหน้า</button>
+            <button class="btn btn-sm" onclick="openClosePeriodModal()">ตัดยอดปิดงวด</button>
+            <button class="btn btn-ghost btn-sm" onclick="openWorkerModal()">จัดการช่าง</button>
           </div>
         </div>
         <div class="worker-chips" id="workerChips"></div>
@@ -1992,6 +2022,7 @@
     let config = loadConfig();
     let autoSyncTimer = null;
     let billFilter = 'all';
+    const openAddForms = new Set(); // การ์ดบิลที่เปิดฟอร์มเพิ่มรายการค้างไว้ (กันพับหลัง re-render)
     const pendingSlips = { pay: '', settle: '', closePeriod: '', newBill: '' };
     let slipTargetPaymentId = null;
     let slipTargetBillId = null;
@@ -2367,10 +2398,7 @@
                   <input type="date" class="inline-edit-date" value="${esc(bill.date || '')}" title="วันที่บิล" onchange="updateBillField('${bill.id}', 'date', this.value)" />
                   <input type="text" class="inline-edit-note" value="${esc(bill.note || '')}" placeholder="เพิ่มหมายเหตุ / ชื่อร้าน..." onchange="updateBillField('${bill.id}', 'note', this.value)" />
                 </div>
-                <div class="buyer-switch" role="group" aria-label="ประเภทผู้ซื้อ">
-                  <button type="button" class="buyer-switch-btn contractor ${!isOwner ? 'active' : ''}" onclick="setBillBuyerType('${bill.id}', 'contractor')" title="ช่างซื้อแล้วมาเบิก (นับเข้ายอดค้างจ่ายช่าง)">ช่างซื้อมาเบิก</button>
-                  <button type="button" class="buyer-switch-btn owner ${isOwner ? 'active' : ''}" onclick="setBillBuyerType('${bill.id}', 'owner')" title="เจ้าของซื้อเอง (เก็บยอดค่าใช้จ่าย ไม่ค้างจ่ายช่าง)">เจ้าของซื้อเอง</button>
-                </div>
+                <button type="button" class="buyer-toggle" onclick="setBillBuyerType('${bill.id}', '${isOwner ? 'contractor' : 'owner'}')" title="${isOwner ? 'เปลี่ยนเป็นช่างซื้อมาเบิก (นับเข้ายอดค้างจ่ายช่าง)' : 'เปลี่ยนเป็นเจ้าของซื้อเอง (ไม่ค้างจ่ายช่าง)'}">${isOwner ? 'เปลี่ยนเป็น ช่างซื้อมาเบิก' : 'เปลี่ยนเป็น เจ้าของซื้อเอง'}</button>
               </div>
               <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
                 <span class="bill-sum-badge num">${fmt(sum)} ฿</span>
@@ -2379,11 +2407,14 @@
             </div>
             ${statusBarHtml}
             <div class="bill-items">${itemsHtml}</div>
+            <details class="bill-add-details" ${openAddForms.has(bill.id) ? 'open' : ''} ontoggle="this.open ? openAddForms.add('${bill.id}') : openAddForms.delete('${bill.id}')">
+              <summary>+ เพิ่มรายการ</summary>
             <form class="bill-add-form" onsubmit="addBillItem(event, '${bill.id}')">
               <input type="text" class="inp-name" name="itemName" placeholder="ชื่อรายการ (ไม่บังคับ)" />
               <input type="number" class="inp-amt" name="itemAmt" placeholder="ราคา ฿" min="0" step="any" required />
               <button type="submit" class="btn btn-primary btn-sm">+ เพิ่ม</button>
             </form>
+            </details>
           </div>
         `;
       }).join('');
