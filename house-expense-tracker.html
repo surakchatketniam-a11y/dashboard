@@ -396,11 +396,18 @@
       padding: 24px;
     }
     /* Featured KPI Card (indigo border) */
+    /* การ์ดที่ต้องจับตา (ยอดคงเหลือที่ต้องจ่าย): เน้นด้วยสีสถานะ ไม่ใช้ม่วง (ม่วงสงวนไว้ให้ปุ่มหลัก/ลิงก์/แท็บที่เลือก)
+       ค้างจ่าย = พื้นแดงอ่อน, ไม่มียอดค้าง = พื้นเขียวอ่อน */
     .kpi-card.highlight {
-      background: var(--color-canvas);
-      border: 2px solid var(--color-primary);
-      box-shadow: rgba(83, 58, 253, 0.08) 0px 8px 24px;
+      background: var(--app-danger-soft);
+      border: 1px solid var(--app-danger-border);
+      box-shadow: none;
     }
+    .kpi-card.highlight.is-clear {
+      background: var(--app-success-soft);
+      border-color: var(--app-success-border);
+    }
+    .kpi-card.highlight .kpi-label, .kpi-card.highlight .kpi-foot { color: var(--color-slate); }
     .kpi-label {
       font-size: 14px;
       color: var(--color-steel);
@@ -2607,7 +2614,10 @@
       document.getElementById('kpiPaidAll').textContent = fmt(s.paidAll) + ' ฿';
       const paidPct = s.totalAll > 0 ? Math.min(100, Math.round((s.paidAll / s.totalAll) * 100)) : 0;
       document.getElementById('kpiPaidPct').textContent = `คิดเป็น ${paidPct}% ของยอดรวม (รวมบิลเจ้าของซื้อเอง)`;
-      document.getElementById('kpiRemainAll').textContent = fmt(s.remainAll) + ' ฿';
+      const kpiRemainEl = document.getElementById('kpiRemainAll');
+      kpiRemainEl.textContent = fmt(s.remainAll) + ' ฿';
+      kpiRemainEl.className = 'kpi-value num ' + (s.remainAll > 0 ? 'text-rose' : 'text-green');
+      kpiRemainEl.closest('.kpi-card').classList.toggle('is-clear', s.remainAll <= 0);
       document.getElementById('kpiRemainSub').textContent = `ค่าของช่างซื้อ ${fmt(s.remainMaterials)} ฿ + ค่าแรง ${fmt(s.remainLabor)} ฿`;
 
       // Materials card
