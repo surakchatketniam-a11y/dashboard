@@ -1280,7 +1280,86 @@
       .buyer-type-grid { grid-template-columns: 1fr; }
       .kpi-value { font-size: 24px; }
       .topbar-inner, .tabs-wrap, .container { padding-left: 16px; padding-right: 16px; }
-      .btn { min-height: 40px; }
+      .btn { min-height: 44px; }
+    }
+
+    /* ---------- Mobile (<=768px): bottom tab bar, compact header, card-style tables ---------- */
+    @media (max-width: 768px) {
+      .topbar { position: static; }
+      .topbar-inner { padding-top: 10px; padding-bottom: 10px; gap: 8px; }
+      .brand-sub { display: none; }
+      .topbar-actions { width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 6px; }
+      .topbar-actions::-webkit-scrollbar { display: none; }
+      .topbar-actions .sync-pill, .topbar-actions .btn { flex-shrink: 0; padding: 8px 12px; font-size: 14px; min-height: 40px; }
+
+      /* Bottom tab bar */
+      .tabs-wrap {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+        max-width: none; margin: 0;
+        padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+        background: rgba(255, 255, 255, 0.97);
+        border-top: 1px solid var(--color-hairline);
+        backdrop-filter: blur(12px);
+      }
+      .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; overflow: visible; padding: 0; }
+      .tab-btn {
+        flex-direction: column; justify-content: center; gap: 2px;
+        min-height: 48px; padding: 6px 2px; border: none; border-radius: var(--radius-md);
+        font-size: 13px; line-height: 1.25; text-align: center; white-space: normal;
+      }
+      .tab-btn:not(.active) { background: transparent; }
+      .tab-btn .tab-badge { display: none; }
+      .container { padding-bottom: 96px; }
+      .toast-wrap { bottom: 84px; right: 12px; left: 12px; }
+
+      /* Quick actions: primary full width, others side by side */
+      .quick-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .quick-bar .btn:first-child { grid-column: 1 / -1; }
+      .card-header > div:last-child:not(:only-child) { width: 100%; }
+
+      /* Touch targets >= 44px in bill cards */
+      .bill-card .btn-danger-ghost, .bill-item-row .btn-danger-ghost { min-width: 44px; min-height: 44px; font-size: 14px; }
+      .buyer-toggle { min-height: 44px; display: inline-flex; align-items: center; margin-top: 0; }
+      .btn-settle-mini, .btn-unsettle-mini, .slip-pill-btn, .slip-add-btn { min-height: 40px; }
+      .bill-add-details > summary { padding-top: 0; min-height: 44px; display: flex; align-items: center; }
+      .filter-pill { min-height: 40px; }
+
+      /* Attendance matrix -> one card per day */
+      .matrix-table, .matrix-table tbody, .matrix-table tfoot, .matrix-table tr, .matrix-table td { display: block; width: 100%; }
+      .matrix-table thead { display: none; }
+      .matrix-table tr { position: relative; border: 1px solid var(--color-hairline); border-radius: var(--radius-lg); margin-bottom: 12px; padding: 4px 12px 8px; background: var(--color-canvas); }
+      .matrix-table td, .matrix-table td:first-child { position: static; border: none; border-right: none; background: transparent; padding: 6px 0; text-align: left; }
+      .matrix-table td.att-date { font-size: 16px; padding: 10px 40px 6px 0; border-bottom: 1px solid var(--color-hairline-soft); }
+      .matrix-table td[data-label] { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .matrix-table td[data-label]::before { content: attr(data-label); font-size: 14px; color: var(--color-steel); flex: 1; min-width: 0; }
+      .matrix-table td.att-sum { border-top: 1px solid var(--color-hairline-soft); margin-top: 4px; padding-top: 10px; font-weight: 600; }
+      .matrix-table td.att-del { position: absolute; top: 4px; right: 4px; width: auto; padding: 0; }
+      .matrix-table td.att-del:empty { display: none; }
+      .matrix-table td.att-del .btn-danger-ghost { min-width: 44px; min-height: 44px; font-size: 16px; }
+      .matrix-table tbody tr:hover td:first-child { background: transparent; }
+      .matrix-table tfoot tr { background: var(--color-surface); }
+      .matrix-table tfoot td { background: transparent; border-top: none; }
+      .att-btn { min-width: 96px; min-height: 44px; }
+      .att-edit-mini { min-width: 44px; min-height: 44px; }
+      #tab-labor .table-wrap { border: none; background: transparent; overflow: visible; }
+      #tab-labor .card { padding: 12px; }
+
+      /* Payments table -> cards */
+      #tab-payments table, #tab-payments tbody, #tab-payments tr, #tab-payments td { display: block; width: 100%; }
+      #tab-payments thead { display: none; }
+      #tab-payments .table-wrap { border: none; overflow: visible; background: transparent; }
+      #tab-payments tbody tr { position: relative; border: 1px solid var(--color-hairline); border-radius: var(--radius-lg); padding: 10px 12px; margin-bottom: 10px; background: var(--color-canvas); display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
+      #tab-payments td { border: none; padding: 0; text-align: left; background: transparent; }
+      #tab-payments td.pay-date { grid-column: 1; font-size: 14px; color: var(--color-steel); }
+      #tab-payments td.pay-amt { grid-column: 2; grid-row: 1; text-align: right; font-size: 17px; }
+      #tab-payments td.pay-cat { grid-column: 1 / -1; }
+      #tab-payments td.pay-note { grid-column: 1 / -1; }
+      #tab-payments td.pay-slip { grid-column: 1; text-align: left; }
+      #tab-payments td.pay-del { grid-column: 2; text-align: right; }
+      #tab-payments td.pay-del .btn-danger-ghost, #tab-payments td.pay-slip button { min-height: 40px; }
+      #tab-payments tr:hover td { background: transparent; }
+      #tab-payments td.empty-state { grid-column: 1 / -1; }
+      #tab-payments tbody tr:has(td.empty-state) { display: block; border: none; }
     }
   </style>
 </head>
@@ -2728,7 +2807,7 @@
               const cls = val === 0 ? 'absent' : (val === Number(w.dailyRate) ? 'full' : 'custom');
               const label = val === 0 ? '—' : fmt(val);
               return `
-                <td class="text-center">
+                <td class="text-center" data-label="${esc(w.name)} · ${fmt(w.dailyRate)} ฿/วัน">
                   <div class="att-cell">
                     <button class="att-btn ${cls}" title="คลิกเพื่อสลับ มาเต็มวัน / ไม่มา" onclick="toggleAtt('${day.id}', '${w.id}')">${label}</button>
                     <button class="att-edit-mini" title="กำหนดครึ่งวันหรือใส่ยอดเอง" onclick="openEditAtt('${day.id}', '${w.id}')">✎</button>
@@ -2738,10 +2817,10 @@
             }).join('');
             return `
               <tr>
-                <td><strong>${esc(day.date)}</strong></td>
+                <td class="att-date"><strong>${esc(day.date)}</strong></td>
                 ${cells}
-                <td class="text-right num"><strong>${fmt(rowSum)}</strong></td>
-                <td class="text-center"><button class="btn-danger-ghost" title="ลบวันนี้" onclick="deleteDay('${day.id}')">✕</button></td>
+                <td class="text-right num att-sum" data-label="รวมวันนี้"><strong>${fmt(rowSum)} ฿</strong></td>
+                <td class="text-center att-del"><button class="btn-danger-ghost" title="ลบวันนี้" onclick="deleteDay('${day.id}')">✕</button></td>
               </tr>
             `;
           }).join('');
@@ -2749,10 +2828,10 @@
       const tfoot = `
         <tfoot>
           <tr>
-            <td>รวมค่าแรงงวดนี้</td>
-            ${state.workers.map(w => `<td class="text-center num">${fmt(s.activeWorkerTotals[w.id] || 0)}</td>`).join('')}
-            <td class="text-right num text-primary">${fmt(s.activeLabor)} ฿</td>
-            <td></td>
+            <td class="att-date">รวมค่าแรงงวดนี้</td>
+            ${state.workers.map(w => `<td class="text-center num" data-label="${esc(w.name)}">${fmt(s.activeWorkerTotals[w.id] || 0)}</td>`).join('')}
+            <td class="text-right num text-primary att-sum" data-label="รวมทั้งงวด">${fmt(s.activeLabor)} ฿</td>
+            <td class="att-del"></td>
           </tr>
         </tfoot>
       `;
@@ -3342,12 +3421,12 @@
           : `<button type="button" class="slip-add-btn" onclick="triggerAttachSlip('${p.id}')" title="แนบสลิปโอนเงิน">+ แนบสลิป</button>`;
         return `
           <tr>
-            <td>${p.date ? esc(p.date) : '<span class="text-muted">ไม่ระบุวันที่</span>'}</td>
-            <td><span class="cat-badge ${p.category === 'materials' ? 'cat-materials' : 'cat-labor'}">${p.category === 'materials' ? 'คืนค่าของ (บิลช่าง)' : 'ค่าแรงช่าง'}</span></td>
-            <td>${esc(p.note || '—')}</td>
-            <td class="text-center">${slipCell}</td>
-            <td class="text-right num"><strong>${fmt(p.amount)} ฿</strong></td>
-            <td class="text-center"><button class="btn-danger-ghost" onclick="deletePayment('${p.id}')">✕</button></td>
+            <td class="pay-date">${p.date ? esc(p.date) : '<span class="text-muted">ไม่ระบุวันที่</span>'}</td>
+            <td class="pay-cat"><span class="cat-badge ${p.category === 'materials' ? 'cat-materials' : 'cat-labor'}">${p.category === 'materials' ? 'คืนค่าของ (บิลช่าง)' : 'ค่าแรงช่าง'}</span></td>
+            <td class="pay-note">${esc(p.note || '—')}</td>
+            <td class="text-center pay-slip">${slipCell}</td>
+            <td class="text-right num pay-amt"><strong>${fmt(p.amount)} ฿</strong></td>
+            <td class="text-center pay-del"><button class="btn-danger-ghost" title="ลบรายการ" onclick="deletePayment('${p.id}')">✕</button></td>
           </tr>
         `;
       }).join('');
