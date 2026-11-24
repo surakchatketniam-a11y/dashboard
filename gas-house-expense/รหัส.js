@@ -77,6 +77,7 @@ function getSlipFile_(fileId) {
   if (!/^[A-Za-z0-9_-]{10,}$/.test(String(fileId || ''))) return null;
   let file;
   try { file = DriveApp.getFileById(fileId); } catch (_) { return null; }
+  if (file.isTrashed()) return null; // ไฟล์ที่ลบแล้ว (อยู่ในถังขยะ) ไม่ส่งรูปให้อีก
   const parents = file.getParents();
   while (parents.hasNext()) {
     if (parents.next().getId() === SLIP_FOLDER_ID) return file;

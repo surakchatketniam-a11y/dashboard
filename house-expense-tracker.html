@@ -238,6 +238,8 @@
     .btn-danger-ghost:hover { background: var(--app-danger-soft); }
 
     .btn-sm { padding: 6px 14px; font-size: 14px; }
+    .icon-btn { width: 40px; height: 40px; min-height: 40px; padding: 0; border-radius: var(--radius-full); color: var(--color-steel); }
+    .icon-btn:hover { color: var(--color-primary); }
 
     /* Sync Pill */
     .sync-pill {
@@ -1293,6 +1295,7 @@
       .topbar-actions { width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 6px; }
       .topbar-actions::-webkit-scrollbar { display: none; }
       .topbar-actions .sync-pill, .topbar-actions .btn { flex-shrink: 0; padding: 8px 12px; font-size: 14px; min-height: 40px; }
+      .topbar-actions .icon-btn { width: 44px; height: 44px; min-height: 44px; padding: 0; }
 
       /* Bottom tab bar */
       .tabs-wrap {
@@ -1403,7 +1406,9 @@
           <span class="sync-dot"></span>
           <span id="syncStatusText">ยังไม่เชื่อม Google Sheets</span>
         </button>
-        <button class="btn btn-sm" onclick="openBackupModal()">ข้อมูล / สำรอง</button>
+        <button class="btn icon-btn" onclick="openBackupModal()" title="ตั้งค่า / ข้อมูล / สำรอง" aria-label="ตั้งค่า ข้อมูล และสำรองข้อมูล">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
       </div>
     </div>
   </header>
@@ -4051,6 +4056,7 @@ function getSlipFile_(fileId) {
   if (!/^[A-Za-z0-9_-]{10,}$/.test(String(fileId || ''))) return null;
   let file;
   try { file = DriveApp.getFileById(fileId); } catch (_) { return null; }
+  if (file.isTrashed()) return null; // ไฟล์ที่ลบแล้ว (อยู่ในถังขยะ) ไม่ส่งรูปให้อีก
   const parents = file.getParents();
   while (parents.hasNext()) {
     if (parents.next().getId() === SLIP_FOLDER_ID) return file;
