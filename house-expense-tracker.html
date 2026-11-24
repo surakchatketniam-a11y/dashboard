@@ -1068,7 +1068,7 @@
     .bill-add-form .inp-amt { width: 96px; text-align: right; font-family: var(--font-mono); }
 
     /* Inputs (design/ text-input: radius 6px, hairline-input border, indigo focus) */
-    input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    input[type="text"], input[type="number"], input[type="date"], input[type="password"], select, textarea {
       font-family: var(--font-body);
       font-size: 15px;
       color: var(--color-ink);
@@ -1380,6 +1380,23 @@
       .quick-bar .btn:first-child { grid-column: 1 / -1; }
       .card-header > div:last-child:not(:only-child) { width: 100%; }
 
+      /* ตารางสรุปค่าแรงรายช่าง (หน้าภาพรวม) -> การ์ดต่อช่าง: ชื่อ + ยอดรวมบรรทัดแรก เฉลี่ย/วันและจำนวนวันบรรทัดสอง */
+      #ovWorkerWrap { border: none; background: transparent; overflow: visible; }
+      #ovWorkerWrap table, #ovWorkerWrap tbody, #ovWorkerWrap tr, #ovWorkerWrap td { display: block; }
+      #ovWorkerWrap table, #ovWorkerWrap tbody { width: 100%; }
+      #ovWorkerWrap td { width: auto; min-width: 0; }
+      #ovWorkerWrap thead { display: none; }
+      #ovWorkerWrap tr { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center; border: 1px solid var(--color-hairline); border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: 8px; background: var(--color-canvas) !important; }
+      #ovWorkerWrap td { border: none; padding: 0; text-align: left; background: transparent !important; }
+      #ovWorkerWrap td.ow-name { grid-column: 1; font-size: 16px; }
+      #ovWorkerWrap td.ow-total { grid-column: 2; grid-row: 1; text-align: right; font-size: 16px; }
+      #ovWorkerWrap td.ow-avg, #ovWorkerWrap td.ow-days { grid-column: 1 / -1; font-size: 14px; color: var(--color-steel); text-align: left; display: flex; gap: 6px; }
+      #ovWorkerWrap td[data-label]::before { content: attr(data-label); min-width: 64px; }
+      #ovWorkerWrap tr.ow-foot { background: var(--color-surface) !important; }
+      #ovWorkerWrap tr.ow-foot td.ow-name { grid-column: 1; font-size: 14px; min-width: 0; }
+      #ovWorkerWrap tr.ow-foot td.ow-total { white-space: nowrap; }
+      .new-bill-item-row .btn-danger-ghost { min-width: 44px; min-height: 44px; }
+
       /* Modals -> bottom sheet */
       .modal-backdrop { padding: 0; align-items: flex-end; }
       .modal, .modal-lg {
@@ -1395,7 +1412,7 @@
         padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
       }
       .modal-foot .btn { width: 100%; }
-      .modal input[type="text"], .modal input[type="number"], .modal input[type="date"], .modal select, .modal textarea { font-size: 16px; min-height: 44px; }
+      .modal input[type="text"], .modal input[type="number"], .modal input[type="date"], .modal input[type="password"], .modal select, .modal textarea { font-size: 16px; min-height: 44px; }
       .modal textarea { height: auto; }
       .modal .btn { min-height: 44px; }
 
@@ -1630,7 +1647,7 @@
             <div class="card-sub">คำนวณอัตโนมัติจากตารางเช็คชื่อรายวัน</div>
           </div>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap" id="ovWorkerWrap">
           <table>
             <thead>
               <tr>
@@ -2035,7 +2052,7 @@
             <input type="checkbox" id="settleCreatePayment" checked onchange="updateSettleTotal()" style="width:auto; height:auto; margin-top:4px;" />
             <span>
               <strong style="font-size:13.5px; color:var(--color-ink);">บันทึกลง "ประวัติจ่ายเงิน" ด้วย (หักยอดค้างจ่ายช่าง)</strong>
-              <div style="font-size:12px; color:var(--color-steel); margin-top:2px;">เอาติ๊กออกหากเคยลงยอดจ่ายเหมาไปก่อนหน้านี้แล้ว เพื่อติดสถานะว่าจ่ายแล้วโดยไม่นับเงินซ้ำ</div>
+              <div style="font-size:13px; color:var(--color-steel); margin-top:2px;">เอาติ๊กออกหากเคยลงยอดจ่ายเหมาไปก่อนหน้านี้แล้ว เพื่อติดสถานะว่าจ่ายแล้วโดยไม่นับเงินซ้ำ</div>
             </span>
           </label>
         </div>
@@ -2068,7 +2085,7 @@
             <input type="date" id="payDate" />
           </div>
         </div>
-        <div id="payBalanceHint" style="font-size:12.5px; color:var(--color-steel); background:var(--color-surface-soft); border:1px solid var(--color-hairline); border-radius:8px; padding:8px 12px; margin-bottom:14px;"></div>
+        <div id="payBalanceHint" style="font-size:13px; color:var(--color-steel); background:var(--color-surface-soft); border:1px solid var(--color-hairline); border-radius:8px; padding:8px 12px; margin-bottom:14px;"></div>
         <div class="form-group">
           <label>จำนวนเงิน (บาท)</label>
           <input type="number" id="payAmount" placeholder="เช่น 5000" min="0" step="any" oninput="updatePayAmountWarn()" />
@@ -2701,21 +2718,21 @@
       } else {
         wtBody.innerHTML = state.workers.map(w => `
           <tr>
-            <td><strong>${esc(w.name)}</strong></td>
-            <td class="text-right num">${(() => {
+            <td class="ow-name"><strong>${esc(w.name)}</strong></td>
+            <td class="text-right num ow-avg" data-label="เฉลี่ย/วัน">${(() => {
               const days = s.workerDays[w.id] || 0;
               const avg = days > 0 ? Math.round((s.workerTotals[w.id] || 0) / days) : 0;
               if (days === 0) return '<span class="text-muted">—</span>';
               const differs = avg !== Math.round(Number(w.dailyRate) || 0);
               return `${fmt(avg)} ฿` + (differs ? `<div class="text-muted" style="font-size:13px;">อัตราตั้งต้น ${fmt(w.dailyRate)} ฿</div>` : '');
             })()}</td>
-            <td class="text-center num">${s.workerDays[w.id] || 0} วัน</td>
-            <td class="text-right num"><strong>${fmt(s.workerTotals[w.id] || 0)} ฿</strong></td>
+            <td class="text-center num ow-days" data-label="มาทำงาน">${s.workerDays[w.id] || 0} วัน</td>
+            <td class="text-right num ow-total"><strong>${fmt(s.workerTotals[w.id] || 0)} ฿</strong></td>
           </tr>
         `).join('') + `
-          <tr style="background:var(--color-surface); font-weight:600;">
-            <td colspan="3">รวมค่าแรงช่างทั้งหมด (ทุกงวด)</td>
-            <td class="text-right num">${fmt(s.totalLabor)} ฿</td>
+          <tr class="ow-foot" style="background:var(--color-surface); font-weight:600;">
+            <td colspan="3" class="ow-name">รวมค่าแรงช่างทั้งหมด (ทุกงวด)</td>
+            <td class="text-right num ow-total">${fmt(s.totalLabor)} ฿</td>
           </tr>
         `;
       }
@@ -2821,7 +2838,7 @@
                 <input type="text" class="inline-edit-item" value="${esc(it.name || '')}" placeholder="ชื่อรายการของที่ซื้อ" onchange="updateBillItem('${bill.id}', '${it.id}', 'name', this.value)" />
                 <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
                   <input type="number" class="inline-edit-amt num" value="${it.amount}" min="0" step="any" onchange="updateBillItem('${bill.id}', '${it.id}', 'amount', this.value)" />
-                  <span class="text-muted" style="font-size:12.5px;">฿</span>
+                  <span class="text-muted" style="font-size:14px;">฿</span>
                   <button class="btn-danger-ghost" title="ลบรายการ" onclick="deleteBillItem('${bill.id}', '${it.id}')">✕</button>
                 </div>
               </div>
@@ -2905,7 +2922,7 @@
               <input type="checkbox" class="settle-bill-chk" data-bid="${b.id}" data-amt="${sum}" ${checked ? 'checked' : ''} onchange="updateSettleTotal()" style="width:auto; height:auto;" />
               <span style="min-width:0;">
                 <strong style="display:block; font-size:14px; color:var(--color-ink);">${esc(b.name)}</strong>
-                <span style="font-size:12px; color:var(--color-steel);">${b.date ? esc(b.date) + ' • ' : ''}${(b.items || []).length} รายการ${b.note ? ' • ' + esc(b.note) : ''}</span>
+                <span style="font-size:13px; color:var(--color-steel);">${b.date ? esc(b.date) + ' • ' : ''}${(b.items || []).length} รายการ${b.note ? ' • ' + esc(b.note) : ''}</span>
               </span>
             </span>
             <strong class="num" style="flex-shrink:0; font-size:14px;">${fmt(sum)} ฿</strong>
@@ -3719,7 +3736,7 @@
             <img src="${dataUrl}" class="slip-thumb" alt="สลิปโอนเงิน" onclick="openSlipPreviewDataUrl('${targetKey}')" title="คลิกเพื่อดูรูปใหญ่" />
             <div>
               <div style="font-size:13px; font-weight:600; color:var(--app-success);">แนบสลิปแล้ว (${kb} KB)</div>
-              <div style="font-size:12px; color:var(--color-steel);">คลิกที่รูปเพื่อขยายดู</div>
+              <div style="font-size:13px; color:var(--color-steel);">คลิกที่รูปเพื่อขยายดู</div>
             </div>
           </div>
           <div style="display:flex; gap:6px;">
