@@ -1375,6 +1375,26 @@
       .toast-wrap { bottom: 84px; right: 12px; left: 12px; }
       .toast-undo-btn { min-height: 44px; }
 
+      /* ===== ภาพรวม: ยอดที่ต้องจ่ายขึ้นก่อน การ์ดกระชับ ตัวเลขในการ์ดอยู่ระดับเดียวกัน ===== */
+      .kpi-grid { gap: 10px; margin-bottom: 14px; }
+      .kpi-card { padding: 14px 16px; }
+      .kpi-card.highlight { order: -1; }
+      .kpi-value { margin-top: 2px; }
+      .two-col { gap: 12px; margin-bottom: 14px; }
+      .two-col .card-header { flex-wrap: nowrap; align-items: flex-start; gap: 8px; }
+      .two-col .card-header > div:first-child { flex: 1; min-width: 0; }
+      .two-col .card-header > .btn { flex-shrink: 0; white-space: nowrap; }
+      .two-col .split-stats { grid-template-rows: auto auto auto; row-gap: 0; align-items: start; }
+      .two-col .split-stats > div { display: grid; grid-template-rows: subgrid; grid-row: span 3; }
+
+      /* ===== ประวัติจ่ายเงิน: ปุ่มหลักบน ตัวกรองเต็มแถว สรุปยอดตรงระดับ ===== */
+      #tab-payments .card-header > div:last-child { display: grid !important; grid-template-columns: 1fr; gap: 8px; width: 100%; }
+      #tab-payments .card-header .btn-primary { order: -1; width: 100%; }
+      #tab-payments #payFilter { width: 100%; min-height: 44px; font-size: 16px !important; }
+      #paySummary { grid-template-rows: auto auto; row-gap: 0; align-items: start; }
+      #paySummary > div:not(.day-notice) { display: grid; grid-template-rows: subgrid; grid-row: span 2; }
+      #paySummary > .day-notice { margin-top: 12px; }
+
       /* Quick actions: primary full width, others side by side */
       .quick-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
       .quick-bar .btn:first-child { grid-column: 1 / -1; }
