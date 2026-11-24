@@ -1422,7 +1422,7 @@
             <thead>
               <tr>
                 <th>ชื่อช่าง</th>
-                <th class="text-right">ค่าแรง/วัน</th>
+                <th class="text-right" title="รวมค่าแรง ÷ จำนวนวันที่มาทำงาน (ยอดจริงที่ได้รับต่อวัน)">เฉลี่ย/วัน</th>
                 <th class="text-center">มาทำงาน (วัน)</th>
                 <th class="text-right">รวมค่าแรง (บาท)</th>
               </tr>
@@ -2252,7 +2252,13 @@
         wtBody.innerHTML = state.workers.map(w => `
           <tr>
             <td><strong>${esc(w.name)}</strong></td>
-            <td class="text-right num">${fmt(w.dailyRate)} ฿</td>
+            <td class="text-right num">${(() => {
+              const days = s.workerDays[w.id] || 0;
+              const avg = days > 0 ? Math.round((s.workerTotals[w.id] || 0) / days) : 0;
+              if (days === 0) return '<span class="text-muted">—</span>';
+              const differs = avg !== Math.round(Number(w.dailyRate) || 0);
+              return `${fmt(avg)} ฿` + (differs ? `<div class="text-muted" style="font-size:13px;">อัตราตั้งต้น ${fmt(w.dailyRate)} ฿</div>` : '');
+            })()}</td>
             <td class="text-center num">${s.workerDays[w.id] || 0} วัน</td>
             <td class="text-right num"><strong>${fmt(s.workerTotals[w.id] || 0)} ฿</strong></td>
           </tr>
