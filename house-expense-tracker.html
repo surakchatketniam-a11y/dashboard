@@ -1399,7 +1399,7 @@
         </div>
       </div>
       <div class="topbar-actions">
-        <button class="sync-pill" id="syncStatusPill" onclick="openSheetsModal()" title="ตั้งค่าการเชื่อมต่อ Google Sheets">
+        <button class="sync-pill" id="syncStatusPill" onclick="onSyncPillClick()" title="ตั้งค่าการเชื่อมต่อ Google Sheets">
           <span class="sync-dot"></span>
           <span id="syncStatusText">ยังไม่เชื่อม Google Sheets</span>
         </button>
@@ -1981,6 +1981,7 @@
             <li>ไปที่เมนู <strong>ส่วนขยาย (Extensions) → Apps Script</strong></li>
             <li>กดปุ่ม <strong>"คัดลอกโค้ด Apps Script"</strong> ด้านล่าง แล้วนำไปวางทับโค้ดเดิม กดบันทึก (Ctrl+S)</li>
             <li>กดปุ่ม <strong>ทำให้ใช้งานได้ (Deploy) → การทำให้ใช้งานได้รายการใหม่ (New deployment)</strong> เลือกประเภท <strong>เว็บแอป (Web app)</strong> → ดำเนินการในฐานะ: <strong>ฉัน (Me)</strong> → ผู้มีสิทธิ์เข้าถึง: <strong>ทุกคน (Anyone)</strong> → กด Deploy แล้วคัดลอก <strong>Web App URL</strong> มาวางด้านล่าง</li>
+            <li><strong>ตั้งรหัสเข้าถึง (แนะนำ):</strong> ในตัวแก้ไข Apps Script เลือกฟังก์ชัน <code>setupAppToken</code> แล้วกด Run ดูรหัสใน "บันทึกการทำงาน" (Execution log) แล้วนำมาวางในช่อง "รหัสเข้าถึง" ด้านล่าง เพื่อไม่ให้คนที่มี URL เข้าถึงข้อมูลได้</li>
           </ol>
           <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
             <button class="btn btn-sm btn-primary" onclick="copyAppsScriptCode()">คัดลอกโค้ด Apps Script</button>
@@ -1991,6 +1992,12 @@
         <div class="form-group">
           <label>Google Apps Script Web App URL</label>
           <input type="text" id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/AKfycb.../exec" />
+        </div>
+
+        <div class="form-group">
+          <label>รหัสเข้าถึง (Access token)</label>
+          <input type="password" id="sheetsTokenInput" autocomplete="off" placeholder="รหัสจาก setupAppToken (เว้นว่างได้ถ้ายังไม่ได้ตั้ง)" />
+          <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">เก็บไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น ไม่อยู่ในโค้ดของหน้าเว็บ ต้องกรอกในทุกเครื่องที่ใช้งาน</div>
         </div>
 
         <div class="form-group" style="display:flex; align-items:center; gap:8px;">
@@ -2007,6 +2014,27 @@
       </div>
       <div class="modal-foot">
         <button class="btn" onclick="closeModal('modalSheets')">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SYNC CONFLICT (E1) -->
+  <div class="modal-backdrop" id="modalSyncConflict">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>ข้อมูลในชีตถูกแก้จากเครื่องอื่น</h3>
+        <button class="btn-ghost" onclick="closeModal('modalSyncConflict')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin:0 0 12px;">ชีตมีข้อมูลที่ใหม่กว่าที่เครื่องนี้เห็น ระบบจึงยังไม่เขียนทับ เลือกว่าจะใช้ชุดไหน (ตัวเลขสีแดง = ต่างกัน)</p>
+        <div class="table-wrap" id="conflictSummary"></div>
+        <p style="margin:12px 0 0; font-size:14px; color:var(--text-muted);">ถ้าไม่แน่ใจ ให้ดาวน์โหลดสำรองข้อมูลของเครื่องนี้ก่อน แล้วค่อยเลือก</p>
+        <button class="btn btn-sm" style="margin-top:8px;" onclick="exportJSON()">ดาวน์โหลดสำรองข้อมูลเครื่องนี้</button>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeModal('modalSyncConflict')">ตัดสินใจทีหลัง</button>
+        <button class="btn" style="color:var(--app-danger); border-color:var(--app-danger-border);" onclick="resolveConflictUseLocal()">ใช้ของเครื่องนี้ทับชีต</button>
+        <button class="btn btn-primary" onclick="resolveConflictUseServer()">ใช้ข้อมูลจากชีต</button>
       </div>
     </div>
   </div>
@@ -2056,7 +2084,7 @@
     const LEGACY_PROJECT_NAME = 'บันทึกค่าใช้จ่ายสร้างบ้าน'; // ชื่อเดิมที่บันทึกไว้ในข้อมูลเก่า จะย้ายเป็นชื่อใหม่อัตโนมัติ
     const STORAGE_KEY = 'house_expense_app_v1';
     const CONFIG_KEY = 'house_expense_config_v1';
-    const DEFAULT_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxohluawjJDQsiBAOOv8duBEIld0bXcBYDEPu5dihd2-RkR76QQnbcxNm9cnvyPrcIq/exec';
+    // E11: ไม่ฝัง Web App URL ไว้ในโค้ดแล้ว (หน้าเว็บและ repo เป็นสาธารณะ) ให้ใส่ในหน้า 'เชื่อมต่อ Google Sheets' ของแต่ละเครื่อง
 
     // ข้อมูลเริ่มต้นจากตารางที่คุณส่งมา
     function getDefaultData() {
@@ -2126,6 +2154,9 @@
     let state = loadState();
     let config = loadConfig();
     let autoSyncTimer = null;
+    let syncConflict = null; // { serverData, serverRevision } เมื่อชีตถูกบันทึกจากเครื่องอื่นไปก่อน (E1)
+    let revisionChecking = false;
+    let lastRevisionCheck = 0;
     let syncPending = false; // มีการแก้ไขที่รอส่งขึ้น Sheet (ยังไม่ครบ 1.2 วินาที)
     let billFilter = 'all';
     const openAddForms = new Set(); // การ์ดบิลที่เปิดฟอร์มเพิ่มรายการค้างไว้ (กันพับหลัง re-render)
@@ -2148,11 +2179,14 @@
         const raw = localStorage.getItem(CONFIG_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (!parsed.sheetsUrl) parsed.sheetsUrl = DEFAULT_SHEETS_URL;
+          if (!parsed.sheetsUrl) parsed.sheetsUrl = '';
+          if (typeof parsed.token !== 'string') parsed.token = '';
+          if (!parsed.revision) parsed.revision = null;
+          parsed.dirty = Boolean(parsed.dirty);
           return parsed;
         }
       } catch (e) {}
-      return { sheetsUrl: DEFAULT_SHEETS_URL, autoSync: true, lastSync: null, sheetName: '' };
+      return { sheetsUrl: '', token: '', revision: null, dirty: false, autoSync: true, lastSync: null, sheetName: '' };
     }
 
     function saveState(triggerSync = true) {
@@ -2162,7 +2196,12 @@
         toast('พื้นที่เก็บข้อมูลในเบราว์เซอร์เต็ม ลองลบสลิปเก่าออกหรือซิงค์ขึ้น Google Sheets', 'error');
       }
       renderAll();
-      if (triggerSync && config.sheetsUrl && config.autoSync) {
+      if (triggerSync && config.sheetsUrl) {
+        // จำไว้ว่ามีการแก้ไขที่ยังไม่ขึ้นชีต (ถึงรีโหลดหน้าก็ยังรู้) ใช้ตัดสินว่าจะดึงข้อมูลชีตมาทับได้ไหม
+        config.dirty = true;
+        try { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); } catch (e) {}
+      }
+      if (triggerSync && config.sheetsUrl && config.autoSync && !syncConflict) {
         clearTimeout(autoSyncTimer);
         syncPending = true;
         setSyncPill('syncing', 'รอซิงค์...');
@@ -3460,6 +3499,7 @@
     // ---- GOOGLE SHEETS SYNC ----
     function openSheetsModal() {
       document.getElementById('sheetsUrlInput').value = config.sheetsUrl || '';
+      document.getElementById('sheetsTokenInput').value = config.token || '';
       document.getElementById('autoSyncCheckbox').checked = config.autoSync !== false;
       document.getElementById('sheetsTestResult').innerHTML = '';
       openModal('modalSheets');
@@ -3475,6 +3515,7 @@
     }
 
     function updateSyncUI() {
+      if (syncConflict) { setSyncPill('error', 'ข้อมูลชนกัน — แตะเพื่อเลือก'); return; }
       if (config.sheetsUrl) {
         const timeStr = config.lastSync ? new Date(config.lastSync).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '';
         setSyncPill('connected', timeStr ? `เชื่อม Sheet แล้ว (${timeStr})` : 'เชื่อม Google Sheets แล้ว');
@@ -3485,6 +3526,7 @@
 
     async function saveAndTestSheetsUrl() {
       const url = document.getElementById('sheetsUrlInput').value.trim();
+      const token = document.getElementById('sheetsTokenInput').value.trim();
       const autoSync = document.getElementById('autoSyncCheckbox').checked;
       const resultEl = document.getElementById('sheetsTestResult');
       if (!url) {
@@ -3501,10 +3543,14 @@
 
       resultEl.innerHTML = '<span style="color:var(--blue);">กำลังทดสอบการเชื่อมต่อ...</span>';
       try {
-        const res = await fetch(url + '?action=ping', { method: 'GET', redirect: 'follow' });
-        const json = await res.json();
+        const json = await sheetsCall({ action: 'ping' }, { url, token });
+        if (json.code === 'AUTH') {
+          resultEl.innerHTML = '<span class="text-rose"><strong>✕ ต้องใส่รหัสเข้าถึงให้ถูกต้อง</strong> สคริปต์นี้ตั้งรหัสไว้แล้ว ใส่รหัสจาก setupAppToken ในช่อง "รหัสเข้าถึง"</span>';
+          return;
+        }
         if (json.ok) {
           config.sheetsUrl = url;
+          config.token = token;
           config.autoSync = autoSync;
           config.sheetName = json.sheetName || '';
           saveConfig();
@@ -3519,23 +3565,134 @@
       }
     }
 
-    async function syncPushToSheets(showNotice = true) {
+    // เรียก Apps Script ด้วย POST เสมอ (รหัสเข้าถึงอยู่ใน body ไม่ใช่ใน URL) opts: { url, token, keepalive }
+    async function sheetsCall(payload, opts = {}) {
+      const url = opts.url || config.sheetsUrl;
+      const token = opts.token !== undefined ? opts.token : config.token;
+      const body = JSON.stringify(Object.assign({}, payload, token ? { token } : {}));
+      const res = await fetch(url, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body,
+        // keepalive ให้คำขอไม่ถูกยกเลิกตอนปิดแท็บ แต่เบราว์เซอร์จำกัดขนาดไว้ ~64KB จึงใช้เฉพาะข้อมูลที่ไม่ใหญ่
+        keepalive: Boolean(opts.keepalive) && body.length < 60000
+      });
+      return await res.json();
+    }
+
+    function onSyncAuthFail(showNotice = true) {
+      setSyncPill('error', 'ต้องใส่รหัสเข้าถึง');
+      if (showNotice) {
+        toast('Google Sheets ต้องใช้รหัสเข้าถึง — ใส่รหัสในหน้าเชื่อมต่อ', 'error');
+        openSheetsModal();
+      }
+    }
+
+    function onSyncPillClick() {
+      if (syncConflict) openConflictModal();
+      else openSheetsModal();
+    }
+
+    function persistConfigQuiet() {
+      try { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); } catch (e) {}
+    }
+
+    // เทียบข้อมูลในชีตกับในเครื่องหลัง normalize (ข้อมูลเก่าอาจขาดฟิลด์บางตัว)
+    function sameAsLocal(serverData) {
+      try {
+        return JSON.stringify(normalizeState(JSON.parse(JSON.stringify(serverData)))) === JSON.stringify(state);
+      } catch (e) { return false; }
+    }
+
+    // E1: ชีตถูกบันทึกจากเครื่องอื่นไปก่อน → ไม่เขียนทับ ให้ผู้ใช้เลือก
+    function onSyncConflict(info, userInitiated) {
+      if (info.serverData && sameAsLocal(info.serverData)) {
+        // ข้อมูลเหมือนกันจริง แค่เครื่องนี้ยังไม่รู้ revision → ถือว่าตรงกัน ไม่ต้องถามผู้ใช้
+        config.revision = info.serverRevision || config.revision;
+        config.dirty = false;
+        saveConfig();
+        return;
+      }
+      syncConflict = { serverData: info.serverData, serverRevision: info.serverRevision };
+      clearTimeout(autoSyncTimer);
+      syncPending = false;
+      setSyncPill('error', 'ข้อมูลชนกัน — แตะเพื่อเลือก');
+      toast('ข้อมูลในชีตถูกแก้จากเครื่องอื่น — ยังไม่เขียนทับ แตะจุดสถานะเพื่อเลือก', 'error');
+      if (userInitiated) openConflictModal();
+    }
+
+    function summarizeData(d) {
+      d = d || {};
+      const bills = d.bills || [], att = d.attendance || [], pays = d.payments || [];
+      const num = v => Number(v) || 0;
+      const labor = att.reduce((a, day) => a + Object.values(day.entries || {}).reduce((x, y) => x + num(y), 0), 0);
+      return {
+        bills: bills.length,
+        billTotal: bills.reduce((a, b) => a + (b.items || []).reduce((x, it) => x + num(it.amount), 0), 0),
+        days: att.length,
+        labor,
+        payments: pays.length,
+        paid: pays.reduce((a, p) => a + num(p.amount), 0)
+      };
+    }
+
+    function openConflictModal() {
+      if (!syncConflict) return;
+      const a = summarizeData(state), b = summarizeData(syncConflict.serverData);
+      const row = (label, x, y, money) => {
+        const f = v => money ? fmt(v) + ' ฿' : v;
+        return `<tr><td>${label}</td><td class="text-right num">${f(x)}</td><td class="text-right num"${x !== y ? ' style="font-weight:600; color:var(--app-danger);"' : ''}>${f(y)}</td></tr>`;
+      };
+      document.getElementById('conflictSummary').innerHTML = `
+        <table>
+          <thead><tr><th></th><th class="text-right">เครื่องนี้</th><th class="text-right">ในชีต</th></tr></thead>
+          <tbody>
+            ${row('จำนวนบิล', a.bills, b.bills)}
+            ${row('ยอดบิลรวม', a.billTotal, b.billTotal, true)}
+            ${row('วันทำงาน (งวดนี้)', a.days, b.days)}
+            ${row('ค่าแรงรวม (งวดนี้)', a.labor, b.labor, true)}
+            ${row('รายการจ่ายเงิน', a.payments, b.payments)}
+            ${row('ยอดจ่ายรวม', a.paid, b.paid, true)}
+          </tbody>
+        </table>`;
+      openModal('modalSyncConflict');
+    }
+
+    function resolveConflictUseServer() {
+      if (!syncConflict) return;
+      state = normalizeState(JSON.parse(JSON.stringify(syncConflict.serverData)));
+      config.revision = syncConflict.serverRevision;
+      config.dirty = false;
+      config.lastSync = new Date().toISOString();
+      syncConflict = null;
+      closeModal('modalSyncConflict');
+      saveState(false);
+      saveConfig();
+      toast('ใช้ข้อมูลจากชีตแล้ว', 'success');
+    }
+
+    async function resolveConflictUseLocal() {
+      if (!syncConflict) return;
+      config.revision = syncConflict.serverRevision;
+      syncConflict = null;
+      closeModal('modalSyncConflict');
+      await syncPushToSheets(true, true);
+    }
+
+    async function syncPushToSheets(showNotice = true, force = false) {
       if (!config.sheetsUrl) { openSheetsModal(); return; }
+      if (syncConflict && !force) { if (showNotice) openConflictModal(); return; }
       clearTimeout(autoSyncTimer);
       syncPending = false;
       setSyncPill('syncing', 'กำลังบันทึกขึ้น Sheet...');
       try {
-        const body = JSON.stringify({ action: 'save', data: state });
-        const res = await fetch(config.sheetsUrl, {
-          method: 'POST',
-          redirect: 'follow',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body,
-          // keepalive ให้คำขอไม่ถูกยกเลิกตอนปิดแท็บ แต่เบราว์เซอร์จำกัดขนาดไว้ ~64KB จึงใช้เฉพาะข้อมูลที่ไม่ใหญ่
-          keepalive: body.length < 60000
-        });
-        const json = await res.json();
+        const json = await sheetsCall({ action: 'save', data: state, baseRevision: config.revision || null, force }, { keepalive: true });
+        if (json.conflict) { onSyncConflict({ serverData: json.serverData, serverRevision: json.serverRevision }, showNotice); if (!syncConflict) updateSyncUI(); return; }
+        if (json.code === 'AUTH') { onSyncAuthFail(showNotice); return; }
         if (!json.ok) throw new Error(json.error || 'Save failed');
+        if (json.revision) config.revision = json.revision;
+        config.dirty = false;
         config.lastSync = new Date().toISOString();
         saveConfig();
         if (showNotice) toast('บันทึกข้อมูลลง Google Sheets เรียบร้อย', 'success');
@@ -3545,19 +3702,52 @@
       }
     }
 
+    // E1: เช็คว่าชีตมีรุ่นใหม่กว่าเครื่องนี้ไหม (ตอนเปิดหน้า และตอนกลับมาที่แท็บ)
+    async function checkServerRevision() {
+      if (!config.sheetsUrl || syncConflict || syncPending || revisionChecking) return;
+      revisionChecking = true;
+      try {
+        const json = await sheetsCall({ action: 'load' });
+        if (json.code === 'AUTH') { onSyncAuthFail(false); return; }
+        if (!json.ok || !json.hasData || !json.data || !json.revision) return; // สคริปต์เวอร์ชันเก่าไม่มี revision
+        if (json.revision === config.revision) { return; }
+        if (sameAsLocal(json.data)) { config.revision = json.revision; config.dirty = false; persistConfigQuiet(); return; }
+        if (config.dirty || !config.revision) {
+          // เครื่องนี้มีการแก้ไขที่ยังไม่ขึ้นชีต หรือไม่รู้ว่าเคยตรงกับชีตรุ่นไหน → ห้ามเขียนทับเอง ให้ผู้ใช้เลือก
+          onSyncConflict({ serverData: json.data, serverRevision: json.revision }, false);
+          return;
+        }
+        // เครื่องนี้ไม่มีอะไรค้าง และชีตใหม่กว่า → อัปเดตตามชีต
+        state = normalizeState(json.data);
+        config.revision = json.revision;
+        config.lastSync = new Date().toISOString();
+        saveState(false);
+        persistConfigQuiet();
+        toast('อัปเดตข้อมูลล่าสุดจาก Google Sheets แล้ว', 'success');
+      } catch (e) {
+        // เงียบไว้ ไม่รบกวนผู้ใช้ถ้าออฟไลน์
+      } finally {
+        revisionChecking = false;
+        lastRevisionCheck = Date.now();
+      }
+    }
+
     // E6: ส่งทันทีเมื่อซ่อน/ปิดแท็บ ไม่รอ 1.2 วินาที
     function flushPendingSync() {
       if (syncPending && config.sheetsUrl && config.autoSync) syncPushToSheets(false);
     }
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushPendingSync(); });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flushPendingSync();
+      else if (Date.now() - lastRevisionCheck > 15000) checkServerRevision();
+    });
     window.addEventListener('pagehide', flushPendingSync);
 
     async function syncPullFromSheets() {
       if (!config.sheetsUrl) { toast('กรุณาใส่ Web App URL ก่อน', 'error'); return; }
       setSyncPill('syncing', 'กำลังดึงข้อมูลจาก Sheet...');
       try {
-        const res = await fetch(config.sheetsUrl + '?action=load', { method: 'GET', redirect: 'follow' });
-        const json = await res.json();
+        const json = await sheetsCall({ action: 'load' });
+        if (json.code === 'AUTH') { onSyncAuthFail(true); return; }
         if (!json.ok) throw new Error(json.error || 'Load failed');
         if (!json.hasData || !json.data) {
           toast('ยังไม่มีข้อมูลใน Google Sheet นี้ (ลองกดส่งข้อมูลขึ้น Sheet ก่อน)', 'error');
@@ -3569,6 +3759,9 @@
           return;
         }
         state = normalizeState(json.data);
+        if (json.revision) config.revision = json.revision;
+        config.dirty = false;
+        syncConflict = null;
         config.lastSync = new Date().toISOString();
         saveState(false);
         saveConfig();
@@ -3672,181 +3865,448 @@
     }
 
     // ---- EMBEDDED APPS SCRIPT CODE FOR 1-CLICK COPY ----
-    const APPS_SCRIPT_CODE = `const DATA_SHEET_NAME = '_AppData';
-const CHUNK_SIZE = 40000;
+    const APPS_SCRIPT_CODE = `/**
+ * Google Apps Script สำหรับแอพ "บันทึกค่าใช้จ่ายสร้างสำนักงาน"
+ * วางโค้ดนี้ในเมนู ส่วนขยาย → Apps Script ของ Google Sheet ที่ต้องการเก็บข้อมูล
+ *
+ * ความปลอดภัย / การชนกันของข้อมูล:
+ *  - E11 รหัสเข้าถึง: ถ้ามี Script Property ชื่อ APP_TOKEN จะต้องส่ง token ให้ตรงทุกคำขอ
+ *    (ถ้ายังไม่มี property นี้ ระบบทำงานแบบเดิมเพื่อไม่ให้แอปที่ใช้อยู่พัง)
+ *    ตั้งรหัสครั้งแรกโดยเปิดตัวแก้ไข Apps Script แล้วรันฟังก์ชัน setupAppToken
+ *  - E1 revision: ทุกการบันทึกได้ revision ใหม่ ถ้าแอปส่ง baseRevision มาไม่ตรงกับของในชีต
+ *    (มีเครื่องอื่นบันทึกไปก่อน) จะไม่เขียนทับ แต่ตอบ conflict พร้อมข้อมูลฝั่งชีตกลับไป
+ */
 
+const SPREADSHEET_ID = ''; // ไม่ต้องใส่ถ้าสร้างสคริปต์จากเมนู ส่วนขยาย → Apps Script ของชีตนั้น
+const DATA_SHEET_NAME = '_AppData';
+const CHUNK_SIZE = 40000;
+const TOKEN_PROP = 'APP_TOKEN';
+
+function initAuthorize() {
+  const ss = getSpreadsheet_();
+  Logger.log('Authorized for spreadsheet: ' + ss.getName() + ' (' + ss.getId() + ')');
+  return ss.getName();
+}
+
+/**
+ * รันครั้งเดียวจากตัวแก้ไข Apps Script เพื่อสร้างรหัสเข้าถึงแบบสุ่ม แล้วดูรหัสใน "บันทึกการทำงาน" (Execution log)
+ * รหัสถูกเก็บใน Script Properties (ไม่อยู่ในโค้ด) ถ้ามีอยู่แล้วจะแสดงรหัสเดิม ไม่สร้างใหม่
+ * ต้องการเปลี่ยนรหัส: ลบ property APP_TOKEN ใน Project Settings แล้วรันใหม่ (ต้องกรอกรหัสใหม่ในแอปทุกเครื่อง)
+ */
+function setupAppToken() {
+  const props = PropertiesService.getScriptProperties();
+  let token = props.getProperty(TOKEN_PROP);
+  if (!token) {
+    token = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
+    props.setProperty(TOKEN_PROP, token);
+    Logger.log('สร้างรหัสเข้าถึงใหม่แล้ว');
+  } else {
+    Logger.log('มีรหัสเข้าถึงอยู่แล้ว (แสดงรหัสเดิม)');
+  }
+  Logger.log('APP_TOKEN = ' + token);
+  return token;
+}
+
+function getExpectedToken_() {
+  return PropertiesService.getScriptProperties().getProperty(TOKEN_PROP) || '';
+}
+
+function safeEqual_(a, b) {
+  const x = String(a == null ? '' : a);
+  const y = String(b == null ? '' : b);
+  let diff = x.length ^ y.length;
+  const n = Math.max(x.length, y.length);
+  for (let i = 0; i < n; i++) {
+    diff |= (x.charCodeAt(i) || 0) ^ (y.charCodeAt(i) || 0);
+  }
+  return diff === 0;
+}
+
+// ยังไม่ตั้ง APP_TOKEN = อนุญาตทุกคำขอ (โหมดเดิม) ตั้งแล้ว = ต้องส่ง token ให้ตรง
+function isAuthorized_(token) {
+  const expected = getExpectedToken_();
+  if (!expected) return true;
+  return safeEqual_(token, expected);
+}
+
+function unauthorized_() {
+  return jsonResponse({ ok: false, code: 'AUTH', error: 'unauthorized: ต้องใส่รหัสเข้าถึง (Access token) ให้ถูกต้อง' });
+}
+
+function getSpreadsheet_() {
+  return SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+
+// GET ใช้ได้เฉพาะตอนยังไม่ตั้งรหัส (แอปเวอร์ชันใหม่ใช้ POST เพื่อไม่ให้รหัสไปอยู่ใน URL)
 function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) || 'load';
-    if (action === 'ping') {
-      return jsonResponse({ ok: true, message: 'เชื่อมต่อ Google Sheets สำเร็จ', sheetName: SpreadsheetApp.getActiveSpreadsheet().getName() });
+    if (getExpectedToken_()) {
+      return jsonResponse({ ok: false, code: 'AUTH', protected: true, error: 'unauthorized: ต้องใช้รหัสเข้าถึง' });
     }
-    if (action === 'load') {
-      const data = loadAppData_();
-      return jsonResponse({ ok: true, hasData: data !== null, data: data, sheetName: SpreadsheetApp.getActiveSpreadsheet().getName(), serverTime: new Date().toISOString() });
-    }
-    return jsonResponse({ ok: false, error: 'Unknown action: ' + action });
+    return handleRead_(action);
   } catch (err) {
     return jsonResponse({ ok: false, error: String(err) });
   }
+}
+
+function handleRead_(action) {
+  const ss = getSpreadsheet_();
+  if (action === 'ping') {
+    return jsonResponse({
+      ok: true,
+      message: 'เชื่อมต่อ Google Sheets สำเร็จ',
+      sheetName: ss.getName(),
+      spreadsheetId: ss.getId(),
+      revision: getRevision_(),
+      protected: Boolean(getExpectedToken_())
+    });
+  }
+  if (action === 'load') {
+    const data = loadAppData_();
+    return jsonResponse({
+      ok: true,
+      hasData: data !== null,
+      data: data,
+      revision: getRevision_(),
+      sheetName: ss.getName(),
+      serverTime: new Date().toISOString()
+    });
+  }
+  return jsonResponse({ ok: false, error: 'Unknown action: ' + action });
 }
 
 function doPost(e) {
   try {
     const raw = (e && e.postData && e.postData.contents) ? e.postData.contents : '{}';
     const payload = JSON.parse(raw);
-    if ((payload.action || 'save') === 'save') {
-      if (!payload.data) return jsonResponse({ ok: false, error: 'Missing data payload' });
-      saveAppData_(payload.data);
-      renderReadableSheets_(payload.data);
-      return jsonResponse({ ok: true, message: 'บันทึกข้อมูลเรียบร้อย', sheetName: SpreadsheetApp.getActiveSpreadsheet().getName(), serverTime: new Date().toISOString() });
+    const action = payload.action || 'save';
+
+    if (!isAuthorized_(payload.token)) {
+      return unauthorized_();
     }
-    return jsonResponse({ ok: false, error: 'Unknown action' });
+
+    if (action === 'ping' || action === 'load') {
+      return handleRead_(action);
+    }
+
+    if (action === 'save') {
+      if (!payload.data) {
+        return jsonResponse({ ok: false, error: 'Missing data payload' });
+      }
+
+      // กันสองคำขอเขียนพร้อมกัน: ตรวจ revision กับบันทึกต้องเกิดต่อเนื่องกัน
+      const lock = LockService.getScriptLock();
+      lock.waitLock(20000);
+      try {
+        const current = getRevision_();
+        const hasBase = Object.prototype.hasOwnProperty.call(payload, 'baseRevision');
+        // แอปเวอร์ชันเก่าไม่ส่ง baseRevision = ไม่ตรวจ (เพื่อไม่ให้ของเดิมพัง)
+        // แอปเวอร์ชันใหม่ส่งเสมอ (null = ยังไม่เคยรู้ revision) และไม่ตรงกับในชีต = ชนกัน
+        if (hasBase && !payload.force && current && payload.baseRevision !== current) {
+          return jsonResponse({
+            ok: false,
+            conflict: true,
+            error: 'conflict: ข้อมูลในชีตถูกบันทึกจากเครื่องอื่นหลังจากที่เครื่องนี้ดึงข้อมูลมาล่าสุด',
+            serverRevision: current,
+            serverData: loadAppData_(),
+            serverTime: new Date().toISOString()
+          });
+        }
+        const revision = saveAppData_(payload.data);
+        renderReadableSheets_(payload.data);
+        return jsonResponse({
+          ok: true,
+          message: 'บันทึกข้อมูลลง Google Sheets เรียบร้อยแล้ว',
+          revision: revision,
+          sheetName: getSpreadsheet_().getName(),
+          serverTime: new Date().toISOString()
+        });
+      } finally {
+        lock.releaseLock();
+      }
+    }
+
+    return jsonResponse({ ok: false, error: 'Unknown action: ' + action });
   } catch (err) {
     return jsonResponse({ ok: false, error: String(err) });
   }
 }
 
 function jsonResponse(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function getOrCreateSheet_(ss, name) {
-  return ss.getSheetByName(name) || ss.insertSheet(name);
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+  }
+  return sheet;
+}
+
+// revision = รหัสรุ่นที่เก็บในเซลล์ B1 ของชีตข้อมูล (เปลี่ยนทุกครั้งที่บันทึก เวลาจริงอยู่ที่ C1) ถ้ายังไม่มีข้อมูลคืน null
+function getRevision_() {
+  const ss = getSpreadsheet_();
+  const sheet = ss.getSheetByName(DATA_SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) return null;
+  const v = sheet.getRange(1, 2).getValue();
+  if (!v) return null;
+  return (v instanceof Date) ? v.toISOString() : String(v);
 }
 
 function saveAppData_(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet_();
   const sheet = getOrCreateSheet_(ss, DATA_SHEET_NAME);
   sheet.clearContents();
+
   const jsonStr = JSON.stringify(data);
   const chunks = [];
-  for (let i = 0; i < jsonStr.length; i += CHUNK_SIZE) chunks.push([jsonStr.slice(i, i + CHUNK_SIZE)]);
+  for (let i = 0; i < jsonStr.length; i += CHUNK_SIZE) {
+    chunks.push([jsonStr.slice(i, i + CHUNK_SIZE)]);
+  }
   if (chunks.length === 0) chunks.push(['{}']);
-  sheet.getRange(1, 1, 1, 2).setValues([['updatedAt', new Date().toISOString()]]);
+
+  // revision เป็นข้อความขึ้นต้นด้วยตัวอักษร เพื่อไม่ให้ Google Sheets แปลงเป็นวันที่/ตัวเลข (ซึ่งทำให้เทียบไม่ตรง)
+  const now = new Date();
+  const revision = 'r' + now.getTime().toString(36) + Math.random().toString(36).slice(2, 8);
+  sheet.getRange(1, 2).setNumberFormat('@');
+  sheet.getRange(1, 1, 1, 3).setValues([['updatedAt', revision, now.toISOString()]]);
   sheet.getRange(2, 1, chunks.length, 1).setValues(chunks);
   try { sheet.hideSheet(); } catch (_) {}
+  return revision;
 }
 
 function loadAppData_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet_();
   const sheet = ss.getSheetByName(DATA_SHEET_NAME);
-  if (!sheet || sheet.getLastRow() < 2) return null;
-  const values = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+  if (!sheet) return null;
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return null;
+
+  const values = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
   const jsonStr = values.map(function (r) { return r[0] || ''; }).join('');
-  return jsonStr ? JSON.parse(jsonStr) : null;
+  if (!jsonStr) return null;
+  return JSON.parse(jsonStr);
 }
 
 function renderReadableSheets_(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const bills = data.bills || [], workers = data.workers || [], attendance = data.attendance || [], payments = data.payments || [];
+  const ss = getSpreadsheet_();
+  const bills = data.bills || [];
+  const workers = data.workers || [];
+  const attendance = data.attendance || [];
+  const closedPeriods = data.closedPeriods || [];
+  const currentPeriodNo = data.currentPeriodNo || (closedPeriods.length + 1);
+  const payments = data.payments || [];
 
-  let ownerMatTotal = 0, contractorMatTotal = 0;
+  let ownerMatTotal = 0;
+  let contractorMatTotal = 0;
   bills.forEach(function (b) {
-    const bSum = (b.items || []).reduce(function (a, it) { return a + (Number(it.amount) || 0); }, 0);
-    if (b.buyerType === 'owner') ownerMatTotal += bSum; else contractorMatTotal += bSum;
+    const bSum = (b.items || []).reduce(function (s, it) { return s + (Number(it.amount) || 0); }, 0);
+    if (b.buyerType === 'owner') {
+      ownerMatTotal += bSum;
+    } else {
+      contractorMatTotal += bSum;
+    }
   });
   const totalMaterials = ownerMatTotal + contractorMatTotal;
-  const paidMaterials = payments.filter(function (p) { return p.category === 'materials'; }).reduce(function (s, p) { return s + (Number(p.amount) || 0); }, 0);
+  const paidMaterials = payments
+    .filter(function (p) { return p.category === 'materials'; })
+    .reduce(function (sum, p) { return sum + (Number(p.amount) || 0); }, 0);
   const totalPaidMaterials = ownerMatTotal + paidMaterials;
   const remainMaterials = contractorMatTotal - paidMaterials;
 
-  const workerTotals = {};
-  workers.forEach(function (w) { workerTotals[w.id] = 0; });
-  let totalLabor = 0;
+  const activeWorkerTotals = {};
+  const allWorkerTotals = {};
+  const allWorkerDays = {};
+  workers.forEach(function (w) {
+    activeWorkerTotals[w.id] = 0;
+    allWorkerTotals[w.id] = 0;
+    allWorkerDays[w.id] = 0;
+  });
+
+  let activeLabor = 0;
   attendance.forEach(function (day) {
+    const entries = day.entries || {};
     workers.forEach(function (w) {
-      const amt = Number((day.entries || {})[w.id]) || 0;
-      workerTotals[w.id] = (workerTotals[w.id] || 0) + amt;
-      totalLabor += amt;
+      const amt = Number(entries[w.id]) || 0;
+      activeWorkerTotals[w.id] = (activeWorkerTotals[w.id] || 0) + amt;
+      allWorkerTotals[w.id] = (allWorkerTotals[w.id] || 0) + amt;
+      if (amt > 0) allWorkerDays[w.id] = (allWorkerDays[w.id] || 0) + 1;
+      activeLabor += amt;
     });
   });
-  const paidLabor = payments.filter(function (p) { return p.category === 'labor'; }).reduce(function (s, p) { return s + (Number(p.amount) || 0); }, 0);
+
+  let closedLabor = 0;
+  closedPeriods.forEach(function (cp) {
+    closedLabor += Number(cp.totalLabor) || 0;
+    (cp.workerSummary || []).forEach(function (ws) {
+      const matched = workers.filter(function (w) { return w.id === ws.id || w.name === ws.name; })[0];
+      if (matched) {
+        allWorkerTotals[matched.id] = (allWorkerTotals[matched.id] || 0) + (Number(ws.total) || 0);
+        allWorkerDays[matched.id] = (allWorkerDays[matched.id] || 0) + (Number(ws.days) || 0);
+      }
+    });
+  });
+
+  const totalLabor = closedLabor + activeLabor;
+  const paidLabor = payments
+    .filter(function (p) { return p.category === 'labor'; })
+    .reduce(function (sum, p) { return sum + (Number(p.amount) || 0); }, 0);
   const remainLabor = totalLabor - paidLabor;
 
+  const activePaidLabor = payments
+    .filter(function (p) { return p.category === 'labor' && Number(p.periodNo || 1) === Number(currentPeriodNo); })
+    .reduce(function (sum, p) { return sum + (Number(p.amount) || 0); }, 0);
+  const activeRemainLabor = activeLabor - activePaidLabor;
+
+  // 1. สรุปภาพรวม
   const summarySheet = getOrCreateSheet_(ss, 'สรุปภาพรวม');
   summarySheet.clear();
+  const projectName = data.projectName || 'โครงการสร้างบ้าน';
   const summaryRows = [
-    [(data.projectName || 'โครงการสร้างสำนักงาน') + ' — สรุปค่าใช้จ่ายทั้งหมด', '', '', ''],
-    ['อัปเดตล่าสุด', Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss'), '', ''],
+    [projectName + ' — สรุปค่าใช้จ่ายทั้งหมด', '', '', ''],
+    ['อัปเดตล่าสุด', Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm:ss'), '', ''],
     ['', '', '', ''],
     ['หมวดหมู่', 'ยอดรวม (บาท)', 'จ่ายแล้ว (บาท)', 'คงเหลือต้องจ่ายช่าง (บาท)'],
     ['ค่าอุปกรณ์ (เจ้าของซื้อเอง)', ownerMatTotal, ownerMatTotal, 0],
     ['ค่าอุปกรณ์ (ช่างซื้อมาเบิก)', contractorMatTotal, paidMaterials, remainMaterials],
-    ['ค่าแรงช่าง', totalLabor, paidLabor, remainLabor],
+    ['ค่าแรงช่าง (รวมทุกงวด)', totalLabor, paidLabor, remainLabor],
     ['รวมทั้งหมด', totalMaterials + totalLabor, totalPaidMaterials + paidLabor, remainMaterials + remainLabor],
     ['', '', '', ''],
-    ['สรุปค่าแรงแยกตามช่าง', 'ค่าแรง/วัน (บาท)', 'รวมค่าแรง (บาท)', 'จำนวนวันทำงาน']
+    ['สรุปค่าแรงแยกตามช่าง (สะสมทุกงวด)', 'ค่าแรง/วัน (บาท)', 'รวมค่าแรง (บาท)', 'จำนวนวันทำงาน']
   ];
   workers.forEach(function (w) {
-    const daysWorked = attendance.filter(function (d) { return (Number((d.entries || {})[w.id]) || 0) > 0; }).length;
-    summaryRows.push([w.name, Number(w.dailyRate) || 0, workerTotals[w.id] || 0, daysWorked]);
+    summaryRows.push([w.name, Number(w.dailyRate) || 0, allWorkerTotals[w.id] || 0, allWorkerDays[w.id] || 0]);
   });
+
   summarySheet.getRange(1, 1, summaryRows.length, 4).setValues(summaryRows);
-  summarySheet.getRange(1, 1, 1, 4).merge().setFontWeight('bold').setFontSize(13).setBackground('#c85a2a').setFontColor('#ffffff');
-  summarySheet.getRange(4, 1, 1, 4).setFontWeight('bold').setBackground('#f1efe8');
-  summarySheet.getRange(8, 1, 1, 4).setFontWeight('bold').setBackground('#fef3c7');
-  summarySheet.getRange(10, 1, 1, 4).setFontWeight('bold').setBackground('#f1efe8');
+  summarySheet.getRange(1, 1, 1, 4).merge().setFontWeight('bold').setFontSize(13).setBackground('#0a0a0a').setFontColor('#ffffff');
+  summarySheet.getRange(4, 1, 1, 4).setFontWeight('bold').setBackground('#f7f7f7');
+  summarySheet.getRange(8, 1, 1, 4).setFontWeight('bold').setBackground('#e6f1ed');
+  summarySheet.getRange(10, 1, 1, 4).setFontWeight('bold').setBackground('#f7f7f7');
   summarySheet.getRange(5, 2, 4, 3).setNumberFormat('#,##0');
-  if (workers.length > 0) summarySheet.getRange(11, 2, workers.length, 2).setNumberFormat('#,##0');
+  if (workers.length > 0) {
+    summarySheet.getRange(11, 2, workers.length, 2).setNumberFormat('#,##0');
+  }
   summarySheet.autoResizeColumns(1, 4);
 
+  // 2. ค่าอุปกรณ์_บิล
   const billSheet = getOrCreateSheet_(ss, 'ค่าอุปกรณ์_บิล');
   billSheet.clear();
   const billRows = [['บิล', 'ประเภทผู้ซื้อ', 'สถานะจ่ายคืนช่าง', 'วันที่', 'รายการ', 'จำนวนเงิน (บาท)', 'หมายเหตุ']];
   bills.forEach(function (b) {
+    const items = b.items || [];
     const buyerLabel = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
-    const statusLabel = (b.buyerType === 'owner' ? 'เจ้าของจ่ายเองแล้ว' : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' (' + b.reimbursedDate + ')' : '')) : 'รอจ่ายคืนช่าง')) + (b.slipDataUrl ? ' • มีสลิป' : '');
+    const statusLabel = (b.buyerType === 'owner'
+      ? 'เจ้าของจ่ายเองแล้ว'
+      : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' (' + b.reimbursedDate + ')' : '')) : 'รอจ่ายคืนช่าง')) + (b.slipDataUrl ? ' • มีสลิป' : '');
     let billSum = 0;
-    (b.items || []).forEach(function (it, idx) {
+    items.forEach(function (it, idx) {
       const amt = Number(it.amount) || 0;
       billSum += amt;
-      billRows.push([idx === 0 ? (b.name || '') : '', idx === 0 ? buyerLabel : '', idx === 0 ? statusLabel : '', idx === 0 ? (b.date || '') : '', it.name || ('รายการที่ ' + (idx + 1)), amt, idx === 0 ? (b.note || '') : '']);
+      billRows.push([
+        idx === 0 ? (b.name || '') : '',
+        idx === 0 ? buyerLabel : '',
+        idx === 0 ? statusLabel : '',
+        idx === 0 ? (b.date || '') : '',
+        it.name || ('รายการที่ ' + (idx + 1)),
+        amt,
+        idx === 0 ? (b.note || '') : ''
+      ]);
     });
     billRows.push(['รวม ' + (b.name || ''), buyerLabel, statusLabel, '', '', billSum, '']);
   });
-  billRows.push(['', '', '', '', '', '', ''], ['รวมค่าอุปกรณ์ทั้งหมด', '', '', '', '', totalMaterials, ''], ['เจ้าของซื้อเอง (จ่ายแล้ว)', '', '', '', '', ownerMatTotal, 'ไม่ค้างจ่ายช่าง'], ['ช่างซื้อมาเบิก', '', '', '', '', contractorMatTotal, ''], ['จ่ายคืนค่าของให้ช่างแล้ว', '', '', '', '', paidMaterials, ''], ['คงเหลือต้องจ่ายช่าง', '', '', '', '', remainMaterials, '']);
+  billRows.push(['', '', '', '', '', '', '']);
+  billRows.push(['รวมค่าอุปกรณ์ทั้งหมด', '', '', '', '', totalMaterials, '']);
+  billRows.push(['เจ้าของซื้อเอง (จ่ายแล้ว)', '', '', '', '', ownerMatTotal, 'ไม่ค้างจ่ายช่าง']);
+  billRows.push(['ช่างซื้อมาเบิก', '', '', '', '', contractorMatTotal, '']);
+  billRows.push(['จ่ายคืนค่าของให้ช่างแล้ว', '', '', '', '', paidMaterials, '']);
+  billRows.push(['คงเหลือต้องจ่ายช่าง', '', '', '', '', remainMaterials, '']);
+
   billSheet.getRange(1, 1, billRows.length, 7).setValues(billRows);
   billSheet.getRange(1, 1, 1, 7).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
   billSheet.getRange(2, 6, billRows.length - 1, 1).setNumberFormat('#,##0');
   billSheet.getRange(billRows.length - 4, 1, 5, 7).setFontWeight('bold').setBackground('#fef3c7');
   billSheet.autoResizeColumns(1, 7);
 
+  // 3. ค่าแรงช่าง
   const laborSheet = getOrCreateSheet_(ss, 'ค่าแรงช่าง');
   laborSheet.clear();
   const colCount = workers.length + 2;
-  const laborRows = [
-    ['วันที่'].concat(workers.map(function (w) { return w.name; })).concat(['รวมรายวัน']),
-    ['ค่าแรง/วัน'].concat(workers.map(function (w) { return Number(w.dailyRate) || 0; })).concat([''])
-  ];
+  const headerRow = ['วันที่'].concat(workers.map(function (w) { return w.name; })).concat(['รวมรายวัน']);
+  const rateRow = ['ค่าแรง/วัน'].concat(workers.map(function (w) { return Number(w.dailyRate) || 0; })).concat(['']);
+  const laborRows = [headerRow, rateRow];
+
   attendance.forEach(function (day) {
+    const entries = day.entries || {};
     let daySum = 0;
     const row = [day.date || ''];
-    workers.forEach(function (w) { const amt = Number((day.entries || {})[w.id]) || 0; daySum += amt; row.push(amt); });
+    workers.forEach(function (w) {
+      const amt = Number(entries[w.id]) || 0;
+      daySum += amt;
+      row.push(amt);
+    });
     row.push(daySum);
     laborRows.push(row);
   });
-  laborRows.push(
-    ['รวมค่าแรง'].concat(workers.map(function (w) { return workerTotals[w.id] || 0; })).concat([totalLabor]),
-    ['จ่ายแล้ว'].concat(workers.map(function () { return ''; })).concat([paidLabor]),
-    ['คงเหลือ'].concat(workers.map(function () { return ''; })).concat([remainLabor])
-  );
+
+  const totalRow = ['รวมค่าแรงงวดที่ ' + currentPeriodNo].concat(workers.map(function (w) { return activeWorkerTotals[w.id] || 0; })).concat([activeLabor]);
+  const paidRow = ['เบิกล่วงหน้างวดนี้'].concat(workers.map(function () { return ''; })).concat([activePaidLabor]);
+  const remainRow = ['คงเหลืองวดนี้'].concat(workers.map(function () { return ''; })).concat([activeRemainLabor]);
+  laborRows.push(totalRow, paidRow, remainRow);
+
   laborSheet.getRange(1, 1, laborRows.length, colCount).setValues(laborRows);
-  laborSheet.getRange(1, 1, 1, colCount).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
-  laborSheet.getRange(2, 1, 1, colCount).setFontStyle('italic').setBackground('#f1efe8');
+  laborSheet.getRange(1, 1, 1, colCount).setFontWeight('bold').setBackground('#0a0a0a').setFontColor('#ffffff');
+  laborSheet.getRange(2, 1, 1, colCount).setBackground('#f7f7f7');
   laborSheet.getRange(2, 2, laborRows.length - 1, colCount - 1).setNumberFormat('#,##0');
-  laborSheet.getRange(laborRows.length - 2, 1, 3, colCount).setFontWeight('bold').setBackground('#fef3c7');
+  laborSheet.getRange(laborRows.length - 2, 1, 3, colCount).setFontWeight('bold').setBackground('#e6f1ed');
   laborSheet.autoResizeColumns(1, colCount);
 
+  // 4. ประวัติงวดค่าแรงที่ตัดยอดแล้ว
+  const historySheet = getOrCreateSheet_(ss, 'ประวัติงวดค่าแรง');
+  historySheet.clear();
+  const histRows = [['งวด', 'ช่วงวันที่', 'วันที่ตัดยอด', 'จำนวนวัน', 'รวมค่าแรง (บาท)', 'จ่ายรวม (บาท)', 'สรุปรายช่าง', 'หมายเหตุ']];
+  closedPeriods.forEach(function (cp) {
+    const wsText = (cp.workerSummary || []).map(function (w) { return w.name + ': ' + w.total + ' (' + w.days + ' วัน)'; }).join(', ');
+    histRows.push([
+      cp.label || '',
+      cp.dateRange || '',
+      cp.closedDate || '',
+      (cp.attendance || []).length,
+      Number(cp.totalLabor) || 0,
+      Number(cp.paidTotal) || 0,
+      wsText,
+      cp.note || ''
+    ]);
+  });
+  historySheet.getRange(1, 1, histRows.length, 8).setValues(histRows);
+  historySheet.getRange(1, 1, 1, 8).setFontWeight('bold').setBackground('#0a0a0a').setFontColor('#ffffff');
+  if (histRows.length > 1) {
+    historySheet.getRange(2, 5, histRows.length - 1, 2).setNumberFormat('#,##0');
+  }
+  historySheet.autoResizeColumns(1, 8);
+
+  // 5. ประวัติการจ่ายเงิน
   const paySheet = getOrCreateSheet_(ss, 'ประวัติการจ่ายเงิน');
   paySheet.clear();
   const payRows = [['วันที่', 'หมวดหมู่', 'จำนวนเงิน (บาท)', 'สลิปโอนเงิน', 'หมายเหตุ / ผู้รับ']];
   payments.forEach(function (p) {
-    payRows.push([p.date || '', p.category === 'materials' ? 'คืนค่าของ (บิลช่างซื้อ)' : 'ค่าแรงช่าง', Number(p.amount) || 0, p.slipDataUrl ? 'มีสลิป' : '—', p.note || '']);
+    payRows.push([
+      p.date || '',
+      p.category === 'materials' ? 'คืนค่าของ (บิลช่างซื้อ)' : 'ค่าแรงช่าง',
+      Number(p.amount) || 0,
+      p.slipDataUrl ? 'มีสลิป' : '—',
+      p.note || ''
+    ]);
   });
   paySheet.getRange(1, 1, payRows.length, 5).setValues(payRows);
   paySheet.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
-  if (payRows.length > 1) paySheet.getRange(2, 3, payRows.length - 1, 1).setNumberFormat('#,##0');
+  if (payRows.length > 1) {
+    paySheet.getRange(2, 3, payRows.length - 1, 1).setNumberFormat('#,##0');
+  }
   paySheet.autoResizeColumns(1, 5);
 }`;
 
@@ -3867,6 +4327,7 @@ function renderReadableSheets_(data) {
 
     // Initial render
     renderAll();
+    checkServerRevision();
   </script>
 </body>
 </html>

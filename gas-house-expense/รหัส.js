@@ -1,11 +1,19 @@
 /**
- * Google Apps Script สำหรับแอพ "บันทึกค่าใช้จ่ายสร้างบ้าน"
+ * Google Apps Script สำหรับแอพ "บันทึกค่าใช้จ่ายสร้างสำนักงาน"
  * เชื่อมต่อกับ Google Sheet: 1h83g2owxnyFiiW0s7WWiEmmbh1fquDp00uOtS4ETetU
+ *
+ * ความปลอดภัย / การชนกันของข้อมูล:
+ *  - E11 รหัสเข้าถึง: ถ้ามี Script Property ชื่อ APP_TOKEN จะต้องส่ง token ให้ตรงทุกคำขอ
+ *    (ถ้ายังไม่มี property นี้ ระบบทำงานแบบเดิมเพื่อไม่ให้แอปที่ใช้อยู่พัง)
+ *    ตั้งรหัสครั้งแรกโดยเปิดตัวแก้ไข Apps Script แล้วรันฟังก์ชัน setupAppToken
+ *  - E1 revision: ทุกการบันทึกได้ revision ใหม่ ถ้าแอปส่ง baseRevision มาไม่ตรงกับของในชีต
+ *    (มีเครื่องอื่นบันทึกไปก่อน) จะไม่เขียนทับ แต่ตอบ conflict พร้อมข้อมูลฝั่งชีตกลับไป
  */
 
 const SPREADSHEET_ID = '1h83g2owxnyFiiW0s7WWiEmmbh1fquDp00uOtS4ETetU';
 const DATA_SHEET_NAME = '_AppData';
 const CHUNK_SIZE = 40000;
+const TOKEN_PROP = 'APP_TOKEN';
 
 function initAuthorize() {
   const ss = getSpreadsheet_();
@@ -13,36 +21,92 @@ function initAuthorize() {
   return ss.getName();
 }
 
+/**
+ * รันครั้งเดียวจากตัวแก้ไข Apps Script เพื่อสร้างรหัสเข้าถึงแบบสุ่ม แล้วดูรหัสใน "บันทึกการทำงาน" (Execution log)
+ * รหัสถูกเก็บใน Script Properties (ไม่อยู่ในโค้ด) ถ้ามีอยู่แล้วจะแสดงรหัสเดิม ไม่สร้างใหม่
+ * ต้องการเปลี่ยนรหัส: ลบ property APP_TOKEN ใน Project Settings แล้วรันใหม่ (ต้องกรอกรหัสใหม่ในแอปทุกเครื่อง)
+ */
+function setupAppToken() {
+  const props = PropertiesService.getScriptProperties();
+  let token = props.getProperty(TOKEN_PROP);
+  if (!token) {
+    token = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
+    props.setProperty(TOKEN_PROP, token);
+    Logger.log('สร้างรหัสเข้าถึงใหม่แล้ว');
+  } else {
+    Logger.log('มีรหัสเข้าถึงอยู่แล้ว (แสดงรหัสเดิม)');
+  }
+  Logger.log('APP_TOKEN = ' + token);
+  return token;
+}
+
+function getExpectedToken_() {
+  return PropertiesService.getScriptProperties().getProperty(TOKEN_PROP) || '';
+}
+
+function safeEqual_(a, b) {
+  const x = String(a == null ? '' : a);
+  const y = String(b == null ? '' : b);
+  let diff = x.length ^ y.length;
+  const n = Math.max(x.length, y.length);
+  for (let i = 0; i < n; i++) {
+    diff |= (x.charCodeAt(i) || 0) ^ (y.charCodeAt(i) || 0);
+  }
+  return diff === 0;
+}
+
+// ยังไม่ตั้ง APP_TOKEN = อนุญาตทุกคำขอ (โหมดเดิม) ตั้งแล้ว = ต้องส่ง token ให้ตรง
+function isAuthorized_(token) {
+  const expected = getExpectedToken_();
+  if (!expected) return true;
+  return safeEqual_(token, expected);
+}
+
+function unauthorized_() {
+  return jsonResponse({ ok: false, code: 'AUTH', error: 'unauthorized: ต้องใส่รหัสเข้าถึง (Access token) ให้ถูกต้อง' });
+}
+
 function getSpreadsheet_() {
   return SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(SPREADSHEET_ID);
 }
 
+// GET ใช้ได้เฉพาะตอนยังไม่ตั้งรหัส (แอปเวอร์ชันใหม่ใช้ POST เพื่อไม่ให้รหัสไปอยู่ใน URL)
 function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) || 'load';
-    const ss = getSpreadsheet_();
-    if (action === 'ping') {
-      return jsonResponse({
-        ok: true,
-        message: 'เชื่อมต่อ Google Sheets สำเร็จ',
-        sheetName: ss.getName(),
-        spreadsheetId: ss.getId()
-      });
+    if (getExpectedToken_()) {
+      return jsonResponse({ ok: false, code: 'AUTH', protected: true, error: 'unauthorized: ต้องใช้รหัสเข้าถึง' });
     }
-    if (action === 'load') {
-      const data = loadAppData_();
-      return jsonResponse({
-        ok: true,
-        hasData: data !== null,
-        data: data,
-        sheetName: ss.getName(),
-        serverTime: new Date().toISOString()
-      });
-    }
-    return jsonResponse({ ok: false, error: 'Unknown action: ' + action });
+    return handleRead_(action);
   } catch (err) {
     return jsonResponse({ ok: false, error: String(err) });
   }
+}
+
+function handleRead_(action) {
+  const ss = getSpreadsheet_();
+  if (action === 'ping') {
+    return jsonResponse({
+      ok: true,
+      message: 'เชื่อมต่อ Google Sheets สำเร็จ',
+      sheetName: ss.getName(),
+      spreadsheetId: ss.getId(),
+      revision: getRevision_(),
+      protected: Boolean(getExpectedToken_())
+    });
+  }
+  if (action === 'load') {
+    const data = loadAppData_();
+    return jsonResponse({
+      ok: true,
+      hasData: data !== null,
+      data: data,
+      revision: getRevision_(),
+      sheetName: ss.getName(),
+      serverTime: new Date().toISOString()
+    });
+  }
+  return jsonResponse({ ok: false, error: 'Unknown action: ' + action });
 }
 
 function doPost(e) {
@@ -51,18 +115,49 @@ function doPost(e) {
     const payload = JSON.parse(raw);
     const action = payload.action || 'save';
 
+    if (!isAuthorized_(payload.token)) {
+      return unauthorized_();
+    }
+
+    if (action === 'ping' || action === 'load') {
+      return handleRead_(action);
+    }
+
     if (action === 'save') {
       if (!payload.data) {
         return jsonResponse({ ok: false, error: 'Missing data payload' });
       }
-      saveAppData_(payload.data);
-      renderReadableSheets_(payload.data);
-      return jsonResponse({
-        ok: true,
-        message: 'บันทึกข้อมูลลง Google Sheets เรียบร้อยแล้ว',
-        sheetName: getSpreadsheet_().getName(),
-        serverTime: new Date().toISOString()
-      });
+
+      // กันสองคำขอเขียนพร้อมกัน: ตรวจ revision กับบันทึกต้องเกิดต่อเนื่องกัน
+      const lock = LockService.getScriptLock();
+      lock.waitLock(20000);
+      try {
+        const current = getRevision_();
+        const hasBase = Object.prototype.hasOwnProperty.call(payload, 'baseRevision');
+        // แอปเวอร์ชันเก่าไม่ส่ง baseRevision = ไม่ตรวจ (เพื่อไม่ให้ของเดิมพัง)
+        // แอปเวอร์ชันใหม่ส่งเสมอ (null = ยังไม่เคยรู้ revision) และไม่ตรงกับในชีต = ชนกัน
+        if (hasBase && !payload.force && current && payload.baseRevision !== current) {
+          return jsonResponse({
+            ok: false,
+            conflict: true,
+            error: 'conflict: ข้อมูลในชีตถูกบันทึกจากเครื่องอื่นหลังจากที่เครื่องนี้ดึงข้อมูลมาล่าสุด',
+            serverRevision: current,
+            serverData: loadAppData_(),
+            serverTime: new Date().toISOString()
+          });
+        }
+        const revision = saveAppData_(payload.data);
+        renderReadableSheets_(payload.data);
+        return jsonResponse({
+          ok: true,
+          message: 'บันทึกข้อมูลลง Google Sheets เรียบร้อยแล้ว',
+          revision: revision,
+          sheetName: getSpreadsheet_().getName(),
+          serverTime: new Date().toISOString()
+        });
+      } finally {
+        lock.releaseLock();
+      }
     }
 
     return jsonResponse({ ok: false, error: 'Unknown action: ' + action });
@@ -85,6 +180,16 @@ function getOrCreateSheet_(ss, name) {
   return sheet;
 }
 
+// revision = รหัสรุ่นที่เก็บในเซลล์ B1 ของชีตข้อมูล (เปลี่ยนทุกครั้งที่บันทึก เวลาจริงอยู่ที่ C1) ถ้ายังไม่มีข้อมูลคืน null
+function getRevision_() {
+  const ss = getSpreadsheet_();
+  const sheet = ss.getSheetByName(DATA_SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) return null;
+  const v = sheet.getRange(1, 2).getValue();
+  if (!v) return null;
+  return (v instanceof Date) ? v.toISOString() : String(v);
+}
+
 function saveAppData_(data) {
   const ss = getSpreadsheet_();
   const sheet = getOrCreateSheet_(ss, DATA_SHEET_NAME);
@@ -97,9 +202,14 @@ function saveAppData_(data) {
   }
   if (chunks.length === 0) chunks.push(['{}']);
 
-  sheet.getRange(1, 1, 1, 2).setValues([['updatedAt', new Date().toISOString()]]);
+  // revision เป็นข้อความขึ้นต้นด้วยตัวอักษร เพื่อไม่ให้ Google Sheets แปลงเป็นวันที่/ตัวเลข (ซึ่งทำให้เทียบไม่ตรง)
+  const now = new Date();
+  const revision = 'r' + now.getTime().toString(36) + Math.random().toString(36).slice(2, 8);
+  sheet.getRange(1, 2).setNumberFormat('@');
+  sheet.getRange(1, 1, 1, 3).setValues([['updatedAt', revision, now.toISOString()]]);
   sheet.getRange(2, 1, chunks.length, 1).setValues(chunks);
   try { sheet.hideSheet(); } catch (_) {}
+  return revision;
 }
 
 function loadAppData_() {
