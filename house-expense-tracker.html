@@ -4483,6 +4483,14 @@
       e.target.value = '';
     }
 
+    // E12: ข้อความใน CSV ต้องครอบด้วย "" และ escape " เป็น "" (ไม่งั้นชื่อที่มีเครื่องหมายคำพูดหรือจุลภาคทำให้คอลัมน์เลื่อน)
+    // และกัน CSV/Formula injection: ข้อความที่ขึ้นต้นด้วย = + - @ หรือ tab/CR จะถูกเติม ' นำหน้า ไม่ให้ Excel/Sheets ตีเป็นสูตร
+    function csvText(v) {
+      let t = String(v == null ? '' : v);
+      if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+      return '"' + t.replace(/"/g, '""') + '"';
+    }
+
     function exportCSV() {
       const s = calcSummary();
       const lines = [];
@@ -4491,7 +4499,7 @@
       state.bills.forEach(b => {
         const buyerLabel = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
         const statusLabel = b.buyerType === 'owner' ? 'เจ้าของจ่ายเองแล้ว' : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' ' + b.reimbursedDate : '')) : 'รอจ่ายคืนช่าง');
-        b.items.forEach(it => lines.push(`"${b.name}","${buyerLabel}","${statusLabel}","${b.date || ''}","${it.name || ''}",${it.amount}`));
+        b.items.forEach(it => lines.push([csvText(b.name), csvText(buyerLabel), csvText(statusLabel), csvText(b.date || ''), csvText(it.name || ''), Number(it.amount) || 0].join(',')));
       });
       lines.push(`รวมค่าอุปกรณ์ทั้งหมด,,,,,${s.totalMaterials}`);
       lines.push(`เจ้าของซื้อเอง (จ่ายแล้ว),,,,,${s.ownerMatTotal}`);
@@ -4500,12 +4508,12 @@
       lines.push(`คงเหลือต้องจ่ายช่าง,,,,,${s.remainMaterials}`);
       lines.push('');
       lines.push('=== ตารางค่าแรงช่าง ===');
-      lines.push(['วันที่', ...state.workers.map(w => `"${w.name}"`), 'รวมรายวัน'].join(','));
+      lines.push([csvText('วันที่'), ...state.workers.map(w => csvText(w.name)), csvText('รวมรายวัน')].join(','));
       lines.push(['ค่าแรง/วัน', ...state.workers.map(w => w.dailyRate), ''].join(','));
       state.attendance.forEach(d => {
         let sum = 0;
         const vals = state.workers.map(w => { const v = Number((d.entries || {})[w.id]) || 0; sum += v; return v; });
-        lines.push([`"${d.date}"`, ...vals, sum].join(','));
+        lines.push([csvText(d.date), ...vals, sum].join(','));
       });
       lines.push(['รวมค่าแรง', ...state.workers.map(w => s.workerTotals[w.id] || 0), s.totalLabor].join(','));
       lines.push(['จ่ายแล้ว', ...state.workers.map(() => ''), s.paidLabor].join(','));
