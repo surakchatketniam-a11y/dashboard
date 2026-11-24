@@ -312,22 +312,23 @@ function renderReadableSheets_(data) {
   }
   historySheet.autoResizeColumns(1, 8);
 
-  // 4. ประวัติการจ่ายเงิน
+  // 5. ประวัติการจ่ายเงิน
   const paySheet = getOrCreateSheet_(ss, 'ประวัติการจ่ายเงิน');
   paySheet.clear();
-  const payRows = [['วันที่', 'หมวดหมู่', 'จำนวนเงิน (บาท)', 'หมายเหตุ / ผู้รับ']];
+  const payRows = [['วันที่', 'หมวดหมู่', 'จำนวนเงิน (บาท)', 'สลิปโอนเงิน', 'หมายเหตุ / ผู้รับ']];
   payments.forEach(function (p) {
     payRows.push([
       p.date || '',
       p.category === 'materials' ? 'คืนค่าของ (บิลช่างซื้อ)' : 'ค่าแรงช่าง',
       Number(p.amount) || 0,
+      p.slipDataUrl ? 'มีสลิป' : '—',
       p.note || ''
     ]);
   });
-  paySheet.getRange(1, 1, payRows.length, 4).setValues(payRows);
-  paySheet.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
+  paySheet.getRange(1, 1, payRows.length, 5).setValues(payRows);
+  paySheet.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
   if (payRows.length > 1) {
     paySheet.getRange(2, 3, payRows.length - 1, 1).setNumberFormat('#,##0');
   }
-  paySheet.autoResizeColumns(1, 4);
+  paySheet.autoResizeColumns(1, 5);
 }

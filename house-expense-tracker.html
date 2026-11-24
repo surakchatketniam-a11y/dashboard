@@ -621,6 +621,122 @@
       font-weight: 600;
       margin-bottom: 14px;
     }
+
+    /* Multi-item new bill rows */
+    .new-bill-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+    .new-bill-item-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .new-bill-item-row .nb-item-name { flex: 1; min-width: 0; }
+    .new-bill-item-row .nb-item-amt { width: 120px; text-align: right; font-family: var(--font-mono); }
+    .new-bill-items-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding-top: 4px;
+    }
+    .new-bill-live-total {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--color-ink);
+      background: var(--color-surface);
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-full);
+      padding: 4px 12px;
+    }
+
+    /* Transfer Slip Upload & Viewer */
+    .slip-upload-box {
+      border: 1.5px dashed var(--color-hairline);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      background: var(--color-surface-soft);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+    .slip-upload-box:hover {
+      border-color: var(--color-brand-green);
+      background: var(--color-canvas);
+    }
+    .slip-preview-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .slip-thumb {
+      width: 44px;
+      height: 56px;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-hairline);
+      cursor: pointer;
+      background: var(--color-canvas);
+      flex-shrink: 0;
+    }
+    .slip-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--app-info-border);
+      background: var(--app-info-soft);
+      color: var(--app-info);
+      transition: all 0.15s;
+    }
+    .slip-pill-btn:hover {
+      background: var(--app-info);
+      border-color: var(--app-info);
+      color: #ffffff;
+    }
+    .slip-add-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px dashed var(--color-hairline);
+      background: transparent;
+      color: var(--color-steel);
+      transition: all 0.15s;
+    }
+    .slip-add-btn:hover {
+      border-color: var(--color-ink);
+      color: var(--color-ink);
+      background: var(--color-surface);
+    }
+    .slip-viewer-img {
+      display: block;
+      max-width: 100%;
+      max-height: 68vh;
+      margin: 0 auto;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-hairline);
+      background: var(--color-surface);
+    }
     .buyer-switch {
       display: inline-flex;
       background: var(--color-surface);
@@ -1409,6 +1525,7 @@
                 <th>วันที่</th>
                 <th>หมวดหมู่</th>
                 <th>หมายเหตุ / ผู้รับ</th>
+                <th class="text-center">สลิป</th>
                 <th class="text-right">จำนวนเงิน (บาท)</th>
                 <th class="text-center" style="width:60px;">ลบ</th>
               </tr>
@@ -1416,6 +1533,7 @@
             <tbody id="paymentsTableBody"></tbody>
           </table>
         </div>
+        <input type="file" id="attachSlipInput" accept="image/*" style="display:none;" onchange="handleAttachSlipToPayment(event)" />
       </div>
     </section>
   </main>
@@ -1456,11 +1574,12 @@
           <label>หมายเหตุ (ไม่บังคับ)</label>
           <input type="text" id="newBillNote" placeholder="เช่น ปูน ทราย เหล็กเส้น" />
         </div>
-        <div class="form-group">
-          <label>รายการแรกในบิล (ไม่บังคับ — เพิ่มทีหลังได้)</label>
-          <div class="form-row">
-            <input type="text" id="newBillFirstItemName" placeholder="ชื่อรายการ เช่น ปูน 2 ถุง" />
-            <input type="number" id="newBillFirstItemAmt" placeholder="ราคา (บาท)" min="0" step="any" />
+        <div class="form-group" style="margin-bottom:0;">
+          <label>รายการสินค้าในบิล (เพิ่มได้หลายรายการ • กด Enter ที่ช่องราคาเพื่อขึ้นแถวใหม่)</label>
+          <div class="new-bill-items-list" id="newBillItemsList"></div>
+          <div class="new-bill-items-footer">
+            <button type="button" class="btn btn-sm" onclick="addNewBillItemRow(true)">+ เพิ่มรายการ</button>
+            <div class="new-bill-live-total" id="newBillLiveTotal">0 รายการ • <span class="num">0 ฿</span></div>
           </div>
         </div>
       </div>
@@ -1577,6 +1696,11 @@
           <label>หมายเหตุ (ไม่บังคับ)</label>
           <input type="text" id="closePeriodNote" placeholder="เช่น โอนจ่ายครบทุกคน ปิดงวดงานโครงสร้าง" />
         </div>
+        <div class="form-group">
+          <label>แนบสลิปโอนเงินปิดงวด (ไม่บังคับ)</label>
+          <div class="slip-upload-box" id="closePeriodSlipBox"></div>
+          <input type="file" id="closePeriodSlipInput" accept="image/*" style="display:none;" onchange="handleModalSlipFile(event, 'closePeriod')" />
+        </div>
         <div style="font-size:13px; color:var(--color-steel); background:var(--color-surface-soft); border:1px solid var(--color-hairline); border-radius:8px; padding:10px 12px;">
           เมื่อกดยืนยัน ตารางวันทำงานของงวดนี้จะถูกย้ายไปเก็บใน <strong>ประวัติงวดค่าแรงที่ตัดยอดแล้ว</strong> และตารางทำงานจะเริ่มว่างสำหรับงวดถัดไปทันที (ยอดสะสมทั้งโครงการในหน้าภาพรวมยังคงอยู่ครบ)
         </div>
@@ -1614,6 +1738,11 @@
             <label>หมายเหตุ (ไม่บังคับ)</label>
             <input type="text" id="settleNote" placeholder="เช่น โอนคืนค่าของให้ช่างศักดิ์" />
           </div>
+        </div>
+        <div class="form-group">
+          <label>แนบสลิปโอนเงิน (ไม่บังคับ)</label>
+          <div class="slip-upload-box" id="settleSlipBox"></div>
+          <input type="file" id="settleSlipInput" accept="image/*" style="display:none;" onchange="handleModalSlipFile(event, 'settle')" />
         </div>
         <div class="form-group" style="background:var(--color-surface-soft); border:1px solid var(--color-hairline); border-radius:8px; padding:10px 12px; margin-bottom:0;">
           <label style="display:flex; align-items:flex-start; gap:8px; margin:0; cursor:pointer;">
@@ -1662,10 +1791,39 @@
           <label>หมายเหตุ / ผู้รับเงิน</label>
           <input type="text" id="payNote" placeholder="เช่น เบิกงวด 2 ให้ช่างศักดิ์ หรือ โอนจ่ายร้านอุปกรณ์" />
         </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>แนบสลิปโอนเงิน (ไม่บังคับ • ย่อขนาดอัตโนมัติ)</label>
+          <div class="slip-upload-box" id="paySlipBox"></div>
+          <input type="file" id="paySlipInput" accept="image/*" style="display:none;" onchange="handleModalSlipFile(event, 'pay')" />
+        </div>
       </div>
       <div class="modal-foot">
         <button class="btn" onclick="closeModal('modalPayment')">ยกเลิก</button>
         <button class="btn btn-primary" onclick="savePayment()">บันทึกการจ่ายเงิน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SLIP VIEWER -->
+  <div class="modal-backdrop" id="modalSlipViewer">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="slipViewerTitle">สลิปโอนเงิน</h3>
+        <button class="btn-ghost" onclick="closeModal('modalSlipViewer')">✕</button>
+      </div>
+      <div class="modal-body" style="text-align:center;">
+        <div id="slipViewerMeta" style="font-size:13px; color:var(--color-steel); margin-bottom:12px;"></div>
+        <img id="slipViewerImg" class="slip-viewer-img" alt="สลิปโอนเงิน" />
+      </div>
+      <div class="modal-foot" style="justify-content:space-between; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px;" id="slipViewerLeftActions">
+          <button class="btn btn-sm" onclick="triggerReplaceSlipFromViewer()">เปลี่ยนรูปสลิป</button>
+          <button class="btn btn-sm btn-danger-ghost" style="border:1px solid var(--app-danger-border);" onclick="removeSlipFromViewer()">ลบสลิป</button>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <a id="slipDownloadLink" class="btn btn-sm" download="transfer-slip.jpg">ดาวน์โหลด</a>
+          <button class="btn btn-primary btn-sm" onclick="closeModal('modalSlipViewer')">ปิด</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1828,6 +1986,9 @@
     let config = loadConfig();
     let autoSyncTimer = null;
     let billFilter = 'all';
+    const pendingSlips = { pay: '', settle: '', closePeriod: '' };
+    let slipTargetPaymentId = null;
+    let viewerPaymentId = null;
 
     function loadState() {
       try {
@@ -1850,7 +2011,11 @@
     }
 
     function saveState(triggerSync = true) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (err) {
+        toast('พื้นที่เก็บข้อมูลในเบราว์เซอร์เต็ม ลองลบสลิปเก่าออกหรือซิงค์ขึ้น Google Sheets', 'error');
+      }
       renderAll();
       if (triggerSync && config.sheetsUrl && config.autoSync) {
         clearTimeout(autoSyncTimer);
@@ -2219,6 +2384,8 @@
       document.getElementById('settleDate').value = todayISO();
       document.getElementById('settleNote').value = '';
       document.getElementById('settleCreatePayment').checked = true;
+      pendingSlips.settle = '';
+      renderSlipUploadBox('settle');
       updateSettleTotal();
       openModal('modalSettleBills');
     }
@@ -2260,15 +2427,18 @@
 
       if (createPayment && totalAmt > 0) {
         paymentId = uid('pay');
-        state.payments.unshift({
+        const payItem = {
           id: paymentId,
           date,
           category: 'materials',
           amount: totalAmt,
           billIds: selectedIds,
           note: `ตัดจ่ายค่าของ (${billNames})${noteInput ? ' — ' + noteInput : ''}`
-        });
+        };
+        if (pendingSlips.settle) payItem.slipDataUrl = pendingSlips.settle;
+        state.payments.unshift(payItem);
       }
+      pendingSlips.settle = '';
 
       selectedBills.forEach(b => {
         b.reimbursed = true;
@@ -2301,15 +2471,74 @@
       toast(`ยกเลิกตัดบิล "${bill.name}" เรียบร้อย`);
     }
 
+    function addNewBillItemRow(focusName = false) {
+      const list = document.getElementById('newBillItemsList');
+      const idx = list.children.length + 1;
+      const row = document.createElement('div');
+      row.className = 'new-bill-item-row';
+      row.innerHTML = `
+        <input type="text" class="nb-item-name" placeholder="ชื่อรายการที่ ${idx} เช่น ปูน 2 ถุง" />
+        <input type="number" class="nb-item-amt" placeholder="ราคา ฿" min="0" step="any" oninput="updateNewBillLiveTotal()" onkeydown="handleNewBillAmtKeydown(event)" />
+        <button type="button" class="btn-danger-ghost" title="ลบแถวนี้" onclick="removeNewBillItemRow(this)">✕</button>
+      `;
+      list.appendChild(row);
+      updateNewBillLiveTotal();
+      if (focusName) {
+        const inp = row.querySelector('.nb-item-name');
+        if (inp) inp.focus();
+      }
+    }
+
+    function removeNewBillItemRow(btn) {
+      const list = document.getElementById('newBillItemsList');
+      if (list.children.length <= 1) {
+        const row = btn.closest('.new-bill-item-row');
+        if (row) {
+          row.querySelector('.nb-item-name').value = '';
+          row.querySelector('.nb-item-amt').value = '';
+        }
+      } else {
+        btn.closest('.new-bill-item-row').remove();
+      }
+      updateNewBillLiveTotal();
+    }
+
+    function handleNewBillAmtKeydown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addNewBillItemRow(true);
+      }
+    }
+
+    function updateNewBillLiveTotal() {
+      const rows = document.querySelectorAll('#newBillItemsList .new-bill-item-row');
+      let count = 0;
+      let sum = 0;
+      rows.forEach(r => {
+        const amt = parseFloat(r.querySelector('.nb-item-amt').value);
+        if (!isNaN(amt) && amt > 0) {
+          count += 1;
+          sum += amt;
+        }
+      });
+      const el = document.getElementById('newBillLiveTotal');
+      if (el) el.innerHTML = `${count} รายการ • <span class="num">${fmt(sum)} ฿</span>`;
+    }
+
     function openNewBillModal() {
       document.getElementById('newBillName').value = 'บิล ' + (state.bills.length + 1);
       document.getElementById('newBillDate').value = todayISO();
       document.getElementById('newBillNote').value = '';
-      document.getElementById('newBillFirstItemName').value = '';
-      document.getElementById('newBillFirstItemAmt').value = '';
+      const list = document.getElementById('newBillItemsList');
+      list.innerHTML = '';
+      addNewBillItemRow(false);
+      addNewBillItemRow(false);
       selectNewBillBuyerType(billFilter === 'owner' ? 'owner' : 'contractor');
       openModal('modalNewBill');
-      setTimeout(() => document.getElementById('newBillFirstItemAmt').focus(), 80);
+      setTimeout(() => {
+        const firstInput = list.querySelector('.nb-item-name');
+        if (firstInput) firstInput.focus();
+      }, 80);
     }
 
     function saveNewBill() {
@@ -2317,18 +2546,21 @@
       const buyerType = document.getElementById('newBillBuyerType').value === 'owner' ? 'owner' : 'contractor';
       const date = document.getElementById('newBillDate').value;
       const note = document.getElementById('newBillNote').value.trim();
-      const firstItemName = document.getElementById('newBillFirstItemName').value.trim();
-      const firstItemAmt = parseFloat(document.getElementById('newBillFirstItemAmt').value);
 
       const items = [];
-      if (!isNaN(firstItemAmt) && firstItemAmt > 0) {
-        items.push({ id: uid('it'), name: firstItemName || 'รายการ 1', amount: firstItemAmt });
-      }
+      document.querySelectorAll('#newBillItemsList .new-bill-item-row').forEach(row => {
+        const itemName = row.querySelector('.nb-item-name').value.trim();
+        const itemAmt = parseFloat(row.querySelector('.nb-item-amt').value);
+        if (!isNaN(itemAmt) && itemAmt > 0) {
+          items.push({ id: uid('it'), name: itemName || ('รายการ ' + (items.length + 1)), amount: itemAmt });
+        }
+      });
+
       state.bills.push({ id: uid('bill'), name, buyerType, reimbursed: false, reimbursedDate: '', paymentId: '', date, note, items });
       closeModal('modalNewBill');
       saveState();
       const typeLabel = buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
-      toast(`เพิ่ม ${name} (${typeLabel}) เรียบร้อย`, 'success');
+      toast(`เพิ่ม ${name} (${typeLabel} • ${items.length} รายการ) เรียบร้อย`, 'success');
     }
 
     function addBillItem(e, billId) {
@@ -2565,6 +2797,8 @@
       document.getElementById('closePeriodDate').value = todayISO();
       document.getElementById('closePeriodPayAmt').value = Math.max(0, s.activeLaborRemain);
       document.getElementById('closePeriodNote').value = '';
+      pendingSlips.closePeriod = '';
+      renderSlipUploadBox('closePeriod');
       openModal('modalClosePeriod');
     }
 
@@ -2581,15 +2815,18 @@
       const dateRange = firstDay && lastDay && firstDay !== lastDay ? `${firstDay} – ${lastDay}` : firstDay;
 
       if (payAmt > 0) {
-        state.payments.unshift({
+        const payItem = {
           id: uid('pay'),
           date: closedDate,
           category: 'labor',
           periodNo: pNo,
           amount: payAmt,
           note: `ตัดยอดปิด${label}${dateRange ? ' (' + dateRange + ')' : ''}${note ? ' — ' + note : ''}`
-        });
+        };
+        if (pendingSlips.closePeriod) payItem.slipDataUrl = pendingSlips.closePeriod;
+        state.payments.unshift(payItem);
       }
+      pendingSlips.closePeriod = '';
 
       const workerSummary = state.workers.map(w => ({
         id: w.id,
@@ -2742,6 +2979,158 @@
       saveState();
     }
 
+    // ---- TRANSFER SLIP UPLOAD & VIEWER ----
+    function compressSlipImage(file) {
+      return new Promise((resolve, reject) => {
+        if (!file || !file.type.startsWith('image/')) {
+          reject(new Error('กรุณาเลือกไฟล์รูปภาพ (JPG / PNG / WebP)'));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์รูปภาพได้'));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('ไฟล์รูปภาพไม่ถูกต้อง'));
+          img.onload = () => {
+            const maxDim = 900;
+            let w = img.width;
+            let h = img.height;
+            if (w > maxDim || h > maxDim) {
+              if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+              else { w = Math.round((w * maxDim) / h); h = maxDim; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.72));
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderSlipUploadBox(targetKey) {
+      const boxMap = { pay: 'paySlipBox', settle: 'settleSlipBox', closePeriod: 'closePeriodSlipBox' };
+      const inputMap = { pay: 'paySlipInput', settle: 'settleSlipInput', closePeriod: 'closePeriodSlipInput' };
+      const box = document.getElementById(boxMap[targetKey]);
+      if (!box) return;
+      const dataUrl = pendingSlips[targetKey];
+      if (dataUrl) {
+        const kb = Math.round((dataUrl.length * 3) / 4 / 1024);
+        box.innerHTML = `
+          <div class="slip-preview-wrap">
+            <img src="${dataUrl}" class="slip-thumb" alt="สลิปโอนเงิน" onclick="openSlipPreviewDataUrl('${targetKey}')" title="คลิกเพื่อดูรูปใหญ่" />
+            <div>
+              <div style="font-size:13px; font-weight:600; color:var(--app-success);">แนบสลิปแล้ว (${kb} KB)</div>
+              <div style="font-size:12px; color:var(--color-steel);">คลิกที่รูปเพื่อขยายดู</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="btn btn-sm" onclick="document.getElementById('${inputMap[targetKey]}').click()">เปลี่ยนรูป</button>
+            <button type="button" class="btn-danger-ghost" onclick="clearModalSlip('${targetKey}')">ลบออก</button>
+          </div>
+        `;
+      } else {
+        box.innerHTML = `
+          <div style="font-size:13px; color:var(--color-steel);">ยังไม่ได้แนบสลิปโอนเงิน (รองรับ JPG / PNG)</div>
+          <button type="button" class="btn btn-sm" onclick="document.getElementById('${inputMap[targetKey]}').click()">+ เลือกรูปสลิป</button>
+        `;
+      }
+    }
+
+    async function handleModalSlipFile(event, targetKey) {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = '';
+      if (!file) return;
+      try {
+        pendingSlips[targetKey] = await compressSlipImage(file);
+        renderSlipUploadBox(targetKey);
+        toast('แนบสลิปโอนเงินเรียบร้อย', 'success');
+      } catch (err) {
+        toast(err.message || 'แนบสลิปไม่สำเร็จ', 'error');
+      }
+    }
+
+    function clearModalSlip(targetKey) {
+      pendingSlips[targetKey] = '';
+      renderSlipUploadBox(targetKey);
+    }
+
+    function openSlipPreviewDataUrl(targetKey) {
+      const dataUrl = pendingSlips[targetKey];
+      if (!dataUrl) return;
+      viewerPaymentId = null;
+      document.getElementById('slipViewerTitle').textContent = 'ตัวอย่างสลิปโอนเงิน';
+      document.getElementById('slipViewerMeta').textContent = 'ยังไม่ได้บันทึก — จะถูกแนบเมื่อกดปุ่มบันทึก';
+      document.getElementById('slipViewerImg').src = dataUrl;
+      document.getElementById('slipDownloadLink').href = dataUrl;
+      document.getElementById('slipDownloadLink').download = `slip-preview-${todayISO()}.jpg`;
+      document.getElementById('slipViewerLeftActions').style.display = 'none';
+      openModal('modalSlipViewer');
+    }
+
+    function openPaymentSlipViewer(paymentId) {
+      const p = state.payments.find(x => x.id === paymentId);
+      if (!p || !p.slipDataUrl) return;
+      viewerPaymentId = paymentId;
+      const catText = p.category === 'materials' ? 'คืนค่าของ (บิลช่าง)' : 'ค่าแรงช่าง';
+      document.getElementById('slipViewerTitle').textContent = `สลิปโอนเงิน — ${fmt(p.amount)} ฿`;
+      document.getElementById('slipViewerMeta').textContent = `${p.date || 'ไม่ระบุวันที่'} • ${catText}${p.note ? ' • ' + p.note : ''}`;
+      document.getElementById('slipViewerImg').src = p.slipDataUrl;
+      document.getElementById('slipDownloadLink').href = p.slipDataUrl;
+      document.getElementById('slipDownloadLink').download = `slip-${p.date || todayISO()}-${p.amount}.jpg`;
+      document.getElementById('slipViewerLeftActions').style.display = 'flex';
+      openModal('modalSlipViewer');
+    }
+
+    function triggerAttachSlip(paymentId) {
+      slipTargetPaymentId = paymentId;
+      const inp = document.getElementById('attachSlipInput');
+      inp.value = '';
+      inp.click();
+    }
+
+    function triggerReplaceSlipFromViewer() {
+      if (!viewerPaymentId) return;
+      triggerAttachSlip(viewerPaymentId);
+    }
+
+    async function handleAttachSlipToPayment(event) {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = '';
+      if (!file || !slipTargetPaymentId) return;
+      const p = state.payments.find(x => x.id === slipTargetPaymentId);
+      if (!p) return;
+      try {
+        p.slipDataUrl = await compressSlipImage(file);
+        saveState();
+        if (viewerPaymentId === p.id && document.getElementById('modalSlipViewer').classList.contains('open')) {
+          openPaymentSlipViewer(p.id);
+        }
+        toast('แนบสลิปโอนเงินเรียบร้อย', 'success');
+      } catch (err) {
+        toast(err.message || 'แนบสลิปไม่สำเร็จ', 'error');
+      } finally {
+        slipTargetPaymentId = null;
+      }
+    }
+
+    function removeSlipFromViewer() {
+      if (!viewerPaymentId) return;
+      const p = state.payments.find(x => x.id === viewerPaymentId);
+      if (!p) return;
+      if (!confirm('ต้องการลบสลิปโอนเงินออกจากรายการนี้ใช่หรือไม่?')) return;
+      delete p.slipDataUrl;
+      closeModal('modalSlipViewer');
+      saveState();
+      toast('ลบสลิปโอนเงินเรียบร้อย');
+    }
+
     // ---- PAYMENTS ----
     function updatePayModalHint() {
       const cat = document.getElementById('payCategory').value;
@@ -2760,6 +3149,8 @@
       document.getElementById('payDate').value = todayISO();
       document.getElementById('payAmount').value = '';
       document.getElementById('payNote').value = '';
+      pendingSlips.pay = '';
+      renderSlipUploadBox('pay');
       updatePayModalHint();
       openModal('modalPayment');
       setTimeout(() => document.getElementById('payAmount').focus(), 80);
@@ -2773,6 +3164,8 @@
       if (isNaN(amount) || amount <= 0) { toast('กรุณาใส่จำนวนเงินที่ถูกต้อง', 'error'); return; }
       const item = { id: uid('pay'), date, category, amount, note };
       if (category === 'labor') item.periodNo = state.currentPeriodNo || 1;
+      if (pendingSlips.pay) item.slipDataUrl = pendingSlips.pay;
+      pendingSlips.pay = '';
       state.payments.unshift(item);
       closeModal('modalPayment');
       saveState();
@@ -2797,18 +3190,24 @@
       const rows = state.payments.filter(p => filter === 'all' || p.category === filter);
       const tbody = document.getElementById('paymentsTableBody');
       if (rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">ยังไม่มีประวัติการจ่ายเงิน</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มีประวัติการจ่ายเงิน</td></tr>';
         return;
       }
-      tbody.innerHTML = rows.map(p => `
-        <tr>
-          <td>${esc(p.date || '—')}</td>
-          <td><span class="cat-badge ${p.category === 'materials' ? 'cat-materials' : 'cat-labor'}">${p.category === 'materials' ? 'คืนค่าของ (บิลช่าง)' : 'ค่าแรงช่าง'}</span></td>
-          <td>${esc(p.note || '—')}</td>
-          <td class="text-right num"><strong>${fmt(p.amount)} ฿</strong></td>
-          <td class="text-center"><button class="btn-danger-ghost" onclick="deletePayment('${p.id}')">✕</button></td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = rows.map(p => {
+        const slipCell = p.slipDataUrl
+          ? `<button type="button" class="slip-pill-btn" onclick="openPaymentSlipViewer('${p.id}')" title="คลิกเพื่อดูสลิปโอนเงิน">ดูสลิป</button>`
+          : `<button type="button" class="slip-add-btn" onclick="triggerAttachSlip('${p.id}')" title="แนบสลิปโอนเงิน">+ แนบสลิป</button>`;
+        return `
+          <tr>
+            <td>${esc(p.date || '—')}</td>
+            <td><span class="cat-badge ${p.category === 'materials' ? 'cat-materials' : 'cat-labor'}">${p.category === 'materials' ? 'คืนค่าของ (บิลช่าง)' : 'ค่าแรงช่าง'}</span></td>
+            <td>${esc(p.note || '—')}</td>
+            <td class="text-center">${slipCell}</td>
+            <td class="text-right num"><strong>${fmt(p.amount)} ฿</strong></td>
+            <td class="text-center"><button class="btn-danger-ghost" onclick="deletePayment('${p.id}')">✕</button></td>
+          </tr>
+        `;
+      }).join('');
     }
 
     // ---- GOOGLE SHEETS SYNC ----
@@ -3182,14 +3581,14 @@ function renderReadableSheets_(data) {
 
   const paySheet = getOrCreateSheet_(ss, 'ประวัติการจ่ายเงิน');
   paySheet.clear();
-  const payRows = [['วันที่', 'หมวดหมู่', 'จำนวนเงิน (บาท)', 'หมายเหตุ / ผู้รับ']];
+  const payRows = [['วันที่', 'หมวดหมู่', 'จำนวนเงิน (บาท)', 'สลิปโอนเงิน', 'หมายเหตุ / ผู้รับ']];
   payments.forEach(function (p) {
-    payRows.push([p.date || '', p.category === 'materials' ? 'คืนค่าของ (บิลช่างซื้อ)' : 'ค่าแรงช่าง', Number(p.amount) || 0, p.note || '']);
+    payRows.push([p.date || '', p.category === 'materials' ? 'คืนค่าของ (บิลช่างซื้อ)' : 'ค่าแรงช่าง', Number(p.amount) || 0, p.slipDataUrl ? 'มีสลิป' : '—', p.note || '']);
   });
-  paySheet.getRange(1, 1, payRows.length, 4).setValues(payRows);
-  paySheet.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
+  paySheet.getRange(1, 1, payRows.length, 5).setValues(payRows);
+  paySheet.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
   if (payRows.length > 1) paySheet.getRange(2, 3, payRows.length - 1, 1).setNumberFormat('#,##0');
-  paySheet.autoResizeColumns(1, 4);
+  paySheet.autoResizeColumns(1, 5);
 }`;
 
     async function copyAppsScriptCode() {
