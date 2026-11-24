@@ -1982,7 +1982,8 @@
         <button class="btn-ghost" onclick="closeModal('modalWorkers')">✕</button>
       </div>
       <div class="modal-body">
-        <div id="workersEditList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;"></div>
+        <div id="workersEditList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:8px;"></div>
+        <div class="card-sub" style="margin-bottom:16px;">เปลี่ยนค่าแรง/วันมีผลกับวันที่เพิ่มต่อจากนี้ (ระบบจะถามว่าจะปรับวันในงวดนี้ที่ยอดเท่าอัตราเดิมด้วยไหม) ช่างที่มีประวัติเช็คชื่อจะเป็นปุ่ม "เลิกใช้" ซึ่งซ่อนจากการเช็คชื่อใหม่ แต่ยอดและประวัติยังอยู่ครบ</div>
         <div style="border-top:1px solid var(--border); padding-top:14px;">
           <label style="display:block; font-size:13px; font-weight:700; margin-bottom:8px;">+ เพิ่มช่างคนใหม่</label>
           <div class="form-row">
@@ -2473,6 +2474,35 @@
       return (Number(n) || 0).toLocaleString('th-TH');
     }
 
+    // ---- E7: เลิกใช้งานช่างที่มีประวัติ แทนการลบ (ลบแล้วยอดค่าแรงในอดีตจะหายจากรายงาน) ----
+    function activeWorkers() { return state.workers.filter(w => !w.archived); }
+
+    function workerHistory(w) {
+      const hasKey = d => d && d.entries && Object.prototype.hasOwnProperty.call(d.entries, w.id);
+      const curDays = state.attendance.filter(hasKey).length;
+      const closedDays = (state.closedPeriods || []).reduce((a, cp) => a + (cp.attendance || []).filter(hasKey).length, 0);
+      return { days: curDays + closedDays, total: calcSummary().workerTotals[w.id] || 0 };
+    }
+
+    function hasWorkerHistory(w) {
+      const h = workerHistory(w);
+      return h.days > 0 || h.total > 0;
+    }
+
+    // ช่างที่แสดงในตารางงวดนี้: ช่างที่ยังใช้งาน + ช่างที่เลิกใช้แล้วแต่ยังมียอดในงวดนี้ (ไม่ให้ยอดหายจากตาราง)
+    function visibleWorkers() {
+      return state.workers.filter(w => !w.archived || state.attendance.some(d => Number((d.entries || {})[w.id]) > 0));
+    }
+
+    // ---- E9: กันกดบันทึกซ้ำ (ดับเบิลคลิก/แตะรัว) ภายในช่วงเวลาสั้นๆ ----
+    const submitLocks = {};
+    function acquireSubmit(key, ms = 1200) {
+      const now = Date.now();
+      if (submitLocks[key] && now < submitLocks[key]) return false;
+      submitLocks[key] = now + ms;
+      return true;
+    }
+
     function todayISO() {
       // ใช้วันที่ตามเวลาเครื่อง (ไม่ใช้ toISOString ซึ่งเป็น UTC ทำให้ 00:00–07:00 น. เวลาไทยได้วันที่เมื่อวาน)
       const d = new Date();
@@ -2735,7 +2765,7 @@
       // Labor card (all-time project summary)
       const totalDaysAll = (s.closedDaysCount || 0) + state.attendance.length;
       const closedCount = (state.closedPeriods || []).length;
-      document.getElementById('ovLabCount').textContent = `งวดปัจจุบัน ${state.attendance.length} วัน${closedCount > 0 ? ` • ตัดยอดแล้ว ${closedCount} งวด (รวม ${totalDaysAll} วัน)` : ''} • ช่าง ${state.workers.length} คน`;
+      document.getElementById('ovLabCount').textContent = `งวดปัจจุบัน ${state.attendance.length} วัน${closedCount > 0 ? ` • ตัดยอดแล้ว ${closedCount} งวด (รวม ${totalDaysAll} วัน)` : ''} • ช่าง ${activeWorkers().length} คน`;
       document.getElementById('ovLabTotal').textContent = fmt(s.totalLabor) + ' ฿';
       document.getElementById('ovLabPaid').textContent = fmt(s.paidLabor) + ' ฿';
       document.getElementById('ovLabRemain').textContent = fmt(s.remainLabor) + ' ฿';
@@ -2751,7 +2781,7 @@
       if (state.workers.length === 0) {
         wtBody.innerHTML = '<tr><td colspan="4" class="empty-state">ยังไม่มีรายชื่อช่าง</td></tr>';
       } else {
-        wtBody.innerHTML = state.workers.map(w => `
+        wtBody.innerHTML = state.workers.filter(w => !w.archived || (s.workerTotals[w.id] || 0) > 0).map(w => `
           <tr>
             <td class="ow-name"><strong>${esc(w.name)}</strong></td>
             <td class="text-right num ow-avg" data-label="เฉลี่ย/วัน">${(() => {
@@ -3032,6 +3062,7 @@
         });
         if (!goOn) return;
       }
+      if (!acquireSubmit('settleBills')) return;
 
       const selectedBills = state.bills.filter(b => selectedIds.includes(b.id));
       const billNames = selectedBills.map(b => b.name).join(', ');
@@ -3155,7 +3186,7 @@
       }, 80);
     }
 
-    function saveNewBill() {
+    async function saveNewBill() {
       const name = document.getElementById('newBillName').value.trim() || ('บิล ' + (state.bills.length + 1));
       const buyerType = document.getElementById('newBillBuyerType').value === 'owner' ? 'owner' : 'contractor';
       const date = document.getElementById('newBillDate').value;
@@ -3169,6 +3200,27 @@
           items.push({ id: uid('it'), name: itemName || ('รายการ ' + (items.length + 1)), amount: itemAmt });
         }
       });
+
+      // E10: บิลซ้ำ (ชื่อ + วันที่ + ยอดรวมเท่ากัน) / บิลเปล่า → ถามก่อนบันทึก
+      const newTotal = items.reduce((a, it) => a + it.amount, 0);
+      const dup = state.bills.find(b => (b.name || '').trim().toLowerCase() === name.toLowerCase() && (b.date || '') === (date || '')
+        && Math.round((b.items || []).reduce((a, it) => a + (Number(it.amount) || 0), 0) * 100) === Math.round(newTotal * 100));
+      if (dup) {
+        const goOn = await confirmDialog({
+          title: 'มีบิลเหมือนกันอยู่แล้ว',
+          body: `มี "${dup.name}" วันที่ ${dup.date || 'ไม่ระบุ'} ยอด ${fmt(newTotal)} ฿ อยู่แล้ว (ชื่อ วันที่ และยอดเท่ากัน) ถ้าเป็นบิลใบเดียวกัน อย่าบันทึกซ้ำ`,
+          confirmLabel: 'บันทึกซ้ำ'
+        });
+        if (!goOn) return;
+      } else if (items.length === 0) {
+        const goOn = await confirmDialog({
+          title: 'บิลนี้ยังไม่มีรายการที่มีราคา',
+          body: 'ยังไม่ได้ใส่รายการหรือราคา (ต้องมากกว่า 0) จะบันทึกเป็นบิลว่างแล้วค่อยเพิ่มรายการทีหลังไหม',
+          confirmLabel: 'บันทึกบิลว่าง'
+        });
+        if (!goOn) return;
+      }
+      if (!acquireSubmit('saveNewBill')) return;
 
       const newBillObj = { id: uid('bill'), name, buyerType, reimbursed: false, reimbursedDate: '', paymentId: '', date, note, items };
       if (pendingSlips.newBill) newBillObj.slipDataUrl = pendingSlips.newBill;
@@ -3188,6 +3240,7 @@
       if (isNaN(amtVal) || amtVal <= 0) return;
       const bill = state.bills.find(b => b.id === billId);
       if (!bill) return;
+      if (!acquireSubmit('addItem:' + billId, 800)) return;
       bill.items.push({ id: uid('it'), name: nameVal || ('รายการ ' + (bill.items.length + 1)), amount: amtVal });
       saveState();
     }
@@ -3234,8 +3287,9 @@
 
     // ---- LABOR & ATTENDANCE ----
     function renderLabor(s) {
+      const vw = visibleWorkers();
       const chips = document.getElementById('workerChips');
-      chips.innerHTML = state.workers.map(w => `
+      chips.innerHTML = vw.map(w => `
         <div class="worker-chip">
           <strong>${esc(w.name)}</strong>
           <span class="worker-rate num">${fmt(w.dailyRate)} ฿/วัน</span>
@@ -3252,7 +3306,7 @@
         <thead>
           <tr>
             <th>วันที่</th>
-            ${state.workers.map(w => `<th class="text-center">${esc(w.name)}<div style="font-size:11px; font-weight:500; color:var(--text-muted);">${fmt(w.dailyRate)} ฿</div></th>`).join('')}
+            ${vw.map(w => `<th class="text-center">${esc(w.name)}<div style="font-size:11px; font-weight:500; color:var(--text-muted);">${fmt(w.dailyRate)} ฿</div></th>`).join('')}
             <th class="text-right">รวมรายวัน</th>
             <th class="text-center" style="width:46px;">ลบ</th>
           </tr>
@@ -3260,10 +3314,10 @@
       `;
 
       const tbodyRows = state.attendance.length === 0
-        ? `<tr><td colspan="${state.workers.length + 3}" class="empty-state">ยังไม่มีบันทึกวันทำงาน กด "+ เพิ่มวันทำงาน" เพื่อเริ่มเช็คชื่อ</td></tr>`
+        ? `<tr><td colspan="${vw.length + 3}" class="empty-state">ยังไม่มีบันทึกวันทำงาน กด "+ เพิ่มวันทำงาน" เพื่อเริ่มเช็คชื่อ</td></tr>`
         : state.attendance.map(day => {
             let rowSum = 0;
-            const cells = state.workers.map(w => {
+            const cells = vw.map(w => {
               const val = Number((day.entries || {})[w.id]) || 0;
               rowSum += val;
               const cls = val === 0 ? 'absent' : (val === Number(w.dailyRate) ? 'full' : 'custom');
@@ -3291,7 +3345,7 @@
         <tfoot>
           <tr>
             <td class="att-date">รวมค่าแรงงวดนี้</td>
-            ${state.workers.map(w => `<td class="text-center num" data-label="${esc(w.name)}">${fmt(s.activeWorkerTotals[w.id] || 0)}</td>`).join('')}
+            ${vw.map(w => `<td class="text-center num" data-label="${esc(w.name)}">${fmt(s.activeWorkerTotals[w.id] || 0)}</td>`).join('')}
             <td class="text-right num text-primary att-sum" data-label="รวมทั้งงวด">${fmt(s.activeLabor)} ฿</td>
             <td class="att-del"></td>
           </tr>
@@ -3338,6 +3392,7 @@
       const amt = parseFloat(document.getElementById('editAttAmount').value) || 0;
       const day = state.attendance.find(d => d.id === dayId);
       if (!day) return;
+      if (!acquireSubmit('saveEditAtt')) return;
       if (!day.entries) day.entries = {};
       day.entries[workerId] = amt;
       closeModal('modalEditAtt');
@@ -3363,7 +3418,7 @@
 
     function renderNewDayChips() {
       let total = 0;
-      document.getElementById('newDayWorkersList').innerHTML = state.workers.map(w => {
+      document.getElementById('newDayWorkersList').innerHTML = activeWorkers().map(w => {
         const st = newDayStates[w.id] || 'full';
         const amt = newDayAmount(w, st);
         total += amt;
@@ -3383,7 +3438,7 @@
     }
 
     function setAllNewDay(st) {
-      state.workers.forEach(w => { newDayStates[w.id] = st; });
+      activeWorkers().forEach(w => { newDayStates[w.id] = st; });
       renderNewDayChips();
     }
 
@@ -3394,7 +3449,7 @@
       const existing = parseIso(iso) ? state.attendance.find(d => d.isoDate === iso) : null;
       if (existing) {
         newDayCustom = {};
-        state.workers.forEach(w => {
+        activeWorkers().forEach(w => {
           const v = Number((existing.entries || {})[w.id]) || 0;
           const rate = Number(w.dailyRate) || 0;
           if (v === 0) newDayStates[w.id] = 'absent';
@@ -3417,7 +3472,7 @@
       newDayStates = {};
       newDayCustom = {};
       newDayLoadedExisting = false;
-      state.workers.forEach(w => { newDayStates[w.id] = 'full'; });
+      activeWorkers().forEach(w => { newDayStates[w.id] = 'full'; });
       document.getElementById('newDayDate').value = todayISO();
       onNewDayDateChange();
       openModal('modalAddDay');
@@ -3433,8 +3488,9 @@
     function saveNewDay() {
       const iso = document.getElementById('newDayDate').value;
       if (!parseIso(iso)) { toast('กรุณาเลือกวันที่', 'error'); return; }
+      if (!acquireSubmit('saveNewDay')) return;
       const entries = {};
-      state.workers.forEach(w => { entries[w.id] = newDayAmount(w, newDayStates[w.id] || 'full'); });
+      activeWorkers().forEach(w => { entries[w.id] = newDayAmount(w, newDayStates[w.id] || 'full'); });
       const label = formatThaiShortDate(iso);
       const existing = state.attendance.find(d => d.isoDate === iso);
       if (existing) {
@@ -3469,6 +3525,7 @@
         toast(`มีบันทึกวันที่ ${formatThaiShortDate(iso)} อยู่แล้ว เลือกวันอื่น หรือลบวันซ้ำก่อน`, 'error');
         return;
       }
+      if (!acquireSubmit('saveSetDay')) return;
       day.isoDate = iso;
       day.date = formatThaiShortDate(iso);
       sortAttendance();
@@ -3498,6 +3555,7 @@
       const rangeStr = firstDay && lastDay && firstDay !== lastDay ? `${firstDay} – ${lastDay}` : firstDay;
 
       const workerLines = state.workers
+        .filter(w => !w.archived || (s.activeWorkerTotals[w.id] || 0) > 0)
         .map(w => `${esc(w.name)}: <strong class="num">${fmt(s.activeWorkerTotals[w.id] || 0)} ฿</strong> (${s.activeWorkerDays[w.id] || 0} วัน)`)
         .join(' &nbsp;•&nbsp; ');
 
@@ -3539,6 +3597,7 @@
     }
 
     function confirmClosePeriod() {
+      if (!acquireSubmit('closePeriod', 3000)) return; // ปิดงวดซ้ำจะทำให้งวดว่างถูกปิดอีกรอบ
       const s = calcSummary();
       const pNo = state.currentPeriodNo || 1;
       const label = document.getElementById('closePeriodLabel').value.trim() || `งวดที่ ${pNo}`;
@@ -3566,7 +3625,7 @@
       }
       pendingSlips.closePeriod = '';
 
-      const workerSummary = state.workers.map(w => ({
+      const workerSummary = state.workers.filter(w => !w.archived || (s.activeWorkerTotals[w.id] || 0) > 0).map(w => ({
         id: w.id,
         name: w.name,
         dailyRate: Number(w.dailyRate) || 0,
@@ -3686,13 +3745,23 @@
 
     function renderWorkersEditList() {
       const list = document.getElementById('workersEditList');
-      list.innerHTML = state.workers.map(w => `
+      const act = activeWorkers();
+      const arch = state.workers.filter(w => w.archived);
+      list.innerHTML = act.map(w => {
+        const hist = hasWorkerHistory(w);
+        return `
         <div style="display:flex; gap:8px; align-items:center;">
           <input type="text" value="${esc(w.name)}" onchange="updateWorker('${w.id}', 'name', this.value)" style="flex:1; min-width:0;" />
-          <input type="number" value="${w.dailyRate}" onchange="updateWorker('${w.id}', 'dailyRate', this.value)" style="width:96px; flex-shrink:0; text-align:right;" min="0" />
-          <button class="btn-danger-ghost" style="flex-shrink:0; min-height:44px; min-width:44px;" title="ลบช่าง" onclick="deleteWorker('${w.id}')">ลบ</button>
-        </div>
-      `).join('');
+          <input type="number" value="${w.dailyRate}" onchange="onWorkerRateChange('${w.id}', this.value)" style="width:96px; flex-shrink:0; text-align:right;" min="0" />
+          <button class="btn-danger-ghost" style="flex-shrink:0; min-height:44px; min-width:44px;" title="${hist ? 'มีประวัติเช็คชื่อ: เลิกใช้งาน (ประวัติและยอดยังอยู่)' : 'ลบช่าง'}" onclick="deleteWorker('${w.id}')">${hist ? 'เลิกใช้' : 'ลบ'}</button>
+        </div>`;
+      }).join('') + (arch.length ? `
+        <div style="margin-top:8px; font-size:13px; color:var(--color-steel);">เลิกใช้งานแล้ว (ประวัติและยอดยังอยู่ในรายงาน)</div>
+        ${arch.map(w => `
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span style="flex:1; min-width:0; color:var(--color-steel);">${esc(w.name)} · ${fmt(w.dailyRate)} ฿/วัน</span>
+          <button class="btn btn-sm" style="flex-shrink:0;" onclick="restoreWorker('${w.id}')">ใช้งานอีกครั้ง</button>
+        </div>`).join('')}` : '');
     }
 
     function updateWorker(id, field, val) {
@@ -3702,10 +3771,34 @@
       saveState();
     }
 
+    // E8: เปลี่ยนค่าแรง/วัน มีผลกับวันที่เพิ่มต่อจากนี้เท่านั้น → แจ้งให้ชัด และเสนอให้ปรับวันในงวดนี้ที่ยอดเท่าอัตราเดิม
+    async function onWorkerRateChange(id, val) {
+      const w = state.workers.find(x => x.id === id);
+      if (!w) return;
+      const oldRate = Number(w.dailyRate) || 0;
+      const newRate = parseFloat(val) || 0;
+      if (newRate === oldRate) return;
+      w.dailyRate = newRate;
+      saveState();
+      const same = oldRate > 0 ? state.attendance.filter(d => Number((d.entries || {})[id]) === oldRate) : [];
+      toast(`ค่าแรง ${w.name} เป็น ${fmt(newRate)} ฿/วัน — มีผลกับวันที่เพิ่มต่อจากนี้ วันที่บันทึกไว้แล้วคงยอดเดิม`);
+      if (same.length === 0) return;
+      const adjust = await confirmDialog({
+        title: `ปรับยอดวันที่บันทึกไว้แล้วด้วยไหม?`,
+        body: `ค่าแรง ${w.name} เปลี่ยนจาก ${fmt(oldRate)} เป็น ${fmt(newRate)} ฿/วัน ในงวดนี้มี ${same.length} วันที่ยอดเท่าอัตราเดิม (${fmt(oldRate)} ฿) ถ้าไม่ปรับ ยอดเหล่านั้นคงเดิม วันครึ่งวัน/ยอดที่กำหนดเอง/วันที่ไม่มา และงวดที่ปิดแล้ว จะไม่ถูกแก้`,
+        confirmLabel: `ปรับ ${same.length} วันเป็น ${fmt(newRate)} ฿`
+      });
+      if (!adjust) return;
+      performWithUndo(`ปรับยอด ${w.name} ${same.length} วันเป็น ${fmt(newRate)} ฿`, () => {
+        same.forEach(d => { d.entries[id] = newRate; });
+      });
+    }
+
     function addNewWorker() {
       const name = document.getElementById('addWorkerName').value.trim();
       const rate = parseFloat(document.getElementById('addWorkerRate').value) || 0;
       if (!name) { toast('กรุณาใส่ชื่อช่าง', 'error'); return; }
+      if (!acquireSubmit('addWorker')) return;
       state.workers.push({ id: uid('w'), name, dailyRate: rate });
       document.getElementById('addWorkerName').value = '';
       document.getElementById('addWorkerRate').value = '';
@@ -3714,11 +3807,28 @@
       toast('เพิ่มช่าง ' + name + ' เรียบร้อย', 'success');
     }
 
+    // E7: ช่างที่มีประวัติเช็คชื่อ/ยอด ไม่ลบ (ยอดในอดีตจะหาย) แต่เลิกใช้งาน: ซ่อนจากการเช็คชื่อใหม่ ประวัติยังอยู่ครบ
     function deleteWorker(id) {
       const w = state.workers.find(x => x.id === id);
       if (!w) return;
+      if (hasWorkerHistory(w)) {
+        performWithUndo(`เลิกใช้งานช่าง "${w.name}" แล้ว (ประวัติและยอดยังอยู่)`, () => {
+          w.archived = true;
+          renderWorkersEditList();
+        });
+        return;
+      }
       performWithUndo(`ลบช่าง "${w.name}" แล้ว`, () => {
         state.workers = state.workers.filter(x => x.id !== id);
+        renderWorkersEditList();
+      });
+    }
+
+    function restoreWorker(id) {
+      const w = state.workers.find(x => x.id === id);
+      if (!w) return;
+      performWithUndo(`ใช้งานช่าง "${w.name}" อีกครั้ง`, () => {
+        delete w.archived;
         renderWorkersEditList();
       });
     }
@@ -4004,7 +4114,7 @@
       const date = document.getElementById('payDate').value;
       const amount = parseFloat(document.getElementById('payAmount').value);
       const note = document.getElementById('payNote').value.trim();
-      if (isNaN(amount) || amount <= 0) { toast('กรุณาใส่จำนวนเงินที่ถูกต้อง', 'error'); return; }
+      if (isNaN(amount) || amount <= 0) { toast('กรุณาใส่จำนวนเงินที่ถูกต้อง (มากกว่า 0)', 'error'); return; }
       const over = payOverInfo(amount);
       if (over && category === 'materials') {
         // ค่าของ: จ่ายเกินยอดค้าง = สัญญาณนับซ้ำ ต้องยืนยัน (ค่าแรงเบิกล่วงหน้าเกินได้ตามปกติ จึงเตือนในฟอร์มเท่านั้น)
@@ -4015,6 +4125,7 @@
         });
         if (!goOn) return;
       }
+      if (!acquireSubmit('savePayment')) return;
       const item = { id: uid('pay'), date, category, amount, note };
       if (category === 'labor') item.periodNo = state.currentPeriodNo || 1;
       if (pendingSlips.pay) item.slipDataUrl = pendingSlips.pay;
