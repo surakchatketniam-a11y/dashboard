@@ -1163,8 +1163,8 @@
       font-size: 13px;
       font-weight: 600;
     }
-    .cat-materials { background: var(--color-surface); color: var(--color-ink); border: 1px solid var(--color-hairline); }
-    .cat-labor { background: rgba(55, 114, 207, 0.12); color: var(--color-brand-tag); }
+    .cat-materials { background: var(--app-warning-soft); color: var(--app-warning); border: 1px solid var(--app-warning-border); }
+    .cat-labor { background: var(--color-accent-soft); color: var(--color-primary-deep); border: 1px solid var(--color-primary-subdued); }
 
     /* Modal */
     .modal-backdrop {
@@ -1540,10 +1540,10 @@
         <div class="card-header">
           <div>
             <h2 class="card-title">ประวัติการจ่ายเงิน / เบิกงวด</h2>
-            <div class="card-sub">บันทึกทุกครั้งที่จ่ายเงินค่าอุปกรณ์หรือจ่าย/เบิกค่าแรงช่าง</div>
+            <div class="card-sub">รายการจ่ายคืนค่าของและเบิกค่าแรงช่าง · ใหม่สุดอยู่บน</div>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-            <select id="payFilter" onchange="renderPayments()" style="padding:7px 10px; font-size:13px;">
+            <select id="payFilter" onchange="renderPayments()" style="padding:7px 10px; font-size:14px;">
               <option value="all">ทั้งหมด</option>
               <option value="materials">เฉพาะจ่ายคืนค่าของ (บิลช่างซื้อ)</option>
               <option value="labor">เฉพาะค่าแรงช่าง</option>
@@ -1551,6 +1551,7 @@
             <button class="btn btn-primary btn-sm" onclick="openPaymentModal()">+ บันทึกการจ่ายเงิน</button>
           </div>
         </div>
+        <div class="split-stats" id="paySummary" style="margin:0 0 16px; padding:0 0 16px; border-top:none; border-bottom:1px solid var(--color-hairline-soft);"></div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -3313,10 +3314,18 @@
 
     function renderPayments() {
       const filter = document.getElementById('payFilter').value;
-      const rows = state.payments.filter(p => filter === 'all' || p.category === filter);
+      const sumOf = cat => state.payments.filter(p => !cat || p.category === cat).reduce((a, p) => a + (Number(p.amount) || 0), 0);
+      document.getElementById('paySummary').innerHTML = `
+        <div><div class="split-stat-label">จ่ายแล้วทั้งหมด</div><div class="split-stat-val num">${fmt(sumOf())} ฿</div></div>
+        <div><div class="split-stat-label">คืนค่าของให้ช่าง</div><div class="split-stat-val num">${fmt(sumOf('materials'))} ฿</div></div>
+        <div><div class="split-stat-label">ค่าแรง / เบิกงวด</div><div class="split-stat-val num">${fmt(sumOf('labor'))} ฿</div></div>`;
+      // ใหม่สุดอยู่บน: เรียงเฉพาะรายการที่มีวันที่แบบ YYYY-MM-DD ที่เหลือคงลำดับเดิมไว้ท้ายตาราง
+      const isIso = d => /^\d{4}-\d{2}-\d{2}$/.test(d || '');
+      const filtered = state.payments.filter(p => filter === 'all' || p.category === filter);
+      const rows = [...filtered.filter(p => isIso(p.date)).sort((a, b) => b.date.localeCompare(a.date)), ...filtered.filter(p => !isIso(p.date))];
       const tbody = document.getElementById('paymentsTableBody');
       if (rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มีประวัติการจ่ายเงิน</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มีประวัติการจ่ายเงิน<br><span style="font-size:14px;">กด "+ บันทึกการจ่ายเงิน" เพื่อเริ่มบันทึก</span></td></tr>';
         return;
       }
       tbody.innerHTML = rows.map(p => {
@@ -3325,7 +3334,7 @@
           : `<button type="button" class="slip-add-btn" onclick="triggerAttachSlip('${p.id}')" title="แนบสลิปโอนเงิน">+ แนบสลิป</button>`;
         return `
           <tr>
-            <td>${esc(p.date || '—')}</td>
+            <td>${p.date ? esc(p.date) : '<span class="text-muted">ไม่ระบุวันที่</span>'}</td>
             <td><span class="cat-badge ${p.category === 'materials' ? 'cat-materials' : 'cat-labor'}">${p.category === 'materials' ? 'คืนค่าของ (บิลช่าง)' : 'ค่าแรงช่าง'}</span></td>
             <td>${esc(p.note || '—')}</td>
             <td class="text-center">${slipCell}</td>
