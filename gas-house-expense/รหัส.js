@@ -219,10 +219,13 @@ function renderReadableSheets_(data) {
   // 2. ค่าอุปกรณ์_บิล
   const billSheet = getOrCreateSheet_(ss, 'ค่าอุปกรณ์_บิล');
   billSheet.clear();
-  const billRows = [['บิล', 'ประเภทผู้ซื้อ', 'วันที่', 'รายการ', 'จำนวนเงิน (บาท)', 'หมายเหตุ']];
+  const billRows = [['บิล', 'ประเภทผู้ซื้อ', 'สถานะจ่ายคืนช่าง', 'วันที่', 'รายการ', 'จำนวนเงิน (บาท)', 'หมายเหตุ']];
   bills.forEach(function (b) {
     const items = b.items || [];
     const buyerLabel = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
+    const statusLabel = b.buyerType === 'owner'
+      ? 'เจ้าของจ่ายเองแล้ว'
+      : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' (' + b.reimbursedDate + ')' : '')) : 'รอจ่ายคืนช่าง');
     let billSum = 0;
     items.forEach(function (it, idx) {
       const amt = Number(it.amount) || 0;
@@ -230,26 +233,27 @@ function renderReadableSheets_(data) {
       billRows.push([
         idx === 0 ? (b.name || '') : '',
         idx === 0 ? buyerLabel : '',
+        idx === 0 ? statusLabel : '',
         idx === 0 ? (b.date || '') : '',
         it.name || ('รายการที่ ' + (idx + 1)),
         amt,
         idx === 0 ? (b.note || '') : ''
       ]);
     });
-    billRows.push(['รวม ' + (b.name || ''), buyerLabel, '', '', billSum, '']);
+    billRows.push(['รวม ' + (b.name || ''), buyerLabel, statusLabel, '', '', billSum, '']);
   });
-  billRows.push(['', '', '', '', '', '']);
-  billRows.push(['รวมค่าอุปกรณ์ทั้งหมด', '', '', '', totalMaterials, '']);
-  billRows.push(['เจ้าของซื้อเอง (จ่ายแล้ว)', '', '', '', ownerMatTotal, 'ไม่ค้างจ่ายช่าง']);
-  billRows.push(['ช่างซื้อมาเบิก', '', '', '', contractorMatTotal, '']);
-  billRows.push(['จ่ายคืนค่าของให้ช่างแล้ว', '', '', '', paidMaterials, '']);
-  billRows.push(['คงเหลือต้องจ่ายช่าง', '', '', '', remainMaterials, '']);
+  billRows.push(['', '', '', '', '', '', '']);
+  billRows.push(['รวมค่าอุปกรณ์ทั้งหมด', '', '', '', '', totalMaterials, '']);
+  billRows.push(['เจ้าของซื้อเอง (จ่ายแล้ว)', '', '', '', '', ownerMatTotal, 'ไม่ค้างจ่ายช่าง']);
+  billRows.push(['ช่างซื้อมาเบิก', '', '', '', '', contractorMatTotal, '']);
+  billRows.push(['จ่ายคืนค่าของให้ช่างแล้ว', '', '', '', '', paidMaterials, '']);
+  billRows.push(['คงเหลือต้องจ่ายช่าง', '', '', '', '', remainMaterials, '']);
 
-  billSheet.getRange(1, 1, billRows.length, 6).setValues(billRows);
-  billSheet.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
-  billSheet.getRange(2, 5, billRows.length - 1, 1).setNumberFormat('#,##0');
-  billSheet.getRange(billRows.length - 4, 1, 5, 6).setFontWeight('bold').setBackground('#fef3c7');
-  billSheet.autoResizeColumns(1, 6);
+  billSheet.getRange(1, 1, billRows.length, 7).setValues(billRows);
+  billSheet.getRange(1, 1, 1, 7).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
+  billSheet.getRange(2, 6, billRows.length - 1, 1).setNumberFormat('#,##0');
+  billSheet.getRange(billRows.length - 4, 1, 5, 7).setFontWeight('bold').setBackground('#fef3c7');
+  billSheet.autoResizeColumns(1, 7);
 
   // 3. ค่าแรงช่าง
   const laborSheet = getOrCreateSheet_(ss, 'ค่าแรงช่าง');

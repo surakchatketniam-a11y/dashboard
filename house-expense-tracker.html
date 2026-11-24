@@ -510,8 +510,116 @@
     .bill-card.type-contractor {
       border-top: 3px solid var(--app-warning);
     }
+    .bill-card.type-contractor.is-settled {
+      border-top: 3px solid var(--app-success);
+    }
     .bill-card.type-owner {
       border-top: 3px solid var(--app-info);
+    }
+    .bill-status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 18px;
+      font-size: 12.5px;
+      border-bottom: 1px solid var(--color-hairline-soft);
+      background: var(--color-canvas);
+    }
+    .bill-status-bar.unpaid {
+      background: var(--app-warning-soft);
+      color: var(--app-warning);
+    }
+    .bill-status-bar.paid {
+      background: var(--app-success-soft);
+      color: var(--app-success);
+    }
+    .bill-status-bar.owner {
+      background: var(--app-info-soft);
+      color: var(--app-info);
+    }
+    .bill-status-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+    .bill-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+    .btn-settle-mini {
+      border: 1px solid var(--app-success-border);
+      background: var(--color-canvas);
+      color: var(--app-success);
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-settle-mini:hover {
+      background: var(--app-success);
+      border-color: var(--app-success);
+      color: #ffffff;
+    }
+    .btn-unsettle-mini {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--color-steel);
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-unsettle-mini:hover {
+      background: rgba(255, 255, 255, 0.7);
+      color: var(--app-danger);
+    }
+    .settle-bill-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      margin-bottom: 14px;
+    }
+    .settle-bill-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 12px;
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-md);
+      background: var(--color-surface-soft);
+      cursor: pointer;
+    }
+    .settle-bill-row:hover {
+      border-color: #d4d4d4;
+      background: var(--color-canvas);
+    }
+    .settle-total-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      background: var(--app-success-soft);
+      border: 1px solid var(--app-success-border);
+      color: var(--app-success);
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 14px;
     }
     .buyer-switch {
       display: inline-flex;
@@ -1185,7 +1293,8 @@
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button class="btn btn-primary" onclick="openNewBillModal()">+ เพิ่มบิลใหม่</button>
-            <button class="btn" onclick="openPaymentModal('materials')">จ่ายคืนค่าของช่าง</button>
+            <button class="btn btn-green" onclick="openSettleBillsModal()">ตัดจ่ายหลายบิล</button>
+            <button class="btn" onclick="openPaymentModal('materials')">จ่ายคืนค่าของ (เหมา)</button>
           </div>
         </div>
         <div class="split-stats four-col" style="border-top:none; padding-top:4px; margin-top:0;">
@@ -1214,7 +1323,8 @@
 
       <div class="bill-filter-bar" id="billFilterBar">
         <button class="filter-pill active" data-filter="all" onclick="setBillFilter('all')">ทั้งหมด <span class="filter-count" id="billCountAll">0</span></button>
-        <button class="filter-pill" data-filter="contractor" onclick="setBillFilter('contractor')">ช่างซื้อมาเบิก <span class="filter-count" id="billCountContractor">0</span></button>
+        <button class="filter-pill" data-filter="contractor_unpaid" onclick="setBillFilter('contractor_unpaid')">ช่างซื้อ • รอจ่าย <span class="filter-count" id="billCountContractorUnpaid">0</span></button>
+        <button class="filter-pill" data-filter="contractor_paid" onclick="setBillFilter('contractor_paid')">ช่างซื้อ • จ่ายแล้ว <span class="filter-count" id="billCountContractorPaid">0</span></button>
         <button class="filter-pill" data-filter="owner" onclick="setBillFilter('owner')">เจ้าของซื้อเอง <span class="filter-count" id="billCountOwner">0</span></button>
       </div>
 
@@ -1478,6 +1588,50 @@
     </div>
   </div>
 
+  <!-- MODAL: SETTLE CONTRACTOR BILLS -->
+  <div class="modal-backdrop" id="modalSettleBills">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>ตัดจ่ายบิลค่าของให้ช่าง</h3>
+        <button class="btn-ghost" onclick="closeModal('modalSettleBills')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <label style="font-size:13.5px; font-weight:600; color:var(--color-charcoal);">เลือกบิลช่างซื้อที่ต้องการตัดจ่าย</label>
+          <button type="button" class="btn btn-sm" onclick="toggleAllSettleBills(true)">เลือกทั้งหมด</button>
+        </div>
+        <div class="settle-bill-list" id="settleBillList"></div>
+        <div class="settle-total-box">
+          <span id="settleSelectedCount">เลือก 0 บิล</span>
+          <span class="num" id="settleSelectedSum">0 ฿</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>วันที่จ่ายคืนช่าง</label>
+            <input type="date" id="settleDate" />
+          </div>
+          <div class="form-group">
+            <label>หมายเหตุ (ไม่บังคับ)</label>
+            <input type="text" id="settleNote" placeholder="เช่น โอนคืนค่าของให้ช่างศักดิ์" />
+          </div>
+        </div>
+        <div class="form-group" style="background:var(--color-surface-soft); border:1px solid var(--color-hairline); border-radius:8px; padding:10px 12px; margin-bottom:0;">
+          <label style="display:flex; align-items:flex-start; gap:8px; margin:0; cursor:pointer;">
+            <input type="checkbox" id="settleCreatePayment" checked style="width:auto; height:auto; margin-top:4px;" />
+            <span>
+              <strong style="font-size:13.5px; color:var(--color-ink);">บันทึกลง "ประวัติจ่ายเงิน" ด้วย (หักยอดค้างจ่ายช่าง)</strong>
+              <div style="font-size:12px; color:var(--color-steel); margin-top:2px;">เอาติ๊กออกหากเคยลงยอดจ่ายเหมาไปก่อนหน้านี้แล้ว เพื่อติดสถานะว่าจ่ายแล้วโดยไม่นับเงินซ้ำ</div>
+            </span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeModal('modalSettleBills')">ยกเลิก</button>
+        <button class="btn btn-green" onclick="confirmSettleBills()">ยืนยันตัดจ่ายบิล</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: ADD PAYMENT -->
   <div class="modal-backdrop" id="modalPayment">
     <div class="modal">
@@ -1657,6 +1811,9 @@
       s.bills.forEach(b => {
         if (b.buyerType !== 'owner' && b.buyerType !== 'contractor') b.buyerType = 'contractor';
         if (!Array.isArray(b.items)) b.items = [];
+        b.reimbursed = Boolean(b.reimbursed);
+        if (!b.reimbursedDate) b.reimbursedDate = '';
+        if (!b.paymentId) b.paymentId = '';
       });
       if (!Array.isArray(s.workers)) s.workers = [];
       if (!Array.isArray(s.attendance)) s.attendance = [];
@@ -1739,6 +1896,8 @@
       let ownerBillCount = 0;
       let contractorMatTotal = 0;
       let contractorBillCount = 0;
+      let contractorPaidBillCount = 0;
+      let contractorUnpaidBillCount = 0;
 
       state.bills.forEach(b => {
         const bSum = (b.items || []).reduce((a, it) => a + (Number(it.amount) || 0), 0);
@@ -1748,6 +1907,8 @@
         } else {
           contractorMatTotal += bSum;
           contractorBillCount += 1;
+          if (b.reimbursed) contractorPaidBillCount += 1;
+          else contractorUnpaidBillCount += 1;
         }
       });
 
@@ -1807,6 +1968,7 @@
       return {
         ownerMatTotal, ownerBillCount,
         contractorMatTotal, contractorBillCount,
+        contractorPaidBillCount, contractorUnpaidBillCount,
         totalMaterials, paidMaterials, totalPaidMaterials, remainMaterials,
         activeLabor, activeLaborPaid, activeLaborRemain,
         activeWorkerTotals, activeWorkerDays,
@@ -1899,12 +2061,13 @@
       document.getElementById('matTabOwner').textContent = fmt(s.ownerMatTotal) + ' ฿';
       document.getElementById('matTabOwnerSub').textContent = `${s.ownerBillCount} บิล • ไม่ค้างจ่ายช่าง`;
       document.getElementById('matTabContractor').textContent = fmt(s.contractorMatTotal) + ' ฿';
-      document.getElementById('matTabPaidSub').textContent = `${s.contractorBillCount} บิล • จ่ายคืนแล้ว ${fmt(s.paidMaterials)} ฿`;
+      document.getElementById('matTabPaidSub').textContent = `จ่ายแล้ว ${s.contractorPaidBillCount}/${s.contractorBillCount} บิล • คืนแล้ว ${fmt(s.paidMaterials)} ฿`;
       const matTabRemainEl = document.getElementById('matTabRemain');
       matTabRemainEl.textContent = fmt(s.remainMaterials) + ' ฿';
       matTabRemainEl.className = 'split-stat-val num ' + (s.remainMaterials > 0 ? 'text-rose' : 'text-green');
       document.getElementById('billCountAll').textContent = state.bills.length;
-      document.getElementById('billCountContractor').textContent = s.contractorBillCount;
+      document.getElementById('billCountContractorUnpaid').textContent = s.contractorUnpaidBillCount;
+      document.getElementById('billCountContractorPaid').textContent = s.contractorPaidBillCount;
       document.getElementById('billCountOwner').textContent = s.ownerBillCount;
       document.querySelectorAll('#billFilterBar .filter-pill').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.filter === billFilter);
@@ -1951,7 +2114,8 @@
       const container = document.getElementById('billsContainer');
       const filteredBills = state.bills.filter(b => {
         if (billFilter === 'owner') return b.buyerType === 'owner';
-        if (billFilter === 'contractor') return b.buyerType !== 'owner';
+        if (billFilter === 'contractor_unpaid') return b.buyerType !== 'owner' && !b.reimbursed;
+        if (billFilter === 'contractor_paid') return b.buyerType !== 'owner' && Boolean(b.reimbursed);
         return true;
       });
       if (state.bills.length === 0) {
@@ -1959,12 +2123,17 @@
         return;
       }
       if (filteredBills.length === 0) {
-        const emptyLabel = billFilter === 'owner' ? 'ยังไม่มีบิลประเภท "เจ้าของซื้อเอง"' : 'ยังไม่มีบิลประเภท "ช่างซื้อมาเบิก"';
-        container.innerHTML = `<div class="card empty-state" style="grid-column:1/-1;">${emptyLabel}</div>`;
+        const emptyMap = {
+          owner: 'ยังไม่มีบิลประเภท "เจ้าของซื้อเอง"',
+          contractor_unpaid: 'ไม่มีบิลช่างซื้อที่รอจ่ายคืนแล้ว',
+          contractor_paid: 'ยังไม่มีบิลช่างซื้อที่ตัดจ่ายแล้ว'
+        };
+        container.innerHTML = `<div class="card empty-state" style="grid-column:1/-1;">${emptyMap[billFilter] || 'ไม่พบบิลในหมวดนี้'}</div>`;
         return;
       }
       container.innerHTML = filteredBills.map(bill => {
         const isOwner = bill.buyerType === 'owner';
+        const isSettled = !isOwner && Boolean(bill.reimbursed);
         const sum = bill.items.reduce((a, it) => a + (Number(it.amount) || 0), 0);
         const itemsHtml = bill.items.length === 0
           ? '<div style="color:var(--text-muted); font-size:13px; padding:8px 0;">ยังไม่มีรายการในบิลนี้</div>'
@@ -1979,8 +2148,22 @@
               </div>
             `).join('');
 
+        const statusBarHtml = isOwner
+          ? `<div class="bill-status-bar owner">
+               <span class="bill-status-label"><span class="bill-status-dot"></span>เจ้าของซื้อเอง • เก็บยอดค่าใช้จ่ายแล้ว</span>
+             </div>`
+          : isSettled
+            ? `<div class="bill-status-bar paid">
+                 <span class="bill-status-label"><span class="bill-status-dot"></span>จ่ายคืนช่างแล้ว${bill.reimbursedDate ? ' (' + esc(bill.reimbursedDate) + ')' : ''}</span>
+                 <button type="button" class="btn-unsettle-mini" onclick="unsettleBill('${bill.id}')" title="ยกเลิกสถานะจ่ายแล้ว">ยกเลิกตัดบิล</button>
+               </div>`
+            : `<div class="bill-status-bar unpaid">
+                 <span class="bill-status-label"><span class="bill-status-dot"></span>รอจ่ายคืนช่าง</span>
+                 <button type="button" class="btn-settle-mini" onclick="openSettleBillsModal('${bill.id}')">✓ ตัดจ่ายบิลนี้</button>
+               </div>`;
+
         return `
-          <div class="bill-card ${isOwner ? 'type-owner' : 'type-contractor'}">
+          <div class="bill-card ${isOwner ? 'type-owner' : 'type-contractor'}${isSettled ? ' is-settled' : ''}">
             <div class="bill-head">
               <div style="flex:1; min-width:0;">
                 <input type="text" class="inline-edit-title" value="${esc(bill.name)}" placeholder="ชื่อบิล" onchange="updateBillField('${bill.id}', 'name', this.value)" />
@@ -1998,6 +2181,7 @@
                 <button class="btn-danger-ghost" title="ลบบิลนี้" onclick="deleteBill('${bill.id}')">ลบ</button>
               </div>
             </div>
+            ${statusBarHtml}
             <div class="bill-items">${itemsHtml}</div>
             <form class="bill-add-form" onsubmit="addBillItem(event, '${bill.id}')">
               <input type="text" class="inp-name" name="itemName" placeholder="ชื่อรายการ (ไม่บังคับ)" />
@@ -2007,6 +2191,114 @@
           </div>
         `;
       }).join('');
+    }
+
+    function openSettleBillsModal(preselectBillId = null) {
+      const unpaidBills = state.bills.filter(b => b.buyerType !== 'owner' && !b.reimbursed);
+      if (unpaidBills.length === 0) {
+        toast('ไม่มีบิลช่างซื้อที่รอจ่ายคืนแล้ว', 'success');
+        return;
+      }
+      const list = document.getElementById('settleBillList');
+      list.innerHTML = unpaidBills.map(b => {
+        const sum = (b.items || []).reduce((a, it) => a + (Number(it.amount) || 0), 0);
+        const checked = preselectBillId ? (b.id === preselectBillId) : true;
+        return `
+          <label class="settle-bill-row">
+            <span style="display:flex; align-items:center; gap:10px; min-width:0;">
+              <input type="checkbox" class="settle-bill-chk" data-bid="${b.id}" data-amt="${sum}" ${checked ? 'checked' : ''} onchange="updateSettleTotal()" style="width:auto; height:auto;" />
+              <span style="min-width:0;">
+                <strong style="display:block; font-size:14px; color:var(--color-ink);">${esc(b.name)}</strong>
+                <span style="font-size:12px; color:var(--color-steel);">${b.date ? esc(b.date) + ' • ' : ''}${(b.items || []).length} รายการ${b.note ? ' • ' + esc(b.note) : ''}</span>
+              </span>
+            </span>
+            <strong class="num" style="flex-shrink:0; font-size:14px;">${fmt(sum)} ฿</strong>
+          </label>
+        `;
+      }).join('');
+      document.getElementById('settleDate').value = todayISO();
+      document.getElementById('settleNote').value = '';
+      document.getElementById('settleCreatePayment').checked = true;
+      updateSettleTotal();
+      openModal('modalSettleBills');
+    }
+
+    function toggleAllSettleBills(checked) {
+      document.querySelectorAll('.settle-bill-chk').forEach(c => { c.checked = checked; });
+      updateSettleTotal();
+    }
+
+    function updateSettleTotal() {
+      let count = 0;
+      let sum = 0;
+      document.querySelectorAll('.settle-bill-chk:checked').forEach(c => {
+        count += 1;
+        sum += parseFloat(c.dataset.amt) || 0;
+      });
+      document.getElementById('settleSelectedCount').textContent = `เลือก ${count} บิล`;
+      document.getElementById('settleSelectedSum').textContent = fmt(sum) + ' ฿';
+    }
+
+    function confirmSettleBills() {
+      const selectedIds = [];
+      let totalAmt = 0;
+      document.querySelectorAll('.settle-bill-chk:checked').forEach(c => {
+        selectedIds.push(c.dataset.bid);
+        totalAmt += parseFloat(c.dataset.amt) || 0;
+      });
+      if (selectedIds.length === 0) {
+        toast('กรุณาเลือกอย่างน้อย 1 บิล', 'error');
+        return;
+      }
+      const date = document.getElementById('settleDate').value || todayISO();
+      const noteInput = document.getElementById('settleNote').value.trim();
+      const createPayment = document.getElementById('settleCreatePayment').checked;
+
+      const selectedBills = state.bills.filter(b => selectedIds.includes(b.id));
+      const billNames = selectedBills.map(b => b.name).join(', ');
+      let paymentId = '';
+
+      if (createPayment && totalAmt > 0) {
+        paymentId = uid('pay');
+        state.payments.unshift({
+          id: paymentId,
+          date,
+          category: 'materials',
+          amount: totalAmt,
+          billIds: selectedIds,
+          note: `ตัดจ่ายค่าของ (${billNames})${noteInput ? ' — ' + noteInput : ''}`
+        });
+      }
+
+      selectedBills.forEach(b => {
+        b.reimbursed = true;
+        b.reimbursedDate = date;
+        b.paymentId = paymentId;
+      });
+
+      closeModal('modalSettleBills');
+      saveState();
+      toast(createPayment ? `ตัดจ่าย ${selectedBills.length} บิล (${fmt(totalAmt)} ฿) เรียบร้อย` : `ติดสถานะจ่ายแล้ว ${selectedBills.length} บิลเรียบร้อย`, 'success');
+    }
+
+    function unsettleBill(billId) {
+      const bill = state.bills.find(b => b.id === billId);
+      if (!bill) return;
+      const linkedPay = bill.paymentId ? state.payments.find(p => p.id === bill.paymentId) : null;
+      const otherBillsSamePay = linkedPay ? state.bills.filter(b => b.id !== billId && b.paymentId === linkedPay.id) : [];
+
+      if (linkedPay && otherBillsSamePay.length === 0) {
+        if (!confirm(`ยกเลิกสถานะจ่ายแล้วของ "${bill.name}" และลบรายการจ่ายเงิน ${fmt(linkedPay.amount)} ฿ ที่เชื่อมกันออกด้วยใช่หรือไม่?`)) return;
+        state.payments = state.payments.filter(p => p.id !== linkedPay.id);
+      } else {
+        if (!confirm(`ต้องการยกเลิกสถานะจ่ายแล้วของ "${bill.name}" กลับเป็น "รอจ่ายคืนช่าง" ใช่หรือไม่?`)) return;
+      }
+
+      bill.reimbursed = false;
+      bill.reimbursedDate = '';
+      bill.paymentId = '';
+      saveState();
+      toast(`ยกเลิกตัดบิล "${bill.name}" เรียบร้อย`);
     }
 
     function openNewBillModal() {
@@ -2032,7 +2324,7 @@
       if (!isNaN(firstItemAmt) && firstItemAmt > 0) {
         items.push({ id: uid('it'), name: firstItemName || 'รายการ 1', amount: firstItemAmt });
       }
-      state.bills.push({ id: uid('bill'), name, buyerType, date, note, items });
+      state.bills.push({ id: uid('bill'), name, buyerType, reimbursed: false, reimbursedDate: '', paymentId: '', date, note, items });
       closeModal('modalNewBill');
       saveState();
       const typeLabel = buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
@@ -2489,6 +2781,13 @@
 
     function deletePayment(id) {
       if (!confirm('ต้องการลบรายการจ่ายเงินนี้ใช่หรือไม่?')) return;
+      state.bills.forEach(b => {
+        if (b.paymentId === id) {
+          b.reimbursed = false;
+          b.reimbursedDate = '';
+          b.paymentId = '';
+        }
+      });
       state.payments = state.payments.filter(p => p.id !== id);
       saveState();
     }
@@ -2667,16 +2966,17 @@
       const s = calcSummary();
       const lines = [];
       lines.push('=== สรุปค่าอุปกรณ์ / บิล ===');
-      lines.push('บิล,ประเภทผู้ซื้อ,วันที่,รายการ,จำนวนเงิน');
+      lines.push('บิล,ประเภทผู้ซื้อ,สถานะจ่ายคืนช่าง,วันที่,รายการ,จำนวนเงิน');
       state.bills.forEach(b => {
         const buyerLabel = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
-        b.items.forEach(it => lines.push(`"${b.name}","${buyerLabel}","${b.date || ''}","${it.name || ''}",${it.amount}`));
+        const statusLabel = b.buyerType === 'owner' ? 'เจ้าของจ่ายเองแล้ว' : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' ' + b.reimbursedDate : '')) : 'รอจ่ายคืนช่าง');
+        b.items.forEach(it => lines.push(`"${b.name}","${buyerLabel}","${statusLabel}","${b.date || ''}","${it.name || ''}",${it.amount}`));
       });
-      lines.push(`รวมค่าอุปกรณ์ทั้งหมด,,,,${s.totalMaterials}`);
-      lines.push(`เจ้าของซื้อเอง (จ่ายแล้ว),,,,${s.ownerMatTotal}`);
-      lines.push(`ช่างซื้อมาเบิก,,,,${s.contractorMatTotal}`);
-      lines.push(`จ่ายคืนค่าของให้ช่างแล้ว,,,,${s.paidMaterials}`);
-      lines.push(`คงเหลือต้องจ่ายช่าง,,,,${s.remainMaterials}`);
+      lines.push(`รวมค่าอุปกรณ์ทั้งหมด,,,,,${s.totalMaterials}`);
+      lines.push(`เจ้าของซื้อเอง (จ่ายแล้ว),,,,,${s.ownerMatTotal}`);
+      lines.push(`ช่างซื้อมาเบิก,,,,,${s.contractorMatTotal}`);
+      lines.push(`จ่ายคืนค่าของให้ช่างแล้ว,,,,,${s.paidMaterials}`);
+      lines.push(`คงเหลือต้องจ่ายช่าง,,,,,${s.remainMaterials}`);
       lines.push('');
       lines.push('=== ตารางค่าแรงช่าง ===');
       lines.push(['วันที่', ...state.workers.map(w => `"${w.name}"`), 'รวมรายวัน'].join(','));
@@ -2835,23 +3135,24 @@ function renderReadableSheets_(data) {
 
   const billSheet = getOrCreateSheet_(ss, 'ค่าอุปกรณ์_บิล');
   billSheet.clear();
-  const billRows = [['บิล', 'ประเภทผู้ซื้อ', 'วันที่', 'รายการ', 'จำนวนเงิน (บาท)', 'หมายเหตุ']];
+  const billRows = [['บิล', 'ประเภทผู้ซื้อ', 'สถานะจ่ายคืนช่าง', 'วันที่', 'รายการ', 'จำนวนเงิน (บาท)', 'หมายเหตุ']];
   bills.forEach(function (b) {
     const buyerLabel = b.buyerType === 'owner' ? 'เจ้าของซื้อเอง' : 'ช่างซื้อมาเบิก';
+    const statusLabel = b.buyerType === 'owner' ? 'เจ้าของจ่ายเองแล้ว' : (b.reimbursed ? ('จ่ายคืนแล้ว' + (b.reimbursedDate ? ' (' + b.reimbursedDate + ')' : '')) : 'รอจ่ายคืนช่าง');
     let billSum = 0;
     (b.items || []).forEach(function (it, idx) {
       const amt = Number(it.amount) || 0;
       billSum += amt;
-      billRows.push([idx === 0 ? (b.name || '') : '', idx === 0 ? buyerLabel : '', idx === 0 ? (b.date || '') : '', it.name || ('รายการที่ ' + (idx + 1)), amt, idx === 0 ? (b.note || '') : '']);
+      billRows.push([idx === 0 ? (b.name || '') : '', idx === 0 ? buyerLabel : '', idx === 0 ? statusLabel : '', idx === 0 ? (b.date || '') : '', it.name || ('รายการที่ ' + (idx + 1)), amt, idx === 0 ? (b.note || '') : '']);
     });
-    billRows.push(['รวม ' + (b.name || ''), buyerLabel, '', '', billSum, '']);
+    billRows.push(['รวม ' + (b.name || ''), buyerLabel, statusLabel, '', '', billSum, '']);
   });
-  billRows.push(['', '', '', '', '', ''], ['รวมค่าอุปกรณ์ทั้งหมด', '', '', '', totalMaterials, ''], ['เจ้าของซื้อเอง (จ่ายแล้ว)', '', '', '', ownerMatTotal, 'ไม่ค้างจ่ายช่าง'], ['ช่างซื้อมาเบิก', '', '', '', contractorMatTotal, ''], ['จ่ายคืนค่าของให้ช่างแล้ว', '', '', '', paidMaterials, ''], ['คงเหลือต้องจ่ายช่าง', '', '', '', remainMaterials, '']);
-  billSheet.getRange(1, 1, billRows.length, 6).setValues(billRows);
-  billSheet.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
-  billSheet.getRange(2, 5, billRows.length - 1, 1).setNumberFormat('#,##0');
-  billSheet.getRange(billRows.length - 4, 1, 5, 6).setFontWeight('bold').setBackground('#fef3c7');
-  billSheet.autoResizeColumns(1, 6);
+  billRows.push(['', '', '', '', '', '', ''], ['รวมค่าอุปกรณ์ทั้งหมด', '', '', '', '', totalMaterials, ''], ['เจ้าของซื้อเอง (จ่ายแล้ว)', '', '', '', '', ownerMatTotal, 'ไม่ค้างจ่ายช่าง'], ['ช่างซื้อมาเบิก', '', '', '', '', contractorMatTotal, ''], ['จ่ายคืนค่าของให้ช่างแล้ว', '', '', '', '', paidMaterials, ''], ['คงเหลือต้องจ่ายช่าง', '', '', '', '', remainMaterials, '']);
+  billSheet.getRange(1, 1, billRows.length, 7).setValues(billRows);
+  billSheet.getRange(1, 1, 1, 7).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
+  billSheet.getRange(2, 6, billRows.length - 1, 1).setNumberFormat('#,##0');
+  billSheet.getRange(billRows.length - 4, 1, 5, 7).setFontWeight('bold').setBackground('#fef3c7');
+  billSheet.autoResizeColumns(1, 7);
 
   const laborSheet = getOrCreateSheet_(ss, 'ค่าแรงช่าง');
   laborSheet.clear();
